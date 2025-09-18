@@ -1,50 +1,45 @@
 package service
 
 import (
-	"encoding/json"
-	"net/http"
+	"errors"
 	"time"
 )
 
+const (
+	NoGender = iota
+	Male
+	Female
+)
+
 // 用户信息结构
-type UserInfo struct {
+type UserProfile struct {
 	Name      string `json:"name"`
 	BirthYear int    `json:"birth_year"`
-	Gender    string `json:"gender"`
+	Gender    uint   `json:"gender"`
 }
 
-func ParseUserInfo() *UserInfo {
-	var userInfo service.UserInfo
-	if err := json.NewDecoder(r.Body).Decode(&userInfo); err != nil {
-		resp := ApiResponse{
-			Success: false,
-			Message: "无效的用户信息格式",
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(resp)
-		return
-	}
-
+func (i *UserProfile) CheckUserData(reqType PromptType) error {
 	// 验证必填字段
-	if userInfo.Name == "" || userInfo.BirthYear == 0 || userInfo.Gender == "" {
-		resp := ApiResponse{
-			Success: false,
-			Message: "姓名、出生年份和性别为必填项",
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(resp)
-		return
+	if i.Name == "" || i.BirthYear == 0 {
+		return errors.New("姓名、出生年份和性别为必填项")
 	}
 
-	// 验证出生年份合理性
-	currentYear := time.Now().Year()
-	if userInfo.BirthYear < 1900 || userInfo.BirthYear > currentYear {
-		resp := ApiResponse{
-			Success: false,
-			Message: "出生年份应在1900年至当前年份之间",
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(resp)
-		return
+	age := time.Now().Year() - i.BirthYear
+
+	var ageIsOk = false
+	switch reqType {
+	case PromptTypeChoseClass:
+		ageIsOk = age >= 12 && age <= 19
+		break
+	case PromptTypePressureMiddleSchool:
+		ageIsOk = age >= 12 && age <= 22
+		break
+	case PromptTypePressureUniversity:
+		ageIsOk = age >= 14 && age <= 32
+		break
 	}
+	if !ageIsOk {
+		return errors.New("出生年份无法参与此测试")
+	}
+	return nil
 }

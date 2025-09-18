@@ -7,4 +7,4 @@ require (
 	github.com/joho/godotenv v1.5.1
 )
 
-replace github.com/hopwesley/wenxintai/server => /Users/hyperorchid/wenxintai/wenxintai/server
+replace github.com/hopwesley/wenxintai/server => /Users/wesley/wenxintai/wenxintai/server

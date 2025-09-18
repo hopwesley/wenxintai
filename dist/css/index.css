@@ -35,7 +35,13 @@ header {
     right: 0;
     background: transparent;
     border-bottom: 1px solid #e5e7eb;
-    z-index: 10; /* 确保在渐变之上 */
+    z-index: 10;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+header.scrolled {
+    background: #fff;          /* 滚动后变白 */
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05); /* 可选，增加分隔感 */
 }
 
 body {
@@ -128,17 +134,27 @@ main{max-width:1000px;margin:0 auto;padding:0 16px;position:relative;z-index:1}
 
 .kpi{display:flex;gap:12px;flex-wrap:wrap}
 .kpi .item{flex:1 1 200px;border:1px solid #e5e7eb;border-radius:12px;padding:12px;background:#fff}
-.kpi .item-d{background:#eff6ff;border-color:#bfdbfe}
-.kpi .item-a{background:#fef9c3;border-color:#fde68a}
-.kpi .item-v{background:#fef2f2;border-color:#fecaca}
+.kpi .item-d {
+    background: rgba(6, 142, 220, 0.1);
+    border: none;
+}
+.kpi .item-a {
+    background: rgba(241, 165, 44, 0.1);
+    border: none;
+}
+.kpi .item-v {
+    background: rgba(63, 154, 33, 0.1);
+    border: none;
+}
 .kpi .score{font-size:28px;font-weight:800}
-.item-d .score{color:#1d4ed8}
-.item-a .score{color:#b45309}
-.item-v .score{color:#b91c1c}
+.item-d .score{color:#068EDC}
+.item-a .score{color:#F1A52C}
+.item-v .score{color:#3F9A21}
 
 .step3-Box {
     padding: 32px 18px;
 }
+
 .badge-ok{
     color:var(--ok)
 }

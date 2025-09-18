@@ -33,3 +33,4 @@ go.work.sum
 /package-lock.json
 /node_modules/
 /server/dist/
+/server/go.sum

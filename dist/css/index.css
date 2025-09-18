@@ -15,19 +15,33 @@
 p,h2,h3{margin:0}
 body{margin:0;background:#fff;color:var(--txt);font:16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
 
-/* 顶部渐变背景 */
-.bg-gradient{
-    background:linear-gradient(180deg,#eef3ff 0%,#eaf3ff 40%,#ffffff 100%);
-    padding-bottom:var(--hero-pad);
-    position:relative;
-    z-index:0;
+/* 顶部渐变背景固定在顶部 */
+.bg-gradient {
+    background: linear-gradient(180deg, #eef3ff 0%, #eaf3ff 40%, #ffffff 100%);
+    padding-bottom: var(--hero-pad);
+    position: fixed;     /* 固定背景 */
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 260px;       /* 控制渐变高度 */
+    z-index: -999;
 }
 
-header{
-    background:transparent;
-    border-bottom:1px solid #e5e7eb;
-    z-index:5
+/* 导航栏固定在渐变背景上方 */
+header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: transparent;
+    border-bottom: 1px solid #e5e7eb;
+    z-index: 10; /* 确保在渐变之上 */
 }
+
+body {
+    padding-top: 80px; /* 给内容留出导航栏高度的空间 */
+}
+
 .nav{
     max-width:1000px;margin:auto;
     display:flex;align-items:center;gap:12px;
@@ -59,11 +73,6 @@ main{max-width:1000px;margin:0 auto;padding:0 16px;position:relative;z-index:1}
     margin:40px auto;
     box-shadow:0 16px 48px rgba(0,0,0,.05);
     overflow:hidden;
-}
-#step0.card,
-#step1.card,
-#step2.card{
-    margin-top: calc(var(--hero-overlap) * -1);
 }
 
 .step1-Box{

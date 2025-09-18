@@ -8,89 +8,100 @@
 </head>
 <body>
 
-<div class="bg-gradient">
-    <header>
-        <div class="nav">
-            <div class="logo"></div>
-            <div class="brand">问心台</div>
-            <span class="pill">非诊断工具 · 仅供筛查参考</span>
-        </div>
-    </header>
-
-    <div class="steps">
-        <div class="step active">
-            <span>Step1</span>
-            <p>请选择学生类别与性别</p>
-        </div>
-        <div class="step">
-            <span>Step2</span>
-            <p>完成问卷并提交</p>
-        </div>
-        <div class="step">
-            <span>Step3</span>
-            <p>查看分析报告</p>
-        </div>
+<div class="bg-gradient"></div>
+<header>
+    <div class="nav">
+        <div class="logo"></div>
+        <div class="brand">问心台</div>
+        <span class="pill">非诊断工具 · 仅供筛查参考</span>
     </div>
+</header>
+<!-- 入口页：年级选择（进入后才显示三步流程） -->
+<div id="entry-hero">
+    <section class="card entry-card" id="entry">
+        <div class="step1-Box">
+            <h2>请选择您的年级</h2>
+            <p class="muted">选择后进入测评流程（3 步）。</p>
+            <div class="row" role="group" aria-label="选择年级">
+                <label class="pill"><input type="radio" name="grade" value="大学生" checked> 大学生</label>
+                <label class="pill"><input type="radio" name="grade" value="中学生"> 中学生</label>
+                <label class="pill"><input type="radio" name="grade" value="初中生"> 初中生</label>
+            </div>
+            <button class="btn" id="startFlow" style="margin-top:16px">开始测评</button>
+        </div>
+    </section>
 </div>
 
-<main>
-    <!-- Step 0 -->
-    <section class="card" id="step0">
-        <div class="step1-Box">
-            <h2>基本信息</h2>
-
-            <h3>学生类别</h3>
-            <p class="muted">请选择学生类别。</p>
-            <div class="row" role="group" aria-label="选择学生类别">
-                <label class="pill"><input type="radio" name="studentType" value="大学生" checked> 大学生</label>
-                <label class="pill"><input type="radio" name="studentType" value="中学生"> 中学生</label>
+<main hidden>
+    <div class="container">
+        <div class="steps">
+            <div class="step active">
+                <span>Step1</span>
+                <p>请选择学生类别与性别</p>
             </div>
-
-            <h3 style="margin-top:16px">性别</h3>
-            <p class="muted">请选择性别。</p>
-            <div class="row" role="group" aria-label="选择性别">
-                <label class="pill"><input type="radio" name="gender" value="女" checked> 女</label>
-                <label class="pill"><input type="radio" name="gender" value="男"> 男</label>
+            <div class="step">
+                <span>Step2</span>
+                <p>完成问卷并提交</p>
             </div>
-
-            <button class="btn" id="toStep1" style="margin-top:16px">确定</button>
-        </div>
-    </section>
-
-    <!-- Step 1 -->
-    <section class="card" id="step1" hidden>
-        <div class="row" style="justify-content:space-between;background-color:#f7f7f8;padding:12px 16px">
-            <h2>第一步 · 风险筛查题（1~5分）</h2>
-            <span class="muted">1=从不 · 2=偶尔 · 3=有时 · 4=经常 · 5=总是</span>
-        </div>
-        <div id="questions" class="step2-Box"></div>
-        <div class="row" style="justify-content:space-between;margin:16px 0">
-            <div style="margin:auto">
-                <button class="btn" id="submit">提交并生成报告</button>
+            <div class="step">
+                <span>Step3</span>
+                <p>查看分析报告</p>
             </div>
         </div>
-    </section>
+        <!-- Step 0 -->
+        <section class="card" id="step0">
+            <div class="step1-Box">
+                <h2>基本信息</h2>
+                <h3>学生年龄</h3>
+                <p class="muted">选择年龄。</p>
+                <div class="row" role="group" aria-label="选择学生类别">
+                    <label class="pill"><input type="radio" name="studentType" value="大学生" checked> 15</label>
+                    <label class="pill"><input type="radio" name="studentType" value="中学生"> 16</label>
+                </div>
+                <h3 style="margin-top:16px">性别</h3>
+                <p class="muted">请选择性别。</p>
+                <div class="row" role="group" aria-label="选择性别">
+                    <label class="pill"><input type="radio" name="gender" value="女" checked> 女</label>
+                    <label class="pill"><input type="radio" name="gender" value="男"> 男</label>
+                </div>
 
-    <!-- Step 2 -->
-    <section class="card step3-Box" id="step2" hidden>
-        <h2>第二步 · 心理状况分析报告</h2>
-        <div class="kpi" id="kpi"></div>
-        <div class="grid2" style="margin-top:12px">
-            <div>
-                <h3>面向校方的筛查性文字报告</h3>
-                <textarea id="report" readonly></textarea>
-                <p class="footer-tip">提示：可复制此报告纳入学校筛查台账。本页为示范，不替代专业诊断。</p>
+                <button class="btn" id="toStep1" style="margin-top:16px">确定</button>
             </div>
-            <div>
-                <h3>作答与效度</h3>
-                <div id="validity"></div>
-                <div style="margin-top:12px">
-                    <button class="btn secondary" id="back">返回修改作答</button>
-                    <button class="btn" id="print">打印/保存 PDF</button>
+        </section>
+        <!-- Step 1 -->
+        <section class="card" id="step1" hidden>
+            <div class="row" style="justify-content:space-between;background-color:#f7f7f8;padding:12px 16px">
+                <h2>第一步 · 风险筛查题（1~5分）</h2>
+                <span class="muted">1=从不 · 2=偶尔 · 3=有时 · 4=经常 · 5=总是</span>
+            </div>
+            <div id="questions" class="step2-Box"></div>
+            <div class="row" style="justify-content:space-between;margin:16px 0">
+                <div style="margin:auto">
+                    <button class="btn" id="submit">提交并生成报告</button>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+        <!-- Step 2 -->
+        <section class="card step3-Box" id="step2" hidden>
+            <h2>第二步 · 心理状况分析报告</h2>
+            <div class="kpi" id="kpi"></div>
+            <div class="grid2" style="margin-top:12px">
+                <div>
+                    <h3>面向校方的筛查性文字报告</h3>
+                    <textarea id="report" readonly></textarea>
+                    <p class="footer-tip">提示：可复制此报告纳入学校筛查台账。本页为示范，不替代专业诊断。</p>
+                </div>
+                <div>
+                    <h3>作答与效度</h3>
+                    <div id="validity"></div>
+                    <div style="margin-top:12px">
+                        <button class="btn secondary" id="back">返回修改作答</button>
+                        <button class="btn" id="print">打印/保存 PDF</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
 </main>
 
 <script type="module" src="./js/main.js"></script>

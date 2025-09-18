@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>大学生抑郁/焦虑风险筛查（示范页）</title>
+    <style>
+        :root{
+            --c:#4164D9;   /* 主题色 */
+            --bg:#f8fafc;
+            --txt:#111827;
+            --mut:#6b7280;
+            --ok:#16a34a;
+            --warn:#f59e0b;
+            --bad:#dc2626;
+
+            --hero-pad: 160px;      /* 渐变区域的底部留白 */
+            --hero-overlap: 100px;  /* Step0 上移覆盖的距离 */
+        }
+
+        *{box-sizing:border-box}
+        p,h2,h3{margin:0}
+        body{margin:0;background:#fff;color:var(--txt);font:16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+
+        /* 顶部渐变背景 */
+        .bg-gradient{
+            background:linear-gradient(180deg,#eef3ff 0%,#eaf3ff 40%,#ffffff 100%);
+            padding-bottom:var(--hero-pad);
+            position:relative;
+            z-index:0;
+        }
+
+        header{
+            background:transparent;
+            border-bottom:1px solid #e5e7eb;
+            z-index:5
+        }
+        .nav{
+            max-width:1000px;margin:auto;
+            display:flex;align-items:center;gap:12px;
+            padding:16px 16px
+        }
+        .logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--c),#8b5cf6)}
+        .brand{font-weight:700}
+
+        /* 步骤进度条 */
+        .steps{display:flex;justify-content:center;gap:24px;max-width:1000px;margin:24px auto 0}
+        .step{
+            flex:1;background:#fff;border-radius:12px;padding:16px;text-align:center;
+            border:1px solid #e5e7eb;color:#6b7280;transition:all .2s
+        }
+        .step span{
+            display:inline-block;background:#e5e7eb;border-radius:999px;padding:2px 10px;
+            font-size:12px;font-weight:600;margin-bottom:6px
+        }
+        .step.active{border-color:var(--c);color:#111827;background:#eff6ff}
+        .step.active span{background:var(--c);color:#fff}
+
+        main{max-width:1000px;margin:0 auto;padding:0 16px;position:relative;z-index:1}
+
+        /* 卡片通用样式，三步保持一致 */
+        .card {
+            background:#fff;
+            border-radius:28px;
+            max-width:1000px;
+            margin:40px auto;
+            box-shadow:0 16px 48px rgba(0,0,0,.05);
+            overflow:hidden;
+        }
+        #step0.card,
+        #step1.card,
+        #step2.card{
+            margin-top: calc(var(--hero-overlap) * -1);
+        }
+
+        .step1-Box{
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            gap:12px;
+            margin:32px 0
+        }
+        .step2-Box{
+            padding:18px 32px
+        }
+        .row{
+            display:flex;
+            flex-wrap:wrap;
+            gap:12px;
+            align-items:center
+        }
+        .btn{
+            appearance:none;
+            border:none;
+            background:var(--c);
+            color:#fff;
+            border-radius:999px;
+            padding:12px 32px;
+            font-weight:600;
+            cursor:pointer
+        }
+        .btn.secondary{background:#1118270d;color:#111827;border:1px solid #e5e7eb}
+        .btn:disabled{opacity:.5;cursor:not-allowed}
+
+        .q{padding:12px 0;border-top:1px dashed #e5e7eb;display:flex;flex-direction:column;align-items:center;width:100%}
+        .q:first-child{border-top:none}
+        .qtitle{font-weight:400}
+        .scale{display:flex;gap:24px;flex-wrap:wrap;padding-top:12px}
+        .scale label{
+            width:42px;height:42px;border:1px solid #e5e7eb;border-radius:999px;
+            cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:center;
+            background:#fff;transition:all .15s
+        }
+        .scale input{display:none}
+        .scale label:has(input:checked){background:var(--c);color:#fff;border-color:var(--c)}
+        .scale label:hover{background-color:rgba(203,213,225,0.4)}
+        .muted{color:var(--mut)}
+        .pill{
+            display:inline-block;
+            border-radius:999px;
+            padding:10px 18px;
+            font-size:14px;
+            border:1px solid #e5e7eb;
+            background:#f9fafb
+        }
+
+        .kpi{display:flex;gap:12px;flex-wrap:wrap}
+        .kpi .item{flex:1 1 200px;border:1px solid #e5e7eb;border-radius:12px;padding:12px;background:#fff}
+        .kpi .item-d{background:#eff6ff;border-color:#bfdbfe}
+        .kpi .item-a{background:#fef9c3;border-color:#fde68a}
+        .kpi .item-v{background:#fef2f2;border-color:#fecaca}
+        .kpi .score{font-size:28px;font-weight:800}
+        .item-d .score{color:#1d4ed8}
+        .item-a .score{color:#b45309}
+        .item-v .score{color:#b91c1c}
+
+        .step3-Box {
+            padding: 32px 18px;
+        }
+        .badge-ok{
+            color:var(--ok)
+        }
+        .badge-warn{
+            color:var(--warn)
+        }
+        .badge-bad{
+            color:var(--bad)
+        }
+        textarea{
+            width:100%;
+            min-height:160px;
+            resize:vertical;
+            border-radius:10px;
+            border:1px solid #e5e7eb;
+            padding:10px
+        }
+        .footer-tip{font-size:12px;color:#6b7280}
+        .grid2{display:grid;grid-template-columns:1fr;gap:12px}
+        @media (min-width:860px){.grid2{grid-template-columns:1fr 1fr}}
+    </style>
+</head>
+<body>
+
+<div class="bg-gradient">
+    <header>
+        <div class="nav">
+            <div class="logo"></div>
+            <div class="brand">问心台</div>
+            <span class="pill">非诊断工具 · 仅供筛查参考</span>
+        </div>
+    </header>
+
+    <div class="steps">
+        <div class="step active">
+            <span>Step1</span>
+            <p>请选择学生类别与性别</p>
+        </div>
+        <div class="step">
+            <span>Step2</span>
+            <p>完成问卷并提交</p>
+        </div>
+        <div class="step">
+            <span>Step3</span>
+            <p>查看分析报告</p>
+        </div>
+    </div>
+</div>
+
+<main>
+    <!-- Step 0 -->
+    <section class="card" id="step0">
+        <div class="step1-Box">
+            <h2>基本信息</h2>
+
+            <h3>学生类别</h3>
+            <p class="muted">请选择学生类别。</p>
+            <div class="row" role="group" aria-label="选择学生类别">
+                <label class="pill"><input type="radio" name="studentType" value="大学生" checked> 大学生</label>
+                <label class="pill"><input type="radio" name="studentType" value="中学生"> 中学生</label>
+            </div>
+
+            <h3 style="margin-top:16px">性别</h3>
+            <p class="muted">请选择性别。</p>
+            <div class="row" role="group" aria-label="选择性别">
+                <label class="pill"><input type="radio" name="gender" value="女" checked> 女</label>
+                <label class="pill"><input type="radio" name="gender" value="男"> 男</label>
+            </div>
+
+            <button class="btn" id="toStep1" style="margin-top:16px">确定</button>
+        </div>
+    </section>
+
+    <!-- Step 1 -->
+    <section class="card" id="step1" hidden>
+        <div class="row" style="justify-content:space-between;background-color:#f7f7f8;padding:12px 16px">
+            <h2>第一步 · 风险筛查题（1~5分）</h2>
+            <span class="muted">1=从不 · 2=偶尔 · 3=有时 · 4=经常 · 5=总是</span>
+        </div>
+        <div id="questions" class="step2-Box"></div>
+        <div class="row" style="justify-content:space-between;margin:16px 0">
+            <div style="margin:auto">
+                <button class="btn" id="submit">提交并生成报告</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Step 2 -->
+    <section class="card step3-Box" id="step2" hidden>
+        <h2>第二步 · 心理状况分析报告</h2>
+        <div class="kpi" id="kpi"></div>
+        <div class="grid2" style="margin-top:12px">
+            <div>
+                <h3>面向校方的筛查性文字报告</h3>
+                <textarea id="report" readonly></textarea>
+                <p class="footer-tip">提示：可复制此报告纳入学校筛查台账。本页为示范，不替代专业诊断。</p>
+            </div>
+            <div>
+                <h3>作答与效度</h3>
+                <div id="validity"></div>
+                <div style="margin-top:12px">
+                    <button class="btn secondary" id="back">返回修改作答</button>
+                    <button class="btn" id="print">打印/保存 PDF</button>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script>
+    /* === 题库 === */
+    const ITEMS=[
+        {id:1,type:'D',rev:false,text:'最近两周，我常感到情绪低落、提不起兴趣完成课程或社团事务。'},
+        {id:2,type:'A',rev:false,text:'接近考试/作业DDL时，我会出现紧张、心慌或坐立不安的感觉。'},
+        {id:3,type:'D',rev:false,text:'我常对未来学业或就业前景感到悲观，无力规划。'},
+        {id:4,type:'A',rev:false,text:'在人多或陌生场合发言时，我会明显担忧他人评价。'},
+        {id:5,type:'D',rev:true,text:'完成日常学习任务后，我仍能感到开心并从中获得满足。'},
+        {id:6,type:'A',rev:false,text:'我容易因小事紧张，身体出现肌肉僵硬、出汗、心跳加快等反应。'},
+        {id:7,type:'D',rev:false,text:'近两周，我的睡眠质量下降（入睡困难、早醒或睡不解乏）。'},
+        {id:8,type:'A',rev:true,text:'面对不确定安排（课程调整/突发任务），我能保持放松与从容。'},
+        {id:9,type:'D',rev:false,text:'我常陷入自我否定或反复回想负面经历而难以抽离。'},
+        {id:10,type:'A',rev:false,text:'我经常为无法完全掌控学习细节而焦虑或烦躁。'},
+        {id:11,type:'D',rev:false,text:'食欲与能量较以往下降，做事需要很大努力才能坚持。'},
+        {id:12,type:'A',rev:false,text:'我常担心与同学关系或人际误解，并因此紧张不安。'},
+        {id:13,type:'V',rev:false,text:'我从不感到任何压力或担忧（完全没有过）。'},
+        {id:14,type:'V',rev:false,text:'我总是心情愉快，从不出现消极想法。'},
+        {id:15,type:'V',rev:true,text:'我偶尔也会状态不好或做事拖延（这很正常）。'},
+        {id:16,type:'V',rev:false,text:'我经常在1分钟内就能完全搞定所有课程任务。'}
+    ];
+
+    const qWrap=document.getElementById('questions');
+    function renderQuestions(){ qWrap.innerHTML=''; ITEMS.forEach(item=>{
+        const div=document.createElement('div'); div.className='q';
+        const hint=item.type==='V'?'（效度题）':'';
+        div.innerHTML=`
+      <div class="qtitle">${item.id}. ${item.text} <span class="muted">${hint}</span></div>
+      <div class="scale" role="radiogroup" aria-label="题目${item.id}">
+        ${[1,2,3,4,5].map(v=>`
+          <label><input type="radio" name="q${item.id}" value="${v}"><span>${v}</span></label>`).join('')}
+      </div>`;
+        qWrap.appendChild(div);
+    });}
+    renderQuestions();
+
+    const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+    const reverse5=v=>({1:5,2:4,3:3,4:2,5:1}[v]||v);
+    function readAnswers(){const ans={};for(const it of ITEMS){
+        const el=document.querySelector(`input[name=q${it.id}]:checked`); ans[it.id]=el?+el.value:null;} return ans;}
+
+    function scoreAndJudge(ans){
+        const missing=Object.values(ans).filter(v=>v==null).length; let imputed={...ans};
+        if(missing>2) return {error:'作答缺失较多（>2题），建议重新作答。'};
+        for(const k in imputed){if(imputed[k]==null) imputed[k]=3;}
+        const calc=(type)=>{const raw=ITEMS.filter(it=>it.type===type).map(it=>it.rev?reverse5(imputed[it.id]):imputed[it.id]);
+            const sum=raw.reduce((a,b)=>a+b,0),n=raw.length,pct=Math.round(((sum-n*1)/(n*4))*100);
+            return {sum,n,pct:clamp(pct,0,100)};};
+        const D=calc('D'),A=calc('A');
+        const v13=imputed[13],v14=imputed[14],v16=imputed[16],v15=imputed[15]; let vFlags=[];
+        if(v13>=4) vFlags.push('不常见肯定（13）'); if(v14>=4) vFlags.push('过度正面（14）');
+        if(v16>=4) vFlags.push('不合常理速度（16）'); if(v15<=2) vFlags.push('否认普遍现象（15）');
+        const validityRisk=vFlags.length>=2?'效度可疑':(vFlags.length===1?'效度轻微可疑':'效度可接受');
+        function band(p){if(p<40) return {lvl:'低',cls:'badge-ok'}; if(p<55) return {lvl:'轻度',cls:'badge-warn'};
+            if(p<70) return {lvl:'中度',cls:'badge-warn'}; return {lvl:'较高',cls:'badge-bad'};}
+        const bd=band(D.pct),ba=band(A.pct);
+        const studentType=(document.querySelector('input[name=studentType]:checked')||{}).value||'未说明';
+        const gender=(document.querySelector('input[name=gender]:checked')||{}).value||'未说明';
+        const words=buildReport({studentType,gender,D,A,validityRisk,vFlags});
+        return {D,A,bd,ba,validityRisk,vFlags,words};
+    }
+
+    function buildReport(ctx){
+        const {studentType,gender,D,A,validityRisk,vFlags}=ctx;
+        const riskFocus=(D.pct>=70||A.pct>=70)?'存在较高风险':((D.pct>=55||A.pct>=55)?'存在一定风险':'整体风险较低');
+        const lines=[];
+        lines.push(`【对象概况】受测者（类别：${studentType}，性别：${gender}）完成抑郁/焦虑筛查量表，共16题（含效度题）。作答完整度良好。`);
+        lines.push(`【核心指标】抑郁倾向风险评分 ${D.pct} / 100，焦虑倾向风险评分 ${A.pct} / 100。总体判断：${riskFocus}。`);
+        if(validityRisk!=='效度可接受'){lines.push(`【作答效度】当前报告显示“${validityRisk}”（提示项：${vFlags.join('、')}），建议结合访谈或复测核实。`);}
+        else{lines.push(`【作答效度】效度指标在可接受范围内，本次结果可用于初步筛查参考。`);}
+        lines.push(`【使用范围】本报告仅用于校方风险筛查与资源分配，不构成临床诊断。`);
+        return lines.join('\n');
+    }
+
+    function setStep(n){
+        document.querySelectorAll('.steps .step').forEach((el,i)=>{el.classList.toggle('active',i===n-1);});
+    }
+
+    document.getElementById('toStep1').onclick=()=>{
+        document.getElementById('step0').hidden=true;document.getElementById('step1').hidden=false;setStep(2);
+        window.scrollTo({top:0,behavior:'smooth'});};
+    document.getElementById('submit').onclick=()=>{
+        const ans=readAnswers(),res=scoreAndJudge(ans); if(res.error){alert(res.error);return;}
+        const kpi=document.getElementById('kpi');
+        kpi.innerHTML=`
+      <div class="item item-d"><div class="muted">抑郁风险（0~100）</div><div class="score">${res.D.pct}</div><div class="${res.bd.cls}">分层：${res.bd.lvl}</div></div>
+      <div class="item item-a"><div class="muted">焦虑风险（0~100）</div><div class="score">${res.A.pct}</div><div class="${res.ba.cls}">分层：${res.ba.lvl}</div></div>
+      <div class="item item-v"><div class="muted">作答效度</div><div class="score">${res.validityRisk}</div><div class="muted">${res.vFlags.length?('提示项：'+res.vFlags.join('、')):'无异常提示'}</div></div>`;
+        document.getElementById('report').value=res.words;
+        document.getElementById('validity').innerHTML=`<p class="muted">判定逻辑：反向计分（5,8,15题），效度题≥2项提示则效度可疑。</p>`;
+        document.getElementById('step1').hidden=true;document.getElementById('step2').hidden=false;setStep(3);
+        window.scrollTo({top:0,behavior:'smooth'});};
+    document.getElementById('back').onclick=()=>{
+        document.getElementById('step2').hidden=true;document.getElementById('step1').hidden=false;setStep(2);
+        window.scrollTo({top:0,behavior:'smooth'});};
+    document.getElementById('print').onclick=()=>window.print();
+</script>
+</body>
+</html>

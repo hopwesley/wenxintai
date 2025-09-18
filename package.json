@@ -1,0 +1,21 @@
+{
+  "name": "wenxintai",
+  "version": "1.0.0",
+  "description": "wechat program for",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "live-server dist"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hopwesley/wenxintai/issues"
+  },
+  "homepage": "https://github.com/hopwesley/wenxintai#readme",
+  "devDependencies": {
+    "live-server": "^1.2.2",
+    "typescript": "^5.9.2"
+  }
+}

@@ -17,20 +17,21 @@
     </div>
 </header>
 <!-- 入口页：年级选择（进入后才显示三步流程） -->
-<div id="entry-hero">
-    <section class="card entry-card" id="entry">
-        <div class="step1-Box">
-            <h2>请选择您的年级</h2>
-            <p class="muted">选择后进入测评流程（3 步）。</p>
-            <div class="row" role="group" aria-label="选择年级">
-                <label class="pill"><input type="radio" name="grade" value="大学生" checked> 大学生</label>
-                <label class="pill"><input type="radio" name="grade" value="中学生"> 中学生</label>
-                <label class="pill"><input type="radio" name="grade" value="初中生"> 初中生</label>
-            </div>
-            <button class="btn" id="startFlow" style="margin-top:16px">开始测评</button>
-        </div>
-    </section>
+<div class="card-grid" role="group" aria-label="选择年级">
+    <div class="entry-card-option card-uni" data-grade="大学生">
+        <h3>大学生</h3>
+        <p class="muted">适用于本科/研究生群体</p>
+    </div>
+    <div class="entry-card-option card-high" data-grade="中学生">
+        <h3>中学生</h3>
+        <p class="muted">适用于高中阶段学生</p>
+    </div>
+    <div class="entry-card-option card-mid" data-grade="初中生">
+        <h3>初中生</h3>
+        <p class="muted">适用于初中阶段学生</p>
+    </div>
 </div>
+
 
 <main hidden>
     <div class="container">
@@ -52,11 +53,10 @@
         <section class="card" id="step0">
             <div class="step1-Box">
                 <h2>基本信息</h2>
-                <h3>学生年龄</h3>
-                <p class="muted">选择年龄。</p>
-                <div class="row" role="group" aria-label="选择学生类别">
-                    <label class="pill"><input type="radio" name="studentType" value="大学生" checked> 15</label>
-                    <label class="pill"><input type="radio" name="studentType" value="中学生"> 16</label>
+                <h3 style="margin-top:16px">出生日期</h3>
+                <p class="muted">请选择您的出生年月日。</p>
+                <div class="row">
+                    <input type="date" id="birthDate" name="birthDate" style="padding:10px;border:1px solid #e5e7eb;border-radius:8px">
                 </div>
                 <h3 style="margin-top:16px">性别</h3>
                 <p class="muted">请选择性别。</p>

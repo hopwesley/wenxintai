@@ -14,16 +14,24 @@
 *{box-sizing:border-box}
 p,h2,h3{margin:0}
 body{margin:0;background:#fff;color:var(--txt);font:16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+#birthDate {
+    font-size: 14px;
+    padding: 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 240px;
+}
 
 /* 顶部渐变背景固定在顶部 */
 .bg-gradient {
-    background: linear-gradient(180deg, #eef3ff 0%, #eaf3ff 40%, #ffffff 100%);
+    background: linear-gradient(180deg, #F2F0FC 0%, #E5F3F4 40%, #ffffff 100%);
     padding-bottom: var(--hero-pad);
     position: fixed;     /* 固定背景 */
     top: 0;
     left: 0;
     right: 0;
-    height: 260px;       /* 控制渐变高度 */
+    height: 40%;       /* 控制渐变高度 */
     z-index: -999;
 }
 
@@ -56,6 +64,77 @@ body {
 .logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--c),#8b5cf6)}
 .brand{font-weight:700}
 
+/* 入口页卡片布局 */
+.card-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin: 40px auto;   /* 关键：居中 */
+    max-width: 1000px;   /* 最大宽度 */
+}
+@media (min-width: 640px) {
+    .card-grid {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+}
+
+.entry-card-option {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 160px;           /* 高度更高 */
+    border: 2px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #fff;
+    color: #111827;
+    text-align: center;
+    font-weight: 500;
+}
+.entry-card-option:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
+
+.entry-card-option input {
+    display: none;
+}
+.entry-card-option input:checked + .option-content {
+    border-left: 4px solid var(--c);
+    padding-left: 16px;
+}
+/* 大学生卡片（蓝色系） */
+.card-uni {
+    background: linear-gradient(135deg, #4164D9, #6B8EF2);
+    color: #fff;
+}
+
+/* 中学生卡片（绿色系） */
+.card-high {
+    background: linear-gradient(135deg, #16a34a, #4ade80);
+    color: #fff;
+}
+
+/* 初中生卡片（橙色系） */
+.card-mid {
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    color: #fff;
+}
+
+.entry-card-option h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+}
+.entry-card-option p {
+    margin: 8px 0 0;
+    font-size: 14px;
+    opacity: 0.9;
+    color: aliceblue;
+}
 /* 步骤进度条 */
 .steps{display:flex;justify-content:center;gap:24px;max-width:1000px;margin:24px auto 0}
 .step{

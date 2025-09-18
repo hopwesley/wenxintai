@@ -1,0 +1,53 @@
+package test
+
+// 在 main 包中定义这些结构体，而不是使用 test 包
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+type ResponseFormat struct {
+	Type       string                 `json:"type"`
+	JSONSchema map[string]interface{} `json:"json_schema,omitempty"`
+}
+type Request struct {
+	Model          string          `json:"model"`
+	Temperature    float32         `json:"temperature"`
+	MaxTokens      int             `json:"max_tokens"`
+	Stream         bool            `json:"stream"`
+	Messages       []Message       `json:"messages"`
+	ResponseFormat *ResponseFormat `json:"response_format,omitempty"`
+}
+
+type ChatResponse struct {
+	ID      string `json:"id"`
+	Object  string `json:"object"`
+	Created int64  `json:"created"`
+	Model   string `json:"model"`
+	Choices []struct {
+		Index   int `json:"index"`
+		Message struct {
+			Role    string `json:"role"`
+			Content string `json:"content"`
+		} `json:"message"`
+		FinishReason string `json:"finish_reason"`
+	} `json:"choices"`
+	Usage struct {
+		PromptTokens     int `json:"prompt_tokens"`
+		CompletionTokens int `json:"completion_tokens"`
+		TotalTokens      int `json:"total_tokens"`
+	} `json:"usage"`
+}
+
+type Item struct {
+	ID   interface{} `json:"id"`
+	Text string      `json:"text"`
+	Type string      `json:"type"`
+	Rev  bool        `json:"rev"`
+}
+
+type Out struct {
+	RequestID        string `json:"request_id"`
+	StudentID        string `json:"student_id"`
+	StudentQuestions []Item `json:"student_questions"`
+	ParentQuestions  []Item `json:"parent_questions"`
+}

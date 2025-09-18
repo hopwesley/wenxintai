@@ -1,67 +1,166 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"strings"
+	"time"
 
-	"github.com/google/uuid"
+	"github.com/hopwesley/wenxintai/server/test"
 )
 
 func main() {
 	if len(os.Args) < 3 {
-		fmt.Println("用法: go run stage1.go <API_KEY> <STUDENT_ID>")
+		fmt.Println("用法: go run main.go <API_KEY> <STUDENT_ID>")
 		return
 	}
 	apiKey := os.Args[1]
 	studentID := os.Args[2]
 
-	// 生成 request_id
-	requestID := uuid.New().String()
+	requestID := uuidLike()
 	fmt.Println("生成的 request_id:", requestID)
 
-	url := "https://api.deepseek.com/chat/completions"
-	method := "POST"
+	// 重要：在提示词中显式包含“小写 json”关键字，满足 response_format 的校验
+	systemPrompt := `你是心理测评专家(RIASEC/Super/OCEAN)。
+请为山东省高一学生及其家长设计综合测评问卷，并严格以 json 对象输出（注意此处为小写 json），只返回一个合法的 json。
+【结构】
+- 学生问卷20题，其中效度题(type='D')恰好4道，且不允许连续≥3道效度题；
+- 家长问卷16题，其中效度题(type='D')恰好1道；
+- 所有效度题rev必须为true，且表述需自然隐蔽，避免“总是/从不”等极端词。
+【维度覆盖】
+- 学生与家长问卷各自覆盖R/I/A/S/E/C/O/N八维度（效度D单独计，不计入覆盖）。
+【题目要求】
+- Likert 1-5分：1=完全不符合，5=非常符合；
+- 题干用流畅简体中文，贴近校园/家庭场景；禁止英文/拼音/引导性/价值判断；
+- type∈{R,I,A,S,E,C,O,N,D}，rev=true表示反向(1↔5,2↔4,3=3)。
+【输出格式】
+- 仅输出一个合法的 json 对象，且仅包含：request_id, student_id, student_questions, parent_questions；
+- student_questions/parent_questions 为数组，元素为{id,text,type,rev}。
+【强制校验】
+- 输出前自检效度题数量和总题数；若不满足（学生题≠20或D≠4，家长题≠16或D≠1）须修正后再输出；
+- 不得返回除json以外的任何内容，题干中禁止出现任何英文。`
 
-	// 构造 payload
-	payload := fmt.Sprintf(`{
-	  "messages": [
-	    {
-	      "role": "system",
-	      "content": "你是一个心理测评专家，熟练掌握霍兰德职业兴趣理论 (HollandTheory)、舒伯生涯发展理论 (SuperTheory)、大五人格模型 (BigFive) 等心理学原理。请为山东省高一学生及其家长设计一套综合测评问卷：学生问卷必须包含 恰好 20 题，其中效度题必须恰好为 4 道，编号分布在 20 道学生题中，且不得全部集中在最后。家长问卷必须包含恰好 16 道题，其中 1 道为效度题，用于检测答卷态度。所有题目均采用 1–5 分 Likert 记分，1 表示完全不符合，5 表示非常符合。输出必须严格为合法JSON对象，必须包含字段 request_id, student_id, student_questions, parent_questions。其中 student_questions 与 parent_questions 必须是数组，每个题目对象必须包含字段 id, text, type, rev。不要输出任何额外解释或markdown，只返回JSON。type 字段仅允许使用 {R, I, A, S, E, C, O, N, D}，其中 RIASEC 对应霍兰德六维度，OCEAN 对应大五人格，D 对应效度题。禁止混用或新造缩写。"
-	    },
-	    {
-	      "role": "user",
-	      "content": "request_id: %s\nstudent_id: %s\n用户基本信息：性别：男，年级：高一。请生成符合要求的问卷。所有题干必须用流畅的简体中文，禁止输出英文或拼音。题干必须贴近中国高中生和家长的日常学习与生活场景，例如学习、社团、同学关系，而不是抽象表述。避免引导性或价值判断用语，保持中性。"
-	    }
-	  ],
-	  "model": "deepseek-chat",
-	  "temperature": 0.7,
-	  "max_tokens": 2000,
-	  "response_format": { "type": "json_object" },
-	  "stream": false
-	}`, requestID, studentID)
+	userPrompt := fmt.Sprintf(
+		"请以 json 对象返回（小写 json），仅输出合法 json：request_id: %s\nstudent_id: %s\n用户基本信息：性别：男，年级：高一。生成符合要求的问卷；题干需贴近学习/社团/同学关系等场景，避免引导性或价值判断。",
+		requestID, studentID,
+	)
 
-	client := &http.Client{}
-	req, err := http.NewRequest(method, url, strings.NewReader(payload))
+	reqBody := test.Request{
+		Model:       "deepseek-chat",
+		Temperature: 0.7,
+		MaxTokens:   4000,
+		Stream:      false,
+		Messages: []test.Message{
+			{Role: "system", Content: systemPrompt},
+			{Role: "user", Content: userPrompt},
+		},
+	}
+	// 必须启用 response_format
+	reqBody.ResponseFormat = &test.ResponseFormat{Type: "json_object"}
+
+	bs, err := json.Marshal(reqBody)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("marshal request error:", err)
 		return
 	}
 
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Accept", "application/json")
-	req.Header.Add("Authorization", "Bearer "+apiKey)
+	fmt.Println("完整请求体:")
+	fmt.Println(string(bs))
 
-	res, err := client.Do(req)
+	client := &http.Client{Timeout: 120 * time.Second}
+	httpReq, _ := http.NewRequest("POST", "https://api.deepseek.com/chat/completions", bytes.NewReader(bs))
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
+	httpReq.Header.Set("Accept", "application/json")
+
+	resp, err := client.Do(httpReq)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("request error:", err)
 		return
 	}
-	defer res.Body.Close()
+	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(res.Body)
+	fmt.Println("HTTP status:", resp.Status)
+	fmt.Println("---- Response headers ----")
+	for k, v := range resp.Header {
+		fmt.Println(k+":", v)
+	}
+
+	body, readErr := io.ReadAll(resp.Body)
+	if readErr != nil {
+		fmt.Println("read body error:", readErr)
+	}
+	fmt.Println("Body length:", len(body))
+	fmt.Println("完整响应:", string(body))
+
+	var cr test.ChatResponse
+	if err := json.Unmarshal(body, &cr); err == nil && len(cr.Choices) > 0 {
+		content := cr.Choices[0].Message.Content
+		fmt.Println(content)
+		checkBasic(content)
+		return
+	}
 	fmt.Println(string(body))
+}
+
+func uuidLike() string {
+	return fmt.Sprintf("req_%d", time.Now().UnixNano())
+}
+
+func checkBasic(content string) {
+	var out test.Out
+	if err := json.Unmarshal([]byte(content), &out); err != nil {
+		fmt.Println("[check] 无法解析assistant内容为JSON：", err)
+		return
+	}
+	fmt.Println("[check] 学生题数/家长题数：", len(out.StudentQuestions), len(out.ParentQuestions))
+
+	countD := func(arr []test.Item) int {
+		n := 0
+		for _, it := range arr {
+			if it.Type == "D" {
+				n++
+			}
+		}
+		return n
+	}
+	okRevForD := func(arr []test.Item) bool {
+		for _, it := range arr {
+			if it.Type == "D" && !it.Rev {
+				return false
+			}
+		}
+		return true
+	}
+	coverAll := func(arr []test.Item) bool {
+		need := map[string]bool{"R": true, "I": true, "A": true, "S": true, "E": true, "C": true, "O": true, "N": true}
+		for _, it := range arr {
+			if need[it.Type] {
+				delete(need, it.Type)
+			}
+		}
+		return len(need) == 0
+	}
+	no3ConsecutiveD := func(arr []test.Item) bool {
+		run := 0
+		for _, it := range arr {
+			if it.Type == "D" {
+				run++
+				if run >= 3 {
+					return false
+				}
+			} else {
+				run = 0
+			}
+		}
+		return true
+	}
+
+	fmt.Printf("[check] 学生端 D=%d (需=4), rev(D)=OK? %v, 维度齐全? %v, D不>=3连? %v\n",
+		countD(out.StudentQuestions), okRevForD(out.StudentQuestions), coverAll(out.StudentQuestions), no3ConsecutiveD(out.StudentQuestions))
+	fmt.Printf("[check] 家长端 D=%d (需=1), rev(D)=OK? %v, 维度齐全? %v\n",
+		countD(out.ParentQuestions), okRevForD(out.ParentQuestions), coverAll(out.ParentQuestions))
 }

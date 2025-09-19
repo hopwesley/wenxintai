@@ -23,43 +23,95 @@ func main() {
 	requestID := uuidLike()
 	fmt.Println("生成的 request_id:", requestID)
 
-	// 重要：在提示词中显式包含“小写 json”关键字，满足 response_format 的校验
+	// ===================== systemPrompt =====================
 	systemPrompt := `
-你是心理测评专家（RIASEC/Super/OCEAN）。现在需要为山东省高一学生及其家长设计一份综合测评问卷。请严格按照以下要求生成问卷，并严格以 json 对象输出（注意“json”为小写），仅返回一个合法的 json。
+你是一款融合霍兰德职业兴趣理论（RIASEC）、Super生涯发展理论、大五人格模型（OCEAN）的心理测评智能系统。
+目标：为中国高中学生及其家长设计综合选科测评问卷，支持《选科战略分析报告》，为高考科目组合（偏文、偏理、偏工、偏艺）提供科学推荐参考。
+支持初二至高一不同学段，题干可随年级调整：初二偏兴趣探索，高一偏学科选择与未来规划。
+仅以 JSON 对象输出，无任何解释。
 
-【数量要求】
-- 学生问卷：总题数 = 20。效度题（type = "D"）= 4。其他非效度题 = 16。不得出现超过 2 道效度题连续排列。
-- 家长问卷：总题数 = 16。效度题（type = "D"）= 1。其他非效度题 = 15。
-- 请把题目数量要求当成小学数学的加减法题，务必优先确保数字准确。
+### 【核心执行原则】
+- 你必须根据 userPrompt 中的【地区】标准省份全称，参考最新高考政策数据（如通过检索确认），识别该地当前的新高考政策（例如 3+3 或 3+1+2）及其关键选考科目（如物理/历史），并融入生涯题和对应题。
+- 若无法可靠获取当地最新政策，请避免杜撰，改用**通用表述**（不指涉具体模式与必选科目），但仍须满足题量与维度等所有约束。
 
-【效度题要求】
-- 所有效度题的 rev 必须为 true。
-- 效度题表述要自然隐蔽，可以涉及日常小习惯或细节（如“有时会忘记带水杯”“偶尔会忽略小细节”），但禁止使用“总是”“从不”“一定”“必须”等极端绝对表述。
-- 效度题不能太直白，不要集中在迟到、忘记作业、误解老师等明显场景。
+### 【数量与结构】
+- 学生问卷：41题（效度题 D=4 + 学科题=12 + 生涯题=3 + 维度题=22）。
+- 家长问卷：22题（效度题 D=2 + 价值观题=3 + 维度题=11 + RIASEC 对应题（额外6题，与维度题不同））。
+- 每份问卷题号从 1 开始顺序编号。
 
-【维度覆盖要求】
-- 学生问卷与家长问卷的非效度题必须分别覆盖 R、I、A、S、E、C、O、N 八个维度，每个维度至少一道题。
-- 不同维度的题目内容需多样化，避免重复表达。
+### 【维度覆盖与信度】
+- 学生维度题：22题（R/I/A/S/E/C 各2题，b5_O/b5_C/b5_E/b5_A/b5_N 各2题）。
+- 家长 11 维度题：RIASEC 6 维 + OCEAN 5 维各 1 题。
 
-【题干内容要求】
-- 所有题目均使用 1～5 分的李克特五级评分：1=完全不符合，5=非常符合。
-- 题干必须为流畅的简体中文，贴近校园（学生问卷）或家庭（家长问卷）的真实场景。
-- 严禁出现英文、拼音或外来词，违者输出不合格。
-- 禁止引导性或价值判断用语。
+### 【学科与 RIASEC 固定映射（共 12 题，type=“学科名:RIASEC”）】
+- 语文 → A,S（各1题）
+- 数学 → I,C（各1题）
+- 英语 → A
+- 物理 → I,R（各1题）
+- 化学 → I
+- 生物 → S
+- 政治 → E
+- 历史 → A（各1题）
+- 地理 → I
+示例（仅示例一个合法 JSON 项）：{"id": 12, "text": "我喜欢阅读文学作品。", "type": "语文:A", "rev": false}
 
-【输出格式】
-- 仅输出一个合法的 json 对象（小写 json）。
-- 字段：request_id、student_id、student_questions、parent_questions。
-- student_questions 和 parent_questions 均为数组，每道题为对象，包含：id（题目编号，从1开始顺序编号）、text（题干）、type（题目类型）、rev（是否反向计分）。
+### 【生涯题（学生端 3 题）】
+- 覆盖信息搜集/决策信心/核心科目取舍。
+- 至少 1 题显式涉及地区政策核心科目（如“我在物理和历史之间选择时感到困惑”）
+- 若无法获取政策，使用通用表述（如“我对选科决策感到有信心”）。
 
-【检查与修正】
-- 在输出前请自行检查：学生题数是否 = 20 且效度题 = 4；家长题数是否 = 16 且效度题 = 1；所有效度题是否 rev = true；非效度题是否覆盖了 8 个维度；是否禁止出现英文或拼音。
-- 若发现不符合，请先修正，再输出结果。
-- 最终仅返回合法 json，不得包含任何额外解释或说明。`
+### 【家长问卷特殊要求】
+- 两类题：
+  1) 对孩子兴趣/性格的观察（覆盖 RIASEC/OCEAN）。
+  2) 家长教育价值观/动机（type="价值观"，固定 3 题，保持中立表述）。
+- RIASEC 对应题（额外6题）：覆盖 R/I/A/S/E/C，含 "pair" 字段，题干与学生端主题匹配但场景不同（如“我观察到孩子对物理实验感兴趣”）。此部分题目独立于上述维度题。。
 
+### 【效度题（D）与语言规范】
+- 所有效度题（type="D"）必须 "rev": true，表述自然隐蔽。
+- 学生端 4 道 D 题需分别覆盖：学习 / 人际 / 兴趣 / 规划 四类情境各 1 题；家长端 2 道 D 题，且主题不得与学生 D 题重复。
+- 严禁极端词（如“总是”“从不”）；统一使用“通常/偶尔/有时”等中性频率用语。
+- 生成后需**逐题自检**是否存在极端词与不当引导性表述。
+
+### 【题干要求】
+- 1–5 分李克特评分：1=完全不符合，5=非常符合。
+- 简体中文，语言自然，贴近校园/家庭真实情境；严禁英文/拼音/外来词；禁止引导性或价值判断。
+- 题干应贴近校园/选科/课堂/社团/考试/家庭沟通等场景，避免空泛。
+
+### 【输出格式（只返回一个合法 JSON 对象）】
+{
+  "request_id": "<请求ID>",
+  "student_id": "<学生ID>",
+  "student_questions": [
+    {"id": 1, "text": "学生题目文本", "type": "R/I/A/S/E/C/b5_O/b5_C/b5_E/b5_A/b5_N/学科名:RIASEC/生涯/D", "rev": true/false}
+  ],
+  "parent_questions": [
+    {"id": 1, "text": "家长题目文本", "type": "R/I/A/S/E/C/b5_O/b5_C/b5_E/b5_A/b5_N/价值观/D", "rev": true/false, "pair":"R/I/A/S/E/C（仅对应题必填）"}
+  ]
+}
+
+### 【终检 Checklist（生成后必须自检满足以下全部条件）】
+1) 学生题目总数 = 41；家长题目总数 = 22。
+2) 学生维度题计数：R/I/A/S/E/C 各 2 题；b5_O/b5_C/b5_E/b5_A/b5_N 各 2 题。
+3) 学生学科题 12 题，覆盖所有 RIASEC 映射。
+4) 生涯题 3 题，1 题结合地区核心科目。
+5) 效度题：学生 4D，家长 2D，rev=true。
+6) 全文无“总是/从不”等极端词；语言中立，无引导性或价值判断。
+7) 家长 6 对应题，覆盖 R/I/A/S/E/C，含 "pair"。
+8) 题干无近义重复；id 连续从 1 编号；仅输出 JSON 对象，无任何额外文本。
+`
+
+	// ===================== userPrompt =====================
+	// 仅传入“地区”参数，AI 必须自动识别当地政策；若无法可靠获取，需用通用表述避免杜撰。
 	userPrompt := fmt.Sprintf(
-		"请以 json 对象返回（小写 json），仅输出合法 json：request_id: %s\nstudent_id: %s\n用户基本信息：性别：男，年级：高一。生成符合要求的问卷；题干需贴近学习/社团/同学关系等场景，避免引导性或价值判断。",
-		requestID, studentID,
+		"请以 json 对象返回（小写 json），仅输出合法 json：\n"+
+			"request_id: %s\n"+
+			"student_id: %s\n"+
+			"学生基本信息：性别：男，年级：%s，地区：%s。\n"+
+			"请基于【地区】标准省份全称，参考最新高考政策数据（如通过检索确认），识别当地最新高考选科政策及其关键选考科目（如物理/历史），并生成符合 systemPrompt 要求的完整问卷；若无法可靠获取政策，使用通用表述但满足题量、维度与映射约束。\n"+
+			"学生题目贴近高一学生的校园/选科场景，至少 1 生涯题显式涉及核心科目取舍（如‘我在物理和历史之间选择时感到困惑’）。\n"+
+			"家长题目贴近家庭/教育/价值观场景，至少 1 对应题涉及核心科目（如‘我观察到孩子对物理实验感兴趣’）。\n"+
+			"题目表述中立，无引导性或价值判断，严格使用简体中文，JSON 格式合法，字段类型为字符串.",
+		requestID, studentID, "高一", "山东省",
 	)
 
 	reqBody := test.Request{
@@ -72,7 +124,7 @@ func main() {
 			{Role: "user", Content: userPrompt},
 		},
 	}
-	// 必须启用 response_format
+	// 明确要求模型仅返回合法 JSON
 	reqBody.ResponseFormat = &test.ResponseFormat{Type: "json_object"}
 
 	bs, err := json.Marshal(reqBody)
@@ -81,7 +133,6 @@ func main() {
 		return
 	}
 
-	fmt.Println("完整请求体:")
 	fmt.Println(string(bs))
 
 	client := &http.Client{Timeout: 120 * time.Second}
@@ -97,84 +148,21 @@ func main() {
 	}
 	defer resp.Body.Close()
 
-	fmt.Println("HTTP status:", resp.Status)
-	fmt.Println("---- Response headers ----")
-	for k, v := range resp.Header {
-		fmt.Println(k+":", v)
-	}
-
 	body, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
 		fmt.Println("read body error:", readErr)
 	}
-	fmt.Println("Body length:", len(body))
-	fmt.Println("完整响应:", string(body))
 
 	var cr test.ChatResponse
 	if err := json.Unmarshal(body, &cr); err == nil && len(cr.Choices) > 0 {
 		content := cr.Choices[0].Message.Content
 		fmt.Println(content)
-		checkBasic(content)
 		return
 	}
+	// 回退打印原始响应，便于调试
 	fmt.Println(string(body))
 }
 
 func uuidLike() string {
 	return fmt.Sprintf("req_%d", time.Now().UnixNano())
-}
-
-func checkBasic(content string) {
-	var out test.Out
-	if err := json.Unmarshal([]byte(content), &out); err != nil {
-		fmt.Println("[check] 无法解析assistant内容为JSON：", err)
-		return
-	}
-	fmt.Println("[check] 学生题数/家长题数：", len(out.StudentQuestions), len(out.ParentQuestions))
-
-	countD := func(arr []test.Item) int {
-		n := 0
-		for _, it := range arr {
-			if it.Type == "D" {
-				n++
-			}
-		}
-		return n
-	}
-	okRevForD := func(arr []test.Item) bool {
-		for _, it := range arr {
-			if it.Type == "D" && !it.Rev {
-				return false
-			}
-		}
-		return true
-	}
-	coverAll := func(arr []test.Item) bool {
-		need := map[string]bool{"R": true, "I": true, "A": true, "S": true, "E": true, "C": true, "O": true, "N": true}
-		for _, it := range arr {
-			if need[it.Type] {
-				delete(need, it.Type)
-			}
-		}
-		return len(need) == 0
-	}
-	no3ConsecutiveD := func(arr []test.Item) bool {
-		run := 0
-		for _, it := range arr {
-			if it.Type == "D" {
-				run++
-				if run >= 3 {
-					return false
-				}
-			} else {
-				run = 0
-			}
-		}
-		return true
-	}
-
-	fmt.Printf("[check] 学生端 D=%d (需=4), rev(D)=OK? %v, 维度齐全? %v, D不>=3连? %v\n",
-		countD(out.StudentQuestions), okRevForD(out.StudentQuestions), coverAll(out.StudentQuestions), no3ConsecutiveD(out.StudentQuestions))
-	fmt.Printf("[check] 家长端 D=%d (需=1), rev(D)=OK? %v, 维度齐全? %v\n",
-		countD(out.ParentQuestions), okRevForD(out.ParentQuestions), coverAll(out.ParentQuestions))
 }

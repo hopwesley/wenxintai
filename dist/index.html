@@ -57,17 +57,21 @@
                     <input type="text" id="studentName" name="studentName" placeholder="请输入姓名"
                            style="padding:12px;border:1px solid #e5e7eb;border-radius:999px;width:240px">
                 </div>
-                <h3 style="margin-top:16px">出生年份</h3>
-                <p class="muted">请选择您的出生年份。</p>
+                <h3 style="margin-top:16px">年级</h3>
+                <p class="muted">请选择您所在的年级。</p>
                 <div class="row">
-                    <select id="birthYear" name="birthYear"
-                            style="padding:10px;border:1px solid #e5e7eb;border-radius:999px;width:240px">
-                        <option value="">请选择年份</option>
-                        <!-- 可以用 JS 动态生成 1950~2025 -->
-                        <option value="2005">2005</option>
-                        <option value="2006">2006</option>
-                        <option value="2007">2007</option>
-                        ...
+                    <select id="grade" name="grade" class="input-field" style="padding:12px;border:1px solid #e5e7eb;border-radius:999px;width:240px">
+                        <option value="">请选择年级</option>
+                        <optgroup label="初中">
+                            <option value="初一">初一</option>
+                            <option value="初二">初二</option>
+                            <option value="初三">初三</option>
+                        </optgroup>
+                        <optgroup label="高中">
+                            <option value="高一">高一</option>
+                            <option value="高二">高二</option>
+                            <option value="高三">高三</option>
+                        </optgroup>
                     </select>
                 </div>
 

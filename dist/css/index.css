@@ -68,7 +68,6 @@ body {
 .card-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 16px;
     margin: 40px auto;   /* 关键：居中 */
     max-width: 1000px;   /* 最大宽度 */
 }
@@ -84,7 +83,6 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 160px;           /* 高度更高 */
-    border: 2px solid #e5e7eb;
     border-radius: 16px;
     padding: 24px;
     cursor: pointer;
@@ -93,6 +91,7 @@ body {
     color: #111827;
     text-align: center;
     font-weight: 500;
+    margin:  0 16px;
 }
 .entry-card-option:hover {
     transform: translateY(-4px);
@@ -189,18 +188,69 @@ main{max-width:1000px;margin:0 auto;padding:0 16px;position:relative;z-index:1}
 .btn.secondary{background:#1118270d;color:#111827;border:1px solid #e5e7eb}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 
-.q{padding:12px 0;border-top:1px dashed #e5e7eb;display:flex;flex-direction:column;align-items:center;width:100%}
-.q:first-child{border-top:none}
-.qtitle{font-weight:400}
-.scale{display:flex;gap:24px;flex-wrap:wrap;padding-top:12px}
-.scale label{
-    width:42px;height:42px;border:1px solid #e5e7eb;border-radius:999px;
-    cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:center;
-    background:#fff;transition:all .15s
+/* 问卷卡片样式 */
+.q {
+    width: 100%;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+    background: rgb(251 251 251);
+    transition: all 0.2s ease;
 }
-.scale input{display:none}
-.scale label:has(input:checked){background:var(--c);color:#fff;border-color:var(--c)}
+
+.q:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+}
+
+.qtitle {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #111827;
+}
+
+/* 卡片内的选择按钮 */
+.scale {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.scale label {
+    flex: 1;
+    min-width: 42px;
+    text-align: center;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 10px 0;
+    cursor: pointer;
+    background: #f9fafb;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.scale label:hover {
+    background: #eef2ff;
+    border-color: var(--c);
+}
+
+.scale input {
+    display: none;
+}
+
+.scale label:has(input:checked) {
+    background: var(--c);
+    color: #fff;
+    border-color: var(--c);
+}
+
+.q:first-child{
+    border-top:none
+}
+
 .scale label:hover{background-color:rgba(203,213,225,0.4)}
+
 .muted{color:var(--mut)}
 .pill{
     display:inline-block;
@@ -253,4 +303,37 @@ textarea{
 }
 .footer-tip{font-size:12px;color:#6b7280}
 .grid2{display:grid;grid-template-columns:1fr;gap:12px}
+/* Loading 遮罩层 */
+.loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.loading.hidden {
+    display: none;
+}
+
+.spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #e5e7eb;
+    border-top-color: var(--c);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 12px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 @media (min-width:860px){.grid2{grid-template-columns:1fr 1fr}}

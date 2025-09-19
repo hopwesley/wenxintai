@@ -52,6 +52,7 @@ header.scrolled {
     box-shadow: 0 2px 6px rgba(0,0,0,0.05); /* 可选，增加分隔感 */
 }
 
+
 body {
     padding-top: 80px; /* 给内容留出导航栏高度的空间 */
 }
@@ -61,7 +62,12 @@ body {
     display:flex;align-items:center;gap:12px;
     padding:16px 16px
 }
-.logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--c),#8b5cf6)}
+.logo {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: url("../img/logo.png") no-repeat center center / cover;
+}
 .brand{font-weight:700}
 
 /* 入口页卡片布局 */

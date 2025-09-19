@@ -68,7 +68,10 @@ body {
     border-radius: 8px;
     background: url("../img/logo.png") no-repeat center center / cover;
 }
-.brand{font-weight:700}
+
+.brand{
+    font-weight:700
+}
 
 /* 入口页卡片布局 */
 .card-grid {

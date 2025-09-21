@@ -11,6 +11,88 @@ type Answer struct {
 	Score int `json:"score"`
 }
 
+type AnswerCase struct {
+	CaseName string   `json:"case_name"` // liberalArts / science / conflict / invalid
+	Variant  string   `json:"variant"`   // set1 / set2 / set3
+	Student  []Answer `json:"student_answers"`
+	Parent   []Answer `json:"parent_answers"`
+}
+
+var allAnswerCases = []AnswerCase{
+	{
+		CaseName: "liberalArts",
+		Variant:  "set1",
+		Student:  []Answer{ /* 从 answersLiberalArts */ },
+		Parent:   []Answer{ /* 从 answersLiberalArts */ },
+	},
+	{
+		CaseName: "liberalArts",
+		Variant:  "set2",
+		Student:  []Answer{ /* 从 liberalArtsAnswers struct */ },
+		Parent:   []Answer{ /* 从 liberalArtsAnswers struct */ },
+	},
+	{
+		CaseName: "liberalArts",
+		Variant:  "set3",
+		Student:  []Answer{ /* 从 const liberalArtsAnswers JSON */ },
+		Parent:   []Answer{ /* 从 const liberalArtsAnswers JSON */ },
+	},
+	{
+		CaseName: "science",
+		Variant:  "set1",
+		Student:  []Answer{ /* 从 scienceAnswers */ },
+		Parent:   []Answer{ /* 从 parentAnswers_consistent_with_science */ },
+	},
+	{
+		CaseName: "science",
+		Variant:  "set2",
+		Student:  []Answer{ /* 从 scienceAnswers struct */ },
+		Parent:   []Answer{ /* 从 scienceAnswers struct */ },
+	},
+	{
+		CaseName: "science",
+		Variant:  "set3",
+		Student:  []Answer{ /* 从 const scienceAnswers JSON */ },
+		Parent:   []Answer{ /* 从 const scienceAnswers JSON */ },
+	},
+	{
+		CaseName: "conflict",
+		Variant:  "set1",
+		Student:  []Answer{ /* 从 answersScienceConflict */ },
+		Parent:   []Answer{ /* 从 answersScienceConflict */ },
+	},
+	{
+		CaseName: "conflict",
+		Variant:  "set2",
+		Student:  []Answer{ /* 从 parentAnswers_inconsistent */ },
+		Parent:   []Answer{ /* 从 parentAnswers_inconsistent */ },
+	},
+	{
+		CaseName: "conflict",
+		Variant:  "set3",
+		Student:  []Answer{ /* 你定义的 scienceAnswers Student */ },
+		Parent:   []Answer{ /* 你定义的 parentAnswers_inconsistent */ },
+	},
+	{
+		CaseName: "invalid",
+		Variant:  "set1",
+		Student:  []Answer{ /* 从 answersInvalid */ },
+		Parent:   []Answer{ /* 从 answersInvalid */ },
+	},
+	{
+		CaseName: "invalid",
+		Variant:  "set2",
+		Student:  []Answer{ /* 从 invalidAnswers struct */ },
+		Parent:   []Answer{ /* 从 invalidAnswers struct */ },
+	},
+	{
+		CaseName: "invalid",
+		Variant:  "set3",
+		Student:  []Answer{ /* 从 const invalidAnswers JSON */ },
+		Parent:   []Answer{ /* 从 const invalidAnswers JSON */ },
+	},
+}
+
 func calculateQuota(requestID, studentID string) {
 	//questionBytes, err := os.ReadFile("question.json")
 	//if err != nil {

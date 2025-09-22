@@ -21,8 +21,17 @@ func main() {
 
 	switch mode {
 	case "1":
-		fetchQuestion(requestID, studentID, "男", "高一", "3+3", apiKey)
-		fetchQuestion(requestID, studentID, "女", "初三", "3+1+2", apiKey)
+		students := []struct {
+			id, gender, grade, mode string
+		}{
+			{studentID, "男", "高一", "3+3"},
+			{studentID + "1", "女", "初三", "3+1+2"},
+		}
+
+		for i, s := range students {
+			rid := fmt.Sprintf("%s_%d", requestID, i)
+			fetchQuestion(rid, s.id, s.gender, s.grade, s.mode, apiKey)
+		}
 	case "2":
 		idxNo, _ := strconv.Atoi(idx)
 		calculateQuota(requestID, studentID, idxNo)

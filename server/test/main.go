@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
 func main() {
@@ -13,15 +14,18 @@ func main() {
 	mode := os.Args[1]
 	apiKey := os.Args[2]
 	studentID := os.Args[3]
+	idx := os.Args[4]
 
 	requestID := uuidLike()
 	fmt.Println("生成的 request_id:", requestID)
 
 	switch mode {
 	case "1":
-		fetchQuestion(requestID, studentID, "山东省", apiKey)
+		fetchQuestion(requestID, studentID, "男", "高一", "3+3", apiKey)
+		fetchQuestion(requestID, studentID, "女", "初三", "3+1+2", apiKey)
 	case "2":
-		calculateQuota(requestID, studentID)
+		idxNo, _ := strconv.Atoi(idx)
+		calculateQuota(requestID, studentID, idxNo)
 	case "3":
 		// === Step 3: quota.json + 提示词，调用 DeepSeek 生成报告 ===
 		quotaBytes, err := os.ReadFile("quota.json")

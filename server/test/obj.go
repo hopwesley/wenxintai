@@ -48,13 +48,13 @@ type ChatResponse struct {
 }
 
 type Item struct {
-	ID   interface{} `json:"id"`
-	Text string      `json:"text"`
-	Type string      `json:"type"`
-	Rev  bool        `json:"rev"`
+	ID   int    `json:"id"`
+	Text string `json:"text"`
+	Type string `json:"type"`
+	Rev  bool   `json:"rev"`
 }
 
-type Out struct {
+type Question struct {
 	RequestID        string `json:"request_id"`
 	StudentID        string `json:"student_id"`
 	StudentQuestions []Item `json:"student_questions"`

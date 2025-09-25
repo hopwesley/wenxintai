@@ -18,7 +18,7 @@ type StreamResponse struct {
 }
 
 func main() {
-	apiKey := "sk-e2d8bce939ac4c1ab84ea352edc1bc27"
+	apiKey := ""
 
 	systemPrompt := `
 你是一款融合霍兰德职业兴趣理论（RIASEC）、Super生涯发展理论、大五人格模型（OCEAN）的心理测评智能系统。

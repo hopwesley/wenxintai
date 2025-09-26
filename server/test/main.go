@@ -7,20 +7,21 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 4 {
+	if len(os.Args) < 2 {
 		fmt.Println("用法: go run main.go <MODE:1|2|3> <API_KEY> <STUDENT_ID>")
 		return
 	}
 	mode := os.Args[1]
-	apiKey := os.Args[2]
-	studentID := os.Args[3]
-	idx := os.Args[4]
 
 	requestID := uuidLike()
 	fmt.Println("生成的 request_id:", requestID)
 
 	switch mode {
 	case "1":
+
+		apiKey := os.Args[2]
+		studentID := os.Args[3]
+
 		students := []struct {
 			id, gender, grade, mode string
 		}{
@@ -33,9 +34,17 @@ func main() {
 			fetchQuestion(rid, s.id, s.gender, s.grade, s.mode, apiKey)
 		}
 	case "2":
-		idxNo, _ := strconv.Atoi(idx)
-		calculateQuota(requestID, studentID, idxNo)
+		questionFile := os.Args[2]
+		idx, err := strconv.Atoi(os.Args[3])
+		if err != nil {
+			panic(err)
+		}
+		calculateQuota(questionFile, "", idx)
+
 	case "3":
+		TestStep1()
+
+	case "4":
 		// === Step 3: quota.json + 提示词，调用 DeepSeek 生成报告 ===
 		quotaBytes, err := os.ReadFile("quota.json")
 		if err != nil {
@@ -73,6 +82,9 @@ func main() {
 5) 总结建议
 语言风格：简体中文，专业且偏建议性，避免极端词。
 仅输出合法 JSON 对象。`
+
+		apiKey := os.Args[2]
+		studentID := os.Args[3]
 
 		userPrompt := fmt.Sprintf("学生ID:%s\n概要指标如下:\n%s\n请生成分析报告。", studentID, string(quotaBytes))
 

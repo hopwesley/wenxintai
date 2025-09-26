@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 )
@@ -122,7 +123,7 @@ func fetchQuestion(requestID, studentID, gender, grade, mode, apiKey string) {
 		Model:       "deepseek-chat",
 		Temperature: 0.7,
 		MaxTokens:   4000,
-		Stream:      false,
+		Stream:      true,
 		Messages: []Message{
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: userPrompt},
@@ -130,6 +131,13 @@ func fetchQuestion(requestID, studentID, gender, grade, mode, apiKey string) {
 		ResponseFormat: &ResponseFormat{Type: "json_object"},
 	}
 	content := callDeepSeek(apiKey, reqBody)
+
+	var q Question
+	if err := json.Unmarshal([]byte(content), &q); err != nil {
+		fmt.Println("解析问卷失败:", err)
+		return
+	}
+
 	if content != "" {
 		filename := fmt.Sprintf("question_%s_%s_%s.json", gender, grade, mode)
 		_ = os.WriteFile(filename, []byte(content), 0644)

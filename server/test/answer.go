@@ -7,6 +7,7 @@ type Answer struct {
 
 type AnswerSet struct {
 	Name           string   `json:"name"`
+	Mode           string   `json:"mode"`
 	StudentAnswers []Answer `json:"student_answers"`
 	ParentAnswers  []Answer `json:"parent_answers"`
 }
@@ -14,6 +15,7 @@ type AnswerSet struct {
 var AllAnswerSets = []AnswerSet{
 	{
 		Name: "偏文科答案1",
+		Mode: "3+3",
 		StudentAnswers: []Answer{
 			{1, 2}, {2, 2}, {3, 2}, {4, 2},
 			{5, 2}, {6, 2}, // R 低
@@ -56,6 +58,7 @@ var AllAnswerSets = []AnswerSet{
 	},
 	{
 		Name: "偏文科答案2",
+		Mode: "3+1+2",
 		StudentAnswers: []Answer{
 			{1, 3}, {2, 3}, {3, 2}, {4, 2},
 			{5, 2}, {6, 2}, // R 低
@@ -98,6 +101,7 @@ var AllAnswerSets = []AnswerSet{
 	},
 	{
 		Name: "偏理科答案1",
+		Mode: "3+3",
 		StudentAnswers: []Answer{
 			{1, 2}, {2, 2}, {3, 2}, {4, 2},
 			{5, 4}, {6, 4}, // R 高
@@ -140,6 +144,7 @@ var AllAnswerSets = []AnswerSet{
 	},
 	{
 		Name: "偏理科答案2",
+		Mode: "3+1+2",
 		StudentAnswers: []Answer{
 			{1, 3}, {2, 2}, {3, 2}, {4, 3},
 			{5, 5}, {6, 5}, // R 高
@@ -182,6 +187,7 @@ var AllAnswerSets = []AnswerSet{
 	},
 	{
 		Name: "无效答案1",
+		Mode: "3+3",
 		StudentAnswers: []Answer{
 			{1, 3}, {2, 3}, {3, 3}, {4, 3}, // D 全部中间分
 			{5, 3}, {6, 3}, {7, 3}, {8, 3},
@@ -213,6 +219,7 @@ var AllAnswerSets = []AnswerSet{
 	},
 	{
 		Name: "无效答案2",
+		Mode: "3+1+2",
 		StudentAnswers: []Answer{
 			{1, 5}, {2, 5}, {3, 5}, {4, 5}, // 效度题全高分 → 明显失真
 			{5, 1}, {6, 1}, {7, 1}, {8, 1}, // R/I 全低
@@ -249,6 +256,7 @@ var AllAnswerSets = []AnswerSet{
 
 	{
 		Name: "冲突答案1",
+		Mode: "3+3",
 		StudentAnswers: []Answer{
 			{1, 2}, {2, 2}, {3, 2}, {4, 2}, // 效度题
 			{5, 5}, {6, 5}, // R 高
@@ -290,6 +298,7 @@ var AllAnswerSets = []AnswerSet{
 	},
 	{
 		Name: "冲突答案2",
+		Mode: "3+1+2",
 		StudentAnswers: []Answer{
 			{1, 2}, {2, 2}, {3, 3}, {4, 2}, // 效度题
 			{5, 4}, {6, 5}, // R 高

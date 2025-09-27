@@ -45,6 +45,12 @@ func main() {
 		TestStep1()
 
 	case "4":
+		TestStep2()
+
+	case "5":
+		TestStep3()
+
+	case "6":
 		// === Step 3: quota.json + 提示词，调用 DeepSeek 生成报告 ===
 		quotaBytes, err := os.ReadFile("quota.json")
 		if err != nil {

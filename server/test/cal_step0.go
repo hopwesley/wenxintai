@@ -33,7 +33,7 @@ func loadQuestion(filePath string) (Question, error) {
 	return q, nil
 }
 
-func step0(questionFile string, answerIndex int) error {
+func TestStep0(questionFile string, answerIndex int) error {
 	// Step 1: 读取问卷
 	q, err := loadQuestion(questionFile)
 	if err != nil {

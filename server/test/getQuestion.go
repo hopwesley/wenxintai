@@ -90,10 +90,10 @@ func fetchQuestion(requestID, studentID, gender, grade, mode, apiKey string) {
   "request_id": "<请求ID>",
   "student_id": "<学生ID>",
   "student_questions": [
-    {"id": 1, "text": "学生题目文本", "type": "R/I/A/S/E/C/b5_O/b5_C/b5_E/b5_A/b5_N/学科名:RIASEC/生涯/D", "rev": true/false}
+    {"id": 1, "text": "学生题目文本", "type": "R/I/A/S/E/C/b5_O/b5_C/b5_E/b5_A/b5_N/学科名:RIASEC/career:学科取舍/career:信息搜集/career:角色认知/career:长期规划/career:兴趣演变/D", "rev": true/false}
   ],
   "parent_questions": [
-    {"id": 1, "text": "家长题目文本", "type": "R/I/A/S/E/C/b5_O/b5_C/b5_E/b5_A/b5_N/价值观/D", "rev": true/false, "pair":"R/I/A/S/E/C（仅对应题必填）"}
+    {"id": 1, "text": "家长题目文本", "type": "R/I/A/S/E/C/b5_O/b5_C/b5_E/b5_A/b5_N/value:自主性/value:合作/value:坚持/D", "rev": true/false, "pair":"R/I/A/S/E/C（仅对应题必填）"}
   ]
 }
 

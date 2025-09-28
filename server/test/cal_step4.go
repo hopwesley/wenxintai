@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 	"time"
 )
@@ -27,13 +26,10 @@ type ReportPayload struct {
 	} `json:"meta"`
 
 	Student struct {
-		RIASEC       map[string]ScoreResult `json:"riasec"`
-		RIASECRank   RankView               `json:"riasec_rank"`
-		OCEAN        map[string]ScoreResult `json:"ocean"`
-		OCEANBand    map[string]string      `json:"ocean_band"` // 高/中/低
-		Subjects     map[string]ScoreResult `json:"subjects"`
-		SubjectsRank RankView               `json:"subjects_rank"`
-		Career       map[string]int         `json:"career"` // 当前是每类一题 → int
+		RIASEC   map[string]ScoreResult `json:"riasec"`
+		OCEAN    map[string]ScoreResult `json:"ocean"`
+		Subjects map[string]ScoreResult `json:"subjects"`
+		Career   map[string]int         `json:"career"` // 当前是每类一题 → int
 	} `json:"student"`
 
 	Parent struct {
@@ -56,14 +52,7 @@ type ReportPayload struct {
 			Student CheckResult `json:"student"`
 			Parent  CheckResult `json:"parent"`
 		} `json:"checks"`
-		Note string `json:"note"`
 	} `json:"validity_section"`
-}
-
-// RankView：Top/Bottom 排名视图
-type RankView struct {
-	Top    []string `json:"top"`
-	Bottom []string `json:"bottom"`
 }
 
 // ========== Step4 主流程 ==========
@@ -91,11 +80,6 @@ func step4() error {
 	payload.Student.Subjects = quota.StudentScores.Subjects
 	payload.Student.Career = quota.StudentScores.Career
 
-	// 排名与区间
-	payload.Student.RIASECRank = makeRank(quota.StudentScores.RIASEC, 2)
-	payload.Student.OCEANBand = makeBand(quota.StudentScores.OCEAN)
-	payload.Student.SubjectsRank = makeRank(quota.StudentScores.Subjects, 3)
-
 	// 家长
 	payload.Parent.RIASEC = quota.ParentScores.RIASEC
 	payload.Parent.OCEAN = quota.ParentScores.OCEAN
@@ -104,7 +88,6 @@ func step4() error {
 	// 差异（家长 - 学生）
 	payload.Deltas.RIASEC = makeDelta(quota.ParentScores.RIASEC, quota.StudentScores.RIASEC)
 	payload.Deltas.OCEAN = makeDelta(quota.ParentScores.OCEAN, quota.StudentScores.OCEAN)
-	// payload.Deltas.Values = ... // 如需可加
 
 	// 模式支持证据
 	payload.ModeSupport = makeModeSupport(quota)
@@ -112,7 +95,6 @@ func step4() error {
 	// 效度板块
 	payload.ValiditySection.ValidityItems = cleaned.ValiditySection.ValidityItems
 	payload.ValiditySection.Checks = cleaned.ValiditySection.Checks
-	payload.ValiditySection.Note = "请先基于本节事实，评价本次答卷的有效性（有效/存疑/无效），并在报告开头以一句提示说明理由。"
 
 	// 3) 落盘
 	if err := writeJSON("report_payload.json", payload); err != nil {
@@ -144,29 +126,14 @@ func writeJSON(path string, v any) error {
 
 // ========== 辅助：排名、区间、差异、模式支持 ==========
 
-func makeRank(m map[string]ScoreResult, k int) RankView {
-	type kv struct {
-		K string
-		V float64
+func toMeanMap(m map[string]ScoreResult) map[string]float64 {
+	res := make(map[string]float64, len(m))
+	for k, v := range m {
+		if v.Count > 0 { // 与你其它辅助函数风格一致
+			res[k] = v.Mean
+		}
 	}
-	var arr []kv
-	for key, sr := range m {
-		arr = append(arr, kv{key, sr.Mean})
-	}
-	sort.Slice(arr, func(i, j int) bool { return arr[i].V > arr[j].V })
-
-	topN := min(k, len(arr))
-	botN := min(k, len(arr))
-	top := make([]string, 0, topN)
-	bot := make([]string, 0, botN)
-
-	for i := 0; i < topN; i++ {
-		top = append(top, arr[i].K)
-	}
-	for i := 0; i < botN; i++ {
-		bot = append(bot, arr[len(arr)-1-i].K)
-	}
-	return RankView{Top: top, Bottom: bot}
+	return res
 }
 
 // 区间：≥4.0 高；3.0–3.9 中；≤2.9 低（仅标签，不是结论）
@@ -224,8 +191,8 @@ func makeModeSupport(q QuotaDataset) map[string]any {
 	case "3+3":
 		// 给 AI 的提示：用学科均值排序 + RIASEC Top2 作为证据
 		result["3+3"] = map[string]any{
-			"subjects_rank_top": makeRank(q.StudentScores.Subjects, 3).Top,
-			"riasec_top":        makeRank(q.StudentScores.RIASEC, 2).Top,
+			"subjects_rank_top": toMeanMap(q.StudentScores.Subjects),
+			"riasec_top":        toMeanMap(q.StudentScores.RIASEC),
 		}
 	default:
 		// 其他模式（如将来扩展），先不填
@@ -273,19 +240,12 @@ func printPayloadSummary(p ReportPayload) {
 	fmt.Println("=== Step4 摘要（将写入 report_payload.json） ===")
 	fmt.Printf("RequestID=%s StudentID=%s Mode=%s\n", p.Meta.RequestID, p.Meta.StudentID, p.Meta.Mode)
 
-	fmt.Printf("[学生 RIASEC] Top=%v Bottom=%v\n", p.Student.RIASECRank.Top, p.Student.RIASECRank.Bottom)
-	fmt.Printf("[学生 学科]   Top=%v Bottom=%v\n", p.Student.SubjectsRank.Top, p.Student.SubjectsRank.Bottom)
-
 	// 模式支持简要
 	if entry, ok := p.ModeSupport["3+1+2"]; ok {
 		m := entry.(map[string]any)
 		pm := m["physics_direction_support"].(map[string]any)["subjects_mean"]
 		hm := m["history_direction_support"].(map[string]any)["subjects_mean"]
 		fmt.Printf("[模式 3+1+2] 理科向学科均值=%.2f | 历史向学科均值=%.2f\n", pm, hm)
-	}
-	if entry, ok := p.ModeSupport["3+3"]; ok {
-		m := entry.(map[string]any)
-		fmt.Printf("[模式 3+3] 学科Top=%v | RIASEC Top=%v\n", m["subjects_rank_top"], m["riasec_top"])
 	}
 
 	// 效度检查简要

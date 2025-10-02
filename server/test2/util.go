@@ -104,9 +104,9 @@ func callDeepSeek(apiKey string, reqBody interface{}) string {
 		}
 	}
 
-	fmt.Println("\n=== 最终完整结果 ===")
-	fmt.Println(fullContent.String())
-	fmt.Println("====================")
+	//fmt.Println("\n=== 最终完整结果 ===")
+	//fmt.Println(fullContent.String())
+	//fmt.Println("====================")
 
 	return fullContent.String()
 }

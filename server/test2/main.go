@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"time"
 )
@@ -51,9 +52,9 @@ func main() {
 		mode := Mode(os.Args[2])
 		apiKey := os.Args[3]
 		//_ = generateQuestions(mode, apiKey, "女", "高一")
-		//hobby := StudentHobbies[rand.Intn(len(StudentHobbies))]
-		//_ = generateQuestions(mode, apiKey, "男", "初三", hobby)
-		_ = generateQuestions(mode, apiKey, "男", "初三", "无")
+		hobby := StudentHobbies[rand.Intn(len(StudentHobbies))]
+		_ = generateQuestions(mode, apiKey, "男", "初三", hobby)
+		//_ = generateQuestions(mode, apiKey, "男", "初三", "无")
 		break
 	default:
 		panic("unknown stage parameter")

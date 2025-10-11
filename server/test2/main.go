@@ -55,8 +55,8 @@ func main() {
 		hobby := StudentHobbies[rand.Intn(len(StudentHobbies))]
 		_ = generateQuestions(mode, apiKey, "男", "初三", hobby)
 
-		//hobby2 := StudentHobbies[rand.Intn(len(StudentHobbies))]
-		//_ = generateQuestions(mode, apiKey, "女", "高一", hobby2)
+		hobby2 := StudentHobbies[rand.Intn(len(StudentHobbies))]
+		_ = generateQuestions(mode, apiKey, "女", "高一", hobby2)
 		//_ = generateQuestions(mode, apiKey, "男", "初三", "无")
 		break
 	default:

@@ -110,28 +110,32 @@ var systemPromptOCEAN = systemPromptHeader + `
 
 var systemPromptRIASEC = systemPromptHeader + `
 【RIASEC 基础题（30题）】
-- 6 个维度（R/I/A/S/E/C）各 5 题（固定生成 4 道正向题 + 1 道反向题），且必须标明 reverse:true，共 30 题。
-- 聚焦基础兴趣倾向，题目需涵盖多样场景（如学习活动、社团活动、职业兴趣探索），确保维度准确性。
-- **活动导向限制**：题干必须侧重于具体的活动、情境或行为偏好，**严禁直接使用"数学"、"物理"、"历史"等高考科目名称或专业学术术语**。
-- **多样性要求**：同一维度下的5道题目必须覆盖该兴趣维度的不同表现形式，确保场景分布均衡。
+- 6 个维度（R/I/A/S/E/C）各 5 题，共 30 题。
+- 全部为正向兴趣题，不得设计反向题。
+- 测量核心：兴趣 = 对活动的喜好/吸引力，而非能力水平、参与频率或情绪体验。
 
-【反向题规则】
-- 每个维度固定 1 道反向题；必须保持**活动导向**，与正向题在行为偏好上对立，且**不跨维度**。
-- 示例对照：
-  - R（现实型）：正向=喜欢动手实践 → 反向=更少参与操作、避免动手活动
-  - I（研究型）：正向=喜欢探索分析 → 反向=缺少探究兴趣、不主动研究
-  - A（艺术型）：正向=喜欢表达创意 → 反向=较少创造性表达、偏好常规活动
-  - S（社会型）：正向=喜欢帮助他人 → 反向=更少参与助人或社交活动
-  - E（企业型）：正向=喜欢组织领导 → 反向=较少承担领导角色、偏向跟随
-  - C（常规型）：正向=喜欢结构和秩序 → 反向=对规则/条理依赖较低，偏好灵活
-- 表达：使用“较少/不太倾向/通常不”等自然表述；**禁止**“讨厌/不感兴趣”等强否定。
+【专属约束】
+- 严禁直接出现“数学、物理、历史”等学科名称或学术术语。
+- 严禁使用“讨厌、不喜欢、不感兴趣、避免”等否定性或情绪化词汇。
+- 不得写成能力感知（如“我擅长…”）或情绪态度（如“我容易焦虑…”）的表述。
+- 同一具体校园场景（如“考试准备”）不得在不同维度重复使用；若必须出现，必须从不同角度清晰区分，每个维度仅保留一次。
+
+【维度表现形式指南】
+确保每个维度的 5 道题覆盖以下至少 3 个子类型，避免重复：
+
+- R（现实型）：动手操作、工具/设备使用、户外/实践活动、维修/组装、身体协调任务  
+- I（研究型）：观察/实验探究、数据/模式分析、问题解决、科学/逻辑思考、独立研究  
+- A（艺术型）：创意表达、视觉/表演设计、故事/音乐创作、审美欣赏、独特风格探索  
+- S（社会型）：帮助/指导他人、团队讨论、情感支持、教学/分享、社区互动  
+- E（企业型）：组织/领导团队、说服/影响他人、推广展示创意、冒险决策、竞争性目标  
+  【边界约束】必须包含影响他人或承担风险，禁止“学习计划、时间管理、个人复习目标”等表述
+- C（常规型）：遵循规则/程序、数据整理、精确/重复任务、时间管理、系统维护  
 
 【JSON 格式示例】
 {
   "id": "int",              // 题号
   "dimension": "R" | "I" | "A" | "S" | "E" | "C", 
   "text": "string",            // 中文题干
-  "reverse": false             // 是否为反向题: true | false
 }
 `
 
@@ -273,17 +277,17 @@ func generateQuestions(mode Mode, apiKey, gender, grade, hobby string) error {
 	//
 	//fmt.Println("\n--- 开始生成 RIASEC 题目 (30题) ---")
 	//// 第二次调用：生成 RIASEC 题目
-	//errRIASEC := callAPIAndSave("RIASEC", mode, apiKey, gender, grade, hobby)
-	//if errRIASEC != nil {
-	//	fmt.Printf("生成 RIASEC 题目失败: %v\n", errRIASEC)
-	//}
-
-	fmt.Println("\n--- 开始生成 ASC 题目 (24题) ---")
-	// 第二次调用：生成 RIASEC 题目
-	errASC := callAPIAndSave("ASC", mode, apiKey, gender, grade, hobby)
-	if errASC != nil {
-		fmt.Printf("生成 ASC 题目失败: %v\n", errASC)
+	errRIASEC := callAPIAndSave("RIASEC", mode, apiKey, gender, grade, hobby)
+	if errRIASEC != nil {
+		fmt.Printf("生成 RIASEC 题目失败: %v\n", errRIASEC)
 	}
+
+	//fmt.Println("\n--- 开始生成 ASC 题目 (24题) ---")
+	//// 第二次调用：生成 RIASEC 题目
+	//errASC := callAPIAndSave("ASC", mode, apiKey, gender, grade, hobby)
+	//if errASC != nil {
+	//	fmt.Printf("生成 ASC 题目失败: %v\n", errASC)
+	//}
 
 	//// 综合返回错误
 	//if errOCEAN != nil || errRIASEC != nil || errASC != nil {

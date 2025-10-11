@@ -39,49 +39,49 @@ var systemPromptHeader = `
 
 var systemPromptASC = systemPromptHeader + `
 【学科自我概念量表（24题）】
-- 参考Marsh的SDQ-III结构，旨在测量学生对核心高考选考科目的能力信心和表现认知。
-- 覆盖6个高考科目（物理、化学、生物、地理、历史、政治），每个学科4题，共24题。
-- 每学科固定生成 3 道正向题 + 1 道反向题，且必须标明 reverse:true，聚焦能力短板认知。
-- **题目分配**：每个学科的4题应涵盖：
-  1. 比较性能力自信（与同伴比较）
-  2. 学习任务效能感  
-  3. 学业成就预期
-  4. 特定技能掌握信心（反向题）
+- 参考 SDQ-III 框架，旨在测量学生对核心高考选考科目的能力信心和表现认知。
+- 覆盖 6 个高考科目（物理、化学、生物、地理、历史、政治），每个学科生成 4 道题，共 24 道题。
+- 每个学科固定为 3 道正向题 + 1 道反向题，且反向题必须标明 reverse:true。
+- **题目分配**：每个学科的 4 道题必须覆盖以下四个维度：  
+  1. Comparison：与同伴比较的能力自信  
+  2. Efficacy：完成学习任务的效能感  
+  3. AchievementExpectation：对学业成就的预期  
+  4. SkillMastery（反向题）：对特定技能掌握的信心  
 
 【行为要求】 
-- 题干基于中国初三/高一课程标准（如物理力学基础、化学简单反应），聚焦课堂或实验场景（如解答练习、完成实验）。
-- 题干示例：解答课堂练习、完成实验步骤、复习考试内容、参与小组讨论。
-- **Efficacy 维度**：用“解答、记忆、完成、分析”等动词，禁止“建模、论证、批判”等高阶词汇。
+- 必须体现中国高一学生的考试导向学习现状，但只能通过学习任务和成就目标来体现，禁止直接描述情绪体验。  
+- **Efficacy 维度动词限制**：
+    - 允许：解答、记忆、完成、分析、计算、识别、复述、操作  
+    - 禁止：建模、论证、批判、反思、评价  
+- **AchievementExpectation 多样性要求**：
+    - 必须体现多样化，不得重复“取得高分”“获得好成绩”。  
+    - 允许范围：课堂表现、阶段性测验、综合题掌握、学科竞赛、全年级相对位置等。
 
 【反向题规则（SkillMastery）】
-- 必须围绕该学科的**常见学习难点**（如复杂公式、图表解读、历史细节、政治概念）。
-- 反向题应体现**低水平倾向**，采用“偏好/习惯对比”而非“困难/出错”的否定。
-- 推荐模式：
-  - 正向：我通常能够熟练掌握……
-  - 反向：我通常不太倾向于在……中表现出优势 / 我相对较少在……任务中展现熟练度
-- **禁止**：“感到困难”“经常出错”等偶发或情绪化表述。
+- 反向题必须围绕各学科常见的学习方法或技能差异，采用“更偏好…而不是…”、“倾向于…而非…”的稳定偏好/习惯表达。  
+- 鼓励体现认知层次的对比（如记忆vs理解、接受vs批判）。  
+- **逻辑方向要求**：反向题必须体现对低水平或低阶学习方式的偏好，高水平或高阶学习方式只能出现在被否定的一侧。  
+ 例如：  
+   - 正确：更偏好死记硬背公式，而不是通过实验理解原理。  
+   - 错误：更偏好通过实验理解原理，而不是仅死记公式。  
+ 禁止：使用“困难”“出错”“不擅长”“不太倾向”“相对较少”等负性措辞。 
 
-- subject 字段请统一使用以下编码：
-  PHY=物理, CHE=化学, BIO=生物, GEO=地理, HIS=历史, POL=政治
 
-【学科特色要求】
-- 物理：侧重公式应用、实验操作、现象解释
-- 化学：侧重反应记忆、实验安全、物质性质  
-- 生物：侧重结构识别、分类记忆、生命过程
-- 地理：侧重地图阅读、空间思维、自然人文
-- 历史：侧重时间脉络、事件关联、材料分析
-- 政治：侧重概念理解、时事讨论、案例分析
 
-【JSON 格式示例】
-{
-  "id": "int",              // 题号
-  "subject": "PHY",         // 学科编码（必填）
-  "subject_label": "物理",  // 中文学科名（可选）
-  "text": "string",         // 中文题干，基于具体学科任务或情境
-  "reverse": false          // 是否为反向题: true | false
-  "subtype": "Comparison" | "Efficacy" | "AchievementExpectation" | "SkillMastery" // 对应 4 个分配维度
-}
+【输出格式要求】
+- subject 字段必须使用以下编码：  
+  PHY=物理, CHE=化学, BIO=生物, GEO=地理, HIS=历史, POL=政治  
+- 题目输出 JSON 对象，包含以下字段：  
+  {
+    "id": "int",              
+    "subject": "PHY" | "CHE" | "BIO" | "GEO" | "HIS" | "POL", 
+    "subject_label": "string",  
+    "text": "string",         
+    "reverse": true | false,  
+    "subtype": "Comparison" | "Efficacy" | "AchievementExpectation" | "SkillMastery"
+  }
 `
+
 var systemPromptOCEAN = systemPromptHeader + `
 【OCEAN 大五人格（20题）】
 - 基于 BFI-20 框架：5 个维度（O/C/E/A/N）各 4 题，共 20 题。
@@ -134,11 +134,12 @@ var systemPromptRIASEC = systemPromptHeader + `
   "reverse": false             // 是否为反向题: true | false
 }
 `
+
 var systemPromptFooter = `
 【场景覆盖约束】  
 - 每个维度/学科下的题目必须覆盖至少 3 种不同校园场景，不得集中在单一语境。  
 - 校园场景示例（至少覆盖其三）：课堂学习、作业/复习、考试准备、实验探究、小组合作、社团活动、体育/艺术活动、同伴交往、家庭沟通、志愿服务。  
-- 如出现兴趣因子，应优先用于**扩展新的场景类型**，而非简单修饰已有场景。  
+- 禁止使用高中课堂中极少出现的场景（如实地考察、原始文献、科研报告），题目必须基于常见的日常学习活动。
 - 同一模块内不得出现高度重复的题干语境或措辞（如连续 3 道“按时完成作业”）。
 
 【题干要求】
@@ -146,6 +147,7 @@ var systemPromptFooter = `
 - 所有题目使用1-5 Likert量表
 - 所有题干必须严格基于中国高中生的校园生活与学习场景（如课堂学习、考试准备、完成作业、实验探究、学科竞赛、班级/社团活动、同伴关系、家庭沟通、志愿服务）。
 - 严禁出现与成人工作、社会职场、财务或职业行为相关的情境。
+- 所有学科题干必须贴合中国高一教学大纲，限定在基础知识、基本技能和常见学习任务上，不得超纲或大学化；语境需来源于课堂、作业、复习、考试等常见学习活动。  
 
 【量表锚点要求】
 - OCEAN / RIASEC：1=完全不符合，2=不太符合，3=一般，4=比较符合，5=完全符合
@@ -205,11 +207,13 @@ func callAPIAndSave(module string, mode Mode, apiKey, gender, grade, hobby strin
 		requestID, gender, grade, mode, hobby,
 	)
 
-	//temperature := getTemperature(module)
-	// --- 维持原有 DeepSeek 请求体字段 ---
+	temperature := getTemperature(module)
+
+	fmt.Println(systemPrompt)
+
 	reqBody := map[string]interface{}{
 		"model":           "deepseek-chat",
-		"temperature":     0.75,
+		"temperature":     temperature,
 		"max_tokens":      8000,
 		"stream":          true, // 双重调用最好不要用 stream，防止中断。
 		"response_format": map[string]string{"type": "json_object"},
@@ -262,17 +266,17 @@ func generateQuestions(mode Mode, apiKey, gender, grade, hobby string) error {
 	fmt.Println("--- 开始 题目 ---", hobby)
 	fmt.Println("--- 开始生成 OCEAN 题目 (20题) ---")
 	// 第一次调用：生成 OCEAN 题目
-	errOCEAN := callAPIAndSave("OCEAN", mode, apiKey, gender, grade, hobby)
-	if errOCEAN != nil {
-		fmt.Printf("生成 OCEAN 题目失败: %v\n", errOCEAN)
-	}
-
-	fmt.Println("\n--- 开始生成 RIASEC 题目 (30题) ---")
-	// 第二次调用：生成 RIASEC 题目
-	errRIASEC := callAPIAndSave("RIASEC", mode, apiKey, gender, grade, hobby)
-	if errRIASEC != nil {
-		fmt.Printf("生成 RIASEC 题目失败: %v\n", errRIASEC)
-	}
+	//errOCEAN := callAPIAndSave("OCEAN", mode, apiKey, gender, grade, hobby)
+	//if errOCEAN != nil {
+	//	fmt.Printf("生成 OCEAN 题目失败: %v\n", errOCEAN)
+	//}
+	//
+	//fmt.Println("\n--- 开始生成 RIASEC 题目 (30题) ---")
+	//// 第二次调用：生成 RIASEC 题目
+	//errRIASEC := callAPIAndSave("RIASEC", mode, apiKey, gender, grade, hobby)
+	//if errRIASEC != nil {
+	//	fmt.Printf("生成 RIASEC 题目失败: %v\n", errRIASEC)
+	//}
 
 	fmt.Println("\n--- 开始生成 ASC 题目 (24题) ---")
 	// 第二次调用：生成 RIASEC 题目
@@ -281,10 +285,10 @@ func generateQuestions(mode Mode, apiKey, gender, grade, hobby string) error {
 		fmt.Printf("生成 ASC 题目失败: %v\n", errASC)
 	}
 
-	// 综合返回错误
-	if errOCEAN != nil || errRIASEC != nil || errASC != nil {
-		return fmt.Errorf("部分或全部题目生成失败: OCEAN 错误: %v, RIASEC 错误: %v, ASC 错误: %v  ", errOCEAN, errRIASEC, errASC)
-	}
+	//// 综合返回错误
+	//if errOCEAN != nil || errRIASEC != nil || errASC != nil {
+	//	return fmt.Errorf("部分或全部题目生成失败: OCEAN 错误: %v, RIASEC 错误: %v, ASC 错误: %v  ", errOCEAN, errRIASEC, errASC)
+	//}
 
 	fmt.Println("\n--- 三个模块题目均已成功生成并保存 ---")
 	return nil

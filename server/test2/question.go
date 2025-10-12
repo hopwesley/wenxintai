@@ -282,31 +282,32 @@ func getTemperature(module string) float64 {
 // 主生成函数，拆分为两次调用
 func generateQuestions(mode Mode, apiKey, gender, grade, hobby string) error {
 	fmt.Println("--- 开始 题目 ---", hobby)
-	//fmt.Println("--- 开始生成 OCEAN 题目 (20题) ---")
+
+	fmt.Println("--- 开始生成 OCEAN 题目 (20题) ---")
 	// 第一次调用：生成 OCEAN 题目
 	errOCEAN := callAPIAndSave("OCEAN", mode, apiKey, gender, grade, hobby)
 	if errOCEAN != nil {
 		fmt.Printf("生成 OCEAN 题目失败: %v\n", errOCEAN)
 	}
-	//
-	//fmt.Println("\n--- 开始生成 RIASEC 题目 (30题) ---")
-	//// 第二次调用：生成 RIASEC 题目
-	//errRIASEC := callAPIAndSave("RIASEC", mode, apiKey, gender, grade, hobby)
-	//if errRIASEC != nil {
-	//	fmt.Printf("生成 RIASEC 题目失败: %v\n", errRIASEC)
-	//}
 
-	//fmt.Println("\n--- 开始生成 ASC 题目 (24题) ---")
-	//// 第二次调用：生成 RIASEC 题目
-	//errASC := callAPIAndSave("ASC", mode, apiKey, gender, grade, hobby)
-	//if errASC != nil {
-	//	fmt.Printf("生成 ASC 题目失败: %v\n", errASC)
-	//}
+	fmt.Println("\n--- 开始生成 RIASEC 题目 (30题) ---")
+	// 第二次调用：生成 RIASEC 题目
+	errRIASEC := callAPIAndSave("RIASEC", mode, apiKey, gender, grade, hobby)
+	if errRIASEC != nil {
+		fmt.Printf("生成 RIASEC 题目失败: %v\n", errRIASEC)
+	}
 
-	//// 综合返回错误
-	//if errOCEAN != nil || errRIASEC != nil || errASC != nil {
-	//	return fmt.Errorf("部分或全部题目生成失败: OCEAN 错误: %v, RIASEC 错误: %v, ASC 错误: %v  ", errOCEAN, errRIASEC, errASC)
-	//}
+	fmt.Println("\n--- 开始生成 ASC 题目 (24题) ---")
+	// 第二次调用：生成 RIASEC 题目
+	errASC := callAPIAndSave("ASC", mode, apiKey, gender, grade, hobby)
+	if errASC != nil {
+		fmt.Printf("生成 ASC 题目失败: %v\n", errASC)
+	}
+
+	// 综合返回错误
+	if errOCEAN != nil || errRIASEC != nil || errASC != nil {
+		return fmt.Errorf("部分或全部题目生成失败: OCEAN 错误: %v, RIASEC 错误: %v, ASC 错误: %v  ", errOCEAN, errRIASEC, errASC)
+	}
 
 	fmt.Println("\n--- 三个模块题目均已成功生成并保存 ---")
 	return nil

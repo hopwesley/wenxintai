@@ -59,6 +59,9 @@ func main() {
 		_ = generateQuestions(mode, apiKey, "女", "高一", hobby2)
 		//_ = generateQuestions(mode, apiKey, "男", "初三", "无")
 		break
+	case "answer":
+		TestRIASECAnswer()
+		TestASCAnswer()
 	default:
 		panic("unknown stage parameter")
 	}

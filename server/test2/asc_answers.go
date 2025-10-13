@@ -18,35 +18,35 @@ type ASCAnswer struct {
 // 其他学科：中性（GEO/HIS/POL 题设给 3；HIS/POL 的 Comparison 稍低 2 以拉开差距）
 var ASC_Aligned_PHY_CHE_BIO = []ASCAnswer{
 	// PHY (1–4)
-	{1, "PHY", 5, false, "Comparison"},
-	{2, "PHY", 5, false, "Efficacy"},
-	{3, "PHY", 5, false, "AchievementExpectation"},
-	{4, "PHY", 1, true, "SkillMastery"},
+	{1, SubjectPHY, 5, false, "Comparison"},
+	{2, SubjectPHY, 5, false, "Efficacy"},
+	{3, SubjectPHY, 5, false, "AchievementExpectation"},
+	{4, SubjectPHY, 1, true, "SkillMastery"},
 	// CHE (5–8)
-	{5, "CHE", 5, false, "Comparison"},
-	{6, "CHE", 5, false, "Efficacy"},
-	{7, "CHE", 5, false, "AchievementExpectation"},
-	{8, "CHE", 1, true, "SkillMastery"},
+	{5, SubjectCHE, 5, false, "Comparison"},
+	{6, SubjectCHE, 5, false, "Efficacy"},
+	{7, SubjectCHE, 5, false, "AchievementExpectation"},
+	{8, SubjectCHE, 1, true, "SkillMastery"},
 	// BIO (9–12)
-	{9, "BIO", 5, false, "Comparison"},
-	{10, "BIO", 5, false, "Efficacy"},
-	{11, "BIO", 5, false, "AchievementExpectation"},
-	{12, "BIO", 1, true, "SkillMastery"},
+	{9, SubjectBIO, 5, false, "Comparison"},
+	{10, SubjectBIO, 5, false, "Efficacy"},
+	{11, SubjectBIO, 5, false, "AchievementExpectation"},
+	{12, SubjectBIO, 1, true, "SkillMastery"},
 	// GEO (13–16)
-	{13, "GEO", 3, false, "Comparison"},
-	{14, "GEO", 3, false, "Efficacy"},
-	{15, "GEO", 3, false, "AchievementExpectation"},
-	{16, "GEO", 3, true, "SkillMastery"},
+	{13, SubjectGEO, 3, false, "Comparison"},
+	{14, SubjectGEO, 3, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 3, true, "SkillMastery"},
 	// HIS (17–20)
-	{17, "HIS", 2, false, "Comparison"},
-	{18, "HIS", 3, false, "Efficacy"},
-	{19, "HIS", 3, false, "AchievementExpectation"},
-	{20, "HIS", 3, true, "SkillMastery"},
+	{17, SubjectHIS, 2, false, "Comparison"},
+	{18, SubjectHIS, 3, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 3, true, "SkillMastery"},
 	// POL (21–24)
-	{21, "POL", 2, false, "Comparison"},
-	{22, "POL", 3, false, "Efficacy"},
-	{23, "POL", 3, false, "AchievementExpectation"},
-	{24, "POL", 3, true, "SkillMastery"},
+	{21, SubjectPOL, 2, false, "Comparison"},
+	{22, SubjectPOL, 3, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
 // ============ PHY_CHE_BIO：不匹配（Mismatch） ============
@@ -54,35 +54,35 @@ var ASC_Aligned_PHY_CHE_BIO = []ASCAnswer{
 // 其他学科：中性 3，突出“不支持该理科组合”的对比效果
 var ASC_Mismatch_PHY_CHE_BIO = []ASCAnswer{
 	// PHY (1–4)
-	{1, "PHY", 2, false, "Comparison"},
-	{2, "PHY", 2, false, "Efficacy"},
-	{3, "PHY", 3, false, "AchievementExpectation"},
-	{4, "PHY", 4, true, "SkillMastery"},
+	{1, SubjectPHY, 2, false, "Comparison"},
+	{2, SubjectPHY, 2, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 4, true, "SkillMastery"},
 	// CHE (5–8)
-	{5, "CHE", 2, false, "Comparison"},
-	{6, "CHE", 2, false, "Efficacy"},
-	{7, "CHE", 3, false, "AchievementExpectation"},
-	{8, "CHE", 4, true, "SkillMastery"},
+	{5, SubjectCHE, 2, false, "Comparison"},
+	{6, SubjectCHE, 2, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 4, true, "SkillMastery"},
 	// BIO (9–12)
-	{9, "BIO", 2, false, "Comparison"},
-	{10, "BIO", 3, false, "Efficacy"},
-	{11, "BIO", 3, false, "AchievementExpectation"},
-	{12, "BIO", 4, true, "SkillMastery"},
+	{9, SubjectBIO, 2, false, "Comparison"},
+	{10, SubjectBIO, 3, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 4, true, "SkillMastery"},
 	// GEO (13–16)
-	{13, "GEO", 3, false, "Comparison"},
-	{14, "GEO", 3, false, "Efficacy"},
-	{15, "GEO", 3, false, "AchievementExpectation"},
-	{16, "GEO", 3, true, "SkillMastery"},
+	{13, SubjectGEO, 3, false, "Comparison"},
+	{14, SubjectGEO, 3, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 3, true, "SkillMastery"},
 	// HIS (17–20)
-	{17, "HIS", 3, false, "Comparison"},
-	{18, "HIS", 3, false, "Efficacy"},
-	{19, "HIS", 3, false, "AchievementExpectation"},
-	{20, "HIS", 3, true, "SkillMastery"},
+	{17, SubjectHIS, 3, false, "Comparison"},
+	{18, SubjectHIS, 3, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 3, true, "SkillMastery"},
 	// POL (21–24)
-	{21, "POL", 3, false, "Comparison"},
-	{22, "POL", 3, false, "Efficacy"},
-	{23, "POL", 3, false, "AchievementExpectation"},
-	{24, "POL", 3, true, "SkillMastery"},
+	{21, SubjectPOL, 3, false, "Comparison"},
+	{22, SubjectPOL, 3, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
 // ============ PHY_CHE_GEO：匹配（Aligned） ============
@@ -90,35 +90,35 @@ var ASC_Mismatch_PHY_CHE_BIO = []ASCAnswer{
 // 其他（BIO / HIS / POL）中性（3,3,3,3）
 var ASC_Aligned_PHY_CHE_GEO = []ASCAnswer{
 	// PHY (1–4)
-	{1, "PHY", 5, false, "Comparison"},
-	{2, "PHY", 5, false, "Efficacy"},
-	{3, "PHY", 5, false, "AchievementExpectation"},
-	{4, "PHY", 1, true, "SkillMastery"},
+	{1, SubjectPHY, 5, false, "Comparison"},
+	{2, SubjectPHY, 5, false, "Efficacy"},
+	{3, SubjectPHY, 5, false, "AchievementExpectation"},
+	{4, SubjectPHY, 1, true, "SkillMastery"},
 	// CHE (5–8)
-	{5, "CHE", 5, false, "Comparison"},
-	{6, "CHE", 5, false, "Efficacy"},
-	{7, "CHE", 5, false, "AchievementExpectation"},
-	{8, "CHE", 1, true, "SkillMastery"},
+	{5, SubjectCHE, 5, false, "Comparison"},
+	{6, SubjectCHE, 5, false, "Efficacy"},
+	{7, SubjectCHE, 5, false, "AchievementExpectation"},
+	{8, SubjectCHE, 1, true, "SkillMastery"},
 	// BIO (9–12)
-	{9, "BIO", 3, false, "Comparison"},
-	{10, "BIO", 3, false, "Efficacy"},
-	{11, "BIO", 3, false, "AchievementExpectation"},
-	{12, "BIO", 3, true, "SkillMastery"},
+	{9, SubjectBIO, 3, false, "Comparison"},
+	{10, SubjectBIO, 3, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 3, true, "SkillMastery"},
 	// GEO (13–16)
-	{13, "GEO", 5, false, "Comparison"},
-	{14, "GEO", 5, false, "Efficacy"},
-	{15, "GEO", 5, false, "AchievementExpectation"},
-	{16, "GEO", 1, true, "SkillMastery"},
+	{13, SubjectGEO, 5, false, "Comparison"},
+	{14, SubjectGEO, 5, false, "Efficacy"},
+	{15, SubjectGEO, 5, false, "AchievementExpectation"},
+	{16, SubjectGEO, 1, true, "SkillMastery"},
 	// HIS (17–20)
-	{17, "HIS", 3, false, "Comparison"},
-	{18, "HIS", 3, false, "Efficacy"},
-	{19, "HIS", 3, false, "AchievementExpectation"},
-	{20, "HIS", 3, true, "SkillMastery"},
+	{17, SubjectHIS, 3, false, "Comparison"},
+	{18, SubjectHIS, 3, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 3, true, "SkillMastery"},
 	// POL (21–24)
-	{21, "POL", 3, false, "Comparison"},
-	{22, "POL", 3, false, "Efficacy"},
-	{23, "POL", 3, false, "AchievementExpectation"},
-	{24, "POL", 3, true, "SkillMastery"},
+	{21, SubjectPOL, 3, false, "Comparison"},
+	{22, SubjectPOL, 3, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
 // ============ PHY_CHE_GEO：不匹配（Mismatch） ============
@@ -126,35 +126,35 @@ var ASC_Aligned_PHY_CHE_GEO = []ASCAnswer{
 // 其他（BIO / HIS / POL）维持中性（3,3,3,3）
 var ASC_Mismatch_PHY_CHE_GEO = []ASCAnswer{
 	// PHY (1–4)
-	{1, "PHY", 2, false, "Comparison"},
-	{2, "PHY", 2, false, "Efficacy"},
-	{3, "PHY", 3, false, "AchievementExpectation"},
-	{4, "PHY", 4, true, "SkillMastery"},
+	{1, SubjectPHY, 2, false, "Comparison"},
+	{2, SubjectPHY, 2, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 4, true, "SkillMastery"},
 	// CHE (5–8)
-	{5, "CHE", 2, false, "Comparison"},
-	{6, "CHE", 2, false, "Efficacy"},
-	{7, "CHE", 3, false, "AchievementExpectation"},
-	{8, "CHE", 4, true, "SkillMastery"},
+	{5, SubjectCHE, 2, false, "Comparison"},
+	{6, SubjectCHE, 2, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 4, true, "SkillMastery"},
 	// BIO (9–12)
-	{9, "BIO", 3, false, "Comparison"},
-	{10, "BIO", 3, false, "Efficacy"},
-	{11, "BIO", 3, false, "AchievementExpectation"},
-	{12, "BIO", 3, true, "SkillMastery"},
+	{9, SubjectBIO, 3, false, "Comparison"},
+	{10, SubjectBIO, 3, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 3, true, "SkillMastery"},
 	// GEO (13–16)
-	{13, "GEO", 2, false, "Comparison"},
-	{14, "GEO", 2, false, "Efficacy"},
-	{15, "GEO", 3, false, "AchievementExpectation"},
-	{16, "GEO", 4, true, "SkillMastery"},
+	{13, SubjectGEO, 2, false, "Comparison"},
+	{14, SubjectGEO, 2, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 4, true, "SkillMastery"},
 	// HIS (17–20)
-	{17, "HIS", 3, false, "Comparison"},
-	{18, "HIS", 3, false, "Efficacy"},
-	{19, "HIS", 3, false, "AchievementExpectation"},
-	{20, "HIS", 3, true, "SkillMastery"},
+	{17, SubjectHIS, 3, false, "Comparison"},
+	{18, SubjectHIS, 3, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 3, true, "SkillMastery"},
 	// POL (21–24)
-	{21, "POL", 3, false, "Comparison"},
-	{22, "POL", 3, false, "Efficacy"},
-	{23, "POL", 3, false, "AchievementExpectation"},
-	{24, "POL", 3, true, "SkillMastery"},
+	{21, SubjectPOL, 3, false, "Comparison"},
+	{22, SubjectPOL, 3, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
 // ============ CHE_BIO_GEO：匹配（Aligned） ============
@@ -162,35 +162,35 @@ var ASC_Mismatch_PHY_CHE_GEO = []ASCAnswer{
 // 其他（PHY / HIS / POL）中性（3,3,3,3）
 var ASC_Aligned_CHE_BIO_GEO = []ASCAnswer{
 	// PHY (1–4)
-	{1, "PHY", 3, false, "Comparison"},
-	{2, "PHY", 3, false, "Efficacy"},
-	{3, "PHY", 3, false, "AchievementExpectation"},
-	{4, "PHY", 3, true, "SkillMastery"},
+	{1, SubjectPHY, 3, false, "Comparison"},
+	{2, SubjectPHY, 3, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 3, true, "SkillMastery"},
 	// CHE (5–8)
-	{5, "CHE", 5, false, "Comparison"},
-	{6, "CHE", 5, false, "Efficacy"},
-	{7, "CHE", 5, false, "AchievementExpectation"},
-	{8, "CHE", 1, true, "SkillMastery"},
+	{5, SubjectCHE, 5, false, "Comparison"},
+	{6, SubjectCHE, 5, false, "Efficacy"},
+	{7, SubjectCHE, 5, false, "AchievementExpectation"},
+	{8, SubjectCHE, 1, true, "SkillMastery"},
 	// BIO (9–12)
-	{9, "BIO", 5, false, "Comparison"},
-	{10, "BIO", 5, false, "Efficacy"},
-	{11, "BIO", 5, false, "AchievementExpectation"},
-	{12, "BIO", 1, true, "SkillMastery"},
+	{9, SubjectBIO, 5, false, "Comparison"},
+	{10, SubjectBIO, 5, false, "Efficacy"},
+	{11, SubjectBIO, 5, false, "AchievementExpectation"},
+	{12, SubjectBIO, 1, true, "SkillMastery"},
 	// GEO (13–16)
-	{13, "GEO", 5, false, "Comparison"},
-	{14, "GEO", 5, false, "Efficacy"},
-	{15, "GEO", 5, false, "AchievementExpectation"},
-	{16, "GEO", 1, true, "SkillMastery"},
+	{13, SubjectGEO, 5, false, "Comparison"},
+	{14, SubjectGEO, 5, false, "Efficacy"},
+	{15, SubjectGEO, 5, false, "AchievementExpectation"},
+	{16, SubjectGEO, 1, true, "SkillMastery"},
 	// HIS (17–20)
-	{17, "HIS", 3, false, "Comparison"},
-	{18, "HIS", 3, false, "Efficacy"},
-	{19, "HIS", 3, false, "AchievementExpectation"},
-	{20, "HIS", 3, true, "SkillMastery"},
+	{17, SubjectHIS, 3, false, "Comparison"},
+	{18, SubjectHIS, 3, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 3, true, "SkillMastery"},
 	// POL (21–24)
-	{21, "POL", 3, false, "Comparison"},
-	{22, "POL", 3, false, "Efficacy"},
-	{23, "POL", 3, false, "AchievementExpectation"},
-	{24, "POL", 3, true, "SkillMastery"},
+	{21, SubjectPOL, 3, false, "Comparison"},
+	{22, SubjectPOL, 3, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
 // ============ CHE_BIO_GEO：不匹配（Mismatch） ============
@@ -198,35 +198,35 @@ var ASC_Aligned_CHE_BIO_GEO = []ASCAnswer{
 // 其他（PHY / HIS / POL）维持中性（3,3,3,3）
 var ASC_Mismatch_CHE_BIO_GEO = []ASCAnswer{
 	// PHY (1–4)
-	{1, "PHY", 3, false, "Comparison"},
-	{2, "PHY", 3, false, "Efficacy"},
-	{3, "PHY", 3, false, "AchievementExpectation"},
-	{4, "PHY", 3, true, "SkillMastery"},
+	{1, SubjectPHY, 3, false, "Comparison"},
+	{2, SubjectPHY, 3, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 3, true, "SkillMastery"},
 	// CHE (5–8)
-	{5, "CHE", 2, false, "Comparison"},
-	{6, "CHE", 2, false, "Efficacy"},
-	{7, "CHE", 3, false, "AchievementExpectation"},
-	{8, "CHE", 4, true, "SkillMastery"},
+	{5, SubjectCHE, 2, false, "Comparison"},
+	{6, SubjectCHE, 2, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 4, true, "SkillMastery"},
 	// BIO (9–12)
-	{9, "BIO", 2, false, "Comparison"},
-	{10, "BIO", 2, false, "Efficacy"},
-	{11, "BIO", 3, false, "AchievementExpectation"},
-	{12, "BIO", 4, true, "SkillMastery"},
+	{9, SubjectBIO, 2, false, "Comparison"},
+	{10, SubjectBIO, 2, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 4, true, "SkillMastery"},
 	// GEO (13–16)
-	{13, "GEO", 2, false, "Comparison"},
-	{14, "GEO", 2, false, "Efficacy"},
-	{15, "GEO", 3, false, "AchievementExpectation"},
-	{16, "GEO", 4, true, "SkillMastery"},
+	{13, SubjectGEO, 2, false, "Comparison"},
+	{14, SubjectGEO, 2, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 4, true, "SkillMastery"},
 	// HIS (17–20)
-	{17, "HIS", 3, false, "Comparison"},
-	{18, "HIS", 3, false, "Efficacy"},
-	{19, "HIS", 3, false, "AchievementExpectation"},
-	{20, "HIS", 3, true, "SkillMastery"},
+	{17, SubjectHIS, 3, false, "Comparison"},
+	{18, SubjectHIS, 3, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 3, true, "SkillMastery"},
 	// POL (21–24)
-	{21, "POL", 3, false, "Comparison"},
-	{22, "POL", 3, false, "Efficacy"},
-	{23, "POL", 3, false, "AchievementExpectation"},
-	{24, "POL", 3, true, "SkillMastery"},
+	{21, SubjectPOL, 3, false, "Comparison"},
+	{22, SubjectPOL, 3, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
 // ============ PHY_BIO_GEO：匹配（Aligned） ============
@@ -234,35 +234,35 @@ var ASC_Mismatch_CHE_BIO_GEO = []ASCAnswer{
 // 其他（CHE / HIS / POL）中性（3,3,3,3）
 var ASC_Aligned_PHY_BIO_GEO = []ASCAnswer{
 	// PHY (1–4)
-	{1, "PHY", 5, false, "Comparison"},
-	{2, "PHY", 5, false, "Efficacy"},
-	{3, "PHY", 5, false, "AchievementExpectation"},
-	{4, "PHY", 1, true, "SkillMastery"},
+	{1, SubjectPHY, 5, false, "Comparison"},
+	{2, SubjectPHY, 5, false, "Efficacy"},
+	{3, SubjectPHY, 5, false, "AchievementExpectation"},
+	{4, SubjectPHY, 1, true, "SkillMastery"},
 	// CHE (5–8)
-	{5, "CHE", 3, false, "Comparison"},
-	{6, "CHE", 3, false, "Efficacy"},
-	{7, "CHE", 3, false, "AchievementExpectation"},
-	{8, "CHE", 3, true, "SkillMastery"},
+	{5, SubjectCHE, 3, false, "Comparison"},
+	{6, SubjectCHE, 3, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 3, true, "SkillMastery"},
 	// BIO (9–12)
-	{9, "BIO", 5, false, "Comparison"},
-	{10, "BIO", 5, false, "Efficacy"},
-	{11, "BIO", 5, false, "AchievementExpectation"},
-	{12, "BIO", 1, true, "SkillMastery"},
+	{9, SubjectBIO, 5, false, "Comparison"},
+	{10, SubjectBIO, 5, false, "Efficacy"},
+	{11, SubjectBIO, 5, false, "AchievementExpectation"},
+	{12, SubjectBIO, 1, true, "SkillMastery"},
 	// GEO (13–16)
-	{13, "GEO", 5, false, "Comparison"},
-	{14, "GEO", 5, false, "Efficacy"},
-	{15, "GEO", 5, false, "AchievementExpectation"},
-	{16, "GEO", 1, true, "SkillMastery"},
+	{13, SubjectGEO, 5, false, "Comparison"},
+	{14, SubjectGEO, 5, false, "Efficacy"},
+	{15, SubjectGEO, 5, false, "AchievementExpectation"},
+	{16, SubjectGEO, 1, true, "SkillMastery"},
 	// HIS (17–20)
-	{17, "HIS", 3, false, "Comparison"},
-	{18, "HIS", 3, false, "Efficacy"},
-	{19, "HIS", 3, false, "AchievementExpectation"},
-	{20, "HIS", 3, true, "SkillMastery"},
+	{17, SubjectHIS, 3, false, "Comparison"},
+	{18, SubjectHIS, 3, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 3, true, "SkillMastery"},
 	// POL (21–24)
-	{21, "POL", 3, false, "Comparison"},
-	{22, "POL", 3, false, "Efficacy"},
-	{23, "POL", 3, false, "AchievementExpectation"},
-	{24, "POL", 3, true, "SkillMastery"},
+	{21, SubjectPOL, 3, false, "Comparison"},
+	{22, SubjectPOL, 3, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
 // ============ PHY_BIO_GEO：不匹配（Mismatch） ============
@@ -270,35 +270,35 @@ var ASC_Aligned_PHY_BIO_GEO = []ASCAnswer{
 // 其他（CHE / HIS / POL）维持中性（3,3,3,3）
 var ASC_Mismatch_PHY_BIO_GEO = []ASCAnswer{
 	// PHY (1–4)
-	{1, "PHY", 2, false, "Comparison"},
-	{2, "PHY", 2, false, "Efficacy"},
-	{3, "PHY", 3, false, "AchievementExpectation"},
-	{4, "PHY", 4, true, "SkillMastery"},
+	{1, SubjectPHY, 2, false, "Comparison"},
+	{2, SubjectPHY, 2, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 4, true, "SkillMastery"},
 	// CHE (5–8)
-	{5, "CHE", 3, false, "Comparison"},
-	{6, "CHE", 3, false, "Efficacy"},
-	{7, "CHE", 3, false, "AchievementExpectation"},
-	{8, "CHE", 3, true, "SkillMastery"},
+	{5, SubjectCHE, 3, false, "Comparison"},
+	{6, SubjectCHE, 3, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 3, true, "SkillMastery"},
 	// BIO (9–12)
-	{9, "BIO", 2, false, "Comparison"},
-	{10, "BIO", 2, false, "Efficacy"},
-	{11, "BIO", 3, false, "AchievementExpectation"},
-	{12, "BIO", 4, true, "SkillMastery"},
+	{9, SubjectBIO, 2, false, "Comparison"},
+	{10, SubjectBIO, 2, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 4, true, "SkillMastery"},
 	// GEO (13–16)
-	{13, "GEO", 2, false, "Comparison"},
-	{14, "GEO", 2, false, "Efficacy"},
-	{15, "GEO", 3, false, "AchievementExpectation"},
-	{16, "GEO", 4, true, "SkillMastery"},
+	{13, SubjectGEO, 2, false, "Comparison"},
+	{14, SubjectGEO, 2, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 4, true, "SkillMastery"},
 	// HIS (17–20)
-	{17, "HIS", 3, false, "Comparison"},
-	{18, "HIS", 3, false, "Efficacy"},
-	{19, "HIS", 3, false, "AchievementExpectation"},
-	{20, "HIS", 3, true, "SkillMastery"},
+	{17, SubjectHIS, 3, false, "Comparison"},
+	{18, SubjectHIS, 3, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 3, true, "SkillMastery"},
 	// POL (21–24)
-	{21, "POL", 3, false, "Comparison"},
-	{22, "POL", 3, false, "Efficacy"},
-	{23, "POL", 3, false, "AchievementExpectation"},
-	{24, "POL", 3, true, "SkillMastery"},
+	{21, SubjectPOL, 3, false, "Comparison"},
+	{22, SubjectPOL, 3, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
 // ============ HIS_GEO_POL：匹配（Aligned） ============
@@ -306,35 +306,35 @@ var ASC_Mismatch_PHY_BIO_GEO = []ASCAnswer{
 // 其他（PHY / CHE / BIO）中性（3,3,3,3）
 var ASC_Aligned_HIS_GEO_POL = []ASCAnswer{
 	// PHY (1–4)
-	{1, "PHY", 3, false, "Comparison"},
-	{2, "PHY", 3, false, "Efficacy"},
-	{3, "PHY", 3, false, "AchievementExpectation"},
-	{4, "PHY", 3, true, "SkillMastery"},
+	{1, SubjectPHY, 3, false, "Comparison"},
+	{2, SubjectPHY, 3, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 3, true, "SkillMastery"},
 	// CHE (5–8)
-	{5, "CHE", 3, false, "Comparison"},
-	{6, "CHE", 3, false, "Efficacy"},
-	{7, "CHE", 3, false, "AchievementExpectation"},
-	{8, "CHE", 3, true, "SkillMastery"},
+	{5, SubjectCHE, 3, false, "Comparison"},
+	{6, SubjectCHE, 3, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 3, true, "SkillMastery"},
 	// BIO (9–12)
-	{9, "BIO", 3, false, "Comparison"},
-	{10, "BIO", 3, false, "Efficacy"},
-	{11, "BIO", 3, false, "AchievementExpectation"},
-	{12, "BIO", 3, true, "SkillMastery"},
+	{9, SubjectBIO, 3, false, "Comparison"},
+	{10, SubjectBIO, 3, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 3, true, "SkillMastery"},
 	// GEO (13–16)
-	{13, "GEO", 5, false, "Comparison"},
-	{14, "GEO", 5, false, "Efficacy"},
-	{15, "GEO", 5, false, "AchievementExpectation"},
-	{16, "GEO", 1, true, "SkillMastery"},
+	{13, SubjectGEO, 5, false, "Comparison"},
+	{14, SubjectGEO, 5, false, "Efficacy"},
+	{15, SubjectGEO, 5, false, "AchievementExpectation"},
+	{16, SubjectGEO, 1, true, "SkillMastery"},
 	// HIS (17–20)
-	{17, "HIS", 5, false, "Comparison"},
-	{18, "HIS", 5, false, "Efficacy"},
-	{19, "HIS", 5, false, "AchievementExpectation"},
-	{20, "HIS", 1, true, "SkillMastery"},
+	{17, SubjectHIS, 5, false, "Comparison"},
+	{18, SubjectHIS, 5, false, "Efficacy"},
+	{19, SubjectHIS, 5, false, "AchievementExpectation"},
+	{20, SubjectHIS, 1, true, "SkillMastery"},
 	// POL (21–24)
-	{21, "POL", 5, false, "Comparison"},
-	{22, "POL", 5, false, "Efficacy"},
-	{23, "POL", 5, false, "AchievementExpectation"},
-	{24, "POL", 1, true, "SkillMastery"},
+	{21, SubjectPOL, 5, false, "Comparison"},
+	{22, SubjectPOL, 5, false, "Efficacy"},
+	{23, SubjectPOL, 5, false, "AchievementExpectation"},
+	{24, SubjectPOL, 1, true, "SkillMastery"},
 }
 
 // ============ HIS_GEO_POL：不匹配（Mismatch） ============
@@ -342,35 +342,35 @@ var ASC_Aligned_HIS_GEO_POL = []ASCAnswer{
 // 其他（PHY / CHE / BIO）中性（3,3,3,3）
 var ASC_Mismatch_HIS_GEO_POL = []ASCAnswer{
 	// PHY (1–4)
-	{1, "PHY", 3, false, "Comparison"},
-	{2, "PHY", 3, false, "Efficacy"},
-	{3, "PHY", 3, false, "AchievementExpectation"},
-	{4, "PHY", 3, true, "SkillMastery"},
+	{1, SubjectPHY, 3, false, "Comparison"},
+	{2, SubjectPHY, 3, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 3, true, "SkillMastery"},
 	// CHE (5–8)
-	{5, "CHE", 3, false, "Comparison"},
-	{6, "CHE", 3, false, "Efficacy"},
-	{7, "CHE", 3, false, "AchievementExpectation"},
-	{8, "CHE", 3, true, "SkillMastery"},
+	{5, SubjectCHE, 3, false, "Comparison"},
+	{6, SubjectCHE, 3, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 3, true, "SkillMastery"},
 	// BIO (9–12)
-	{9, "BIO", 3, false, "Comparison"},
-	{10, "BIO", 3, false, "Efficacy"},
-	{11, "BIO", 3, false, "AchievementExpectation"},
-	{12, "BIO", 3, true, "SkillMastery"},
+	{9, SubjectBIO, 3, false, "Comparison"},
+	{10, SubjectBIO, 3, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 3, true, "SkillMastery"},
 	// GEO (13–16)
-	{13, "GEO", 2, false, "Comparison"},
-	{14, "GEO", 2, false, "Efficacy"},
-	{15, "GEO", 3, false, "AchievementExpectation"},
-	{16, "GEO", 4, true, "SkillMastery"},
+	{13, SubjectGEO, 2, false, "Comparison"},
+	{14, SubjectGEO, 2, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 4, true, "SkillMastery"},
 	// HIS (17–20)
-	{17, "HIS", 2, false, "Comparison"},
-	{18, "HIS", 2, false, "Efficacy"},
-	{19, "HIS", 3, false, "AchievementExpectation"},
-	{20, "HIS", 4, true, "SkillMastery"},
+	{17, SubjectHIS, 2, false, "Comparison"},
+	{18, SubjectHIS, 2, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 4, true, "SkillMastery"},
 	// POL (21–24)
-	{21, "POL", 2, false, "Comparison"},
-	{22, "POL", 2, false, "Efficacy"},
-	{23, "POL", 3, false, "AchievementExpectation"},
-	{24, "POL", 4, true, "SkillMastery"},
+	{21, SubjectPOL, 2, false, "Comparison"},
+	{22, SubjectPOL, 2, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 4, true, "SkillMastery"},
 }
 
 // ============ HIS_GEO_BIO：匹配（Aligned） ============
@@ -378,35 +378,35 @@ var ASC_Mismatch_HIS_GEO_POL = []ASCAnswer{
 // 其他（PHY / CHE / POL）中性（3,3,3,3）
 var ASC_Aligned_HIS_GEO_BIO = []ASCAnswer{
 	// PHY (1–4)
-	{1, "PHY", 3, false, "Comparison"},
-	{2, "PHY", 3, false, "Efficacy"},
-	{3, "PHY", 3, false, "AchievementExpectation"},
-	{4, "PHY", 3, true, "SkillMastery"},
+	{1, SubjectPHY, 3, false, "Comparison"},
+	{2, SubjectPHY, 3, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 3, true, "SkillMastery"},
 	// CHE (5–8)
-	{5, "CHE", 3, false, "Comparison"},
-	{6, "CHE", 3, false, "Efficacy"},
-	{7, "CHE", 3, false, "AchievementExpectation"},
-	{8, "CHE", 3, true, "SkillMastery"},
+	{5, SubjectCHE, 3, false, "Comparison"},
+	{6, SubjectCHE, 3, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 3, true, "SkillMastery"},
 	// BIO (9–12)
-	{9, "BIO", 5, false, "Comparison"},
-	{10, "BIO", 5, false, "Efficacy"},
-	{11, "BIO", 5, false, "AchievementExpectation"},
-	{12, "BIO", 1, true, "SkillMastery"},
+	{9, SubjectBIO, 5, false, "Comparison"},
+	{10, SubjectBIO, 5, false, "Efficacy"},
+	{11, SubjectBIO, 5, false, "AchievementExpectation"},
+	{12, SubjectBIO, 1, true, "SkillMastery"},
 	// GEO (13–16)
-	{13, "GEO", 5, false, "Comparison"},
-	{14, "GEO", 5, false, "Efficacy"},
-	{15, "GEO", 5, false, "AchievementExpectation"},
-	{16, "GEO", 1, true, "SkillMastery"},
+	{13, SubjectGEO, 5, false, "Comparison"},
+	{14, SubjectGEO, 5, false, "Efficacy"},
+	{15, SubjectGEO, 5, false, "AchievementExpectation"},
+	{16, SubjectGEO, 1, true, "SkillMastery"},
 	// HIS (17–20)
-	{17, "HIS", 5, false, "Comparison"},
-	{18, "HIS", 5, false, "Efficacy"},
-	{19, "HIS", 5, false, "AchievementExpectation"},
-	{20, "HIS", 1, true, "SkillMastery"},
+	{17, SubjectHIS, 5, false, "Comparison"},
+	{18, SubjectHIS, 5, false, "Efficacy"},
+	{19, SubjectHIS, 5, false, "AchievementExpectation"},
+	{20, SubjectHIS, 1, true, "SkillMastery"},
 	// POL (21–24)
-	{21, "POL", 3, false, "Comparison"},
-	{22, "POL", 3, false, "Efficacy"},
-	{23, "POL", 3, false, "AchievementExpectation"},
-	{24, "POL", 3, true, "SkillMastery"},
+	{21, SubjectPOL, 3, false, "Comparison"},
+	{22, SubjectPOL, 3, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
 // ============ HIS_GEO_BIO：不匹配（Mismatch） ============
@@ -414,35 +414,35 @@ var ASC_Aligned_HIS_GEO_BIO = []ASCAnswer{
 // 其他（PHY / CHE / POL）中性（3,3,3,3）
 var ASC_Mismatch_HIS_GEO_BIO = []ASCAnswer{
 	// PHY (1–4)
-	{1, "PHY", 3, false, "Comparison"},
-	{2, "PHY", 3, false, "Efficacy"},
-	{3, "PHY", 3, false, "AchievementExpectation"},
-	{4, "PHY", 3, true, "SkillMastery"},
+	{1, SubjectPHY, 3, false, "Comparison"},
+	{2, SubjectPHY, 3, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 3, true, "SkillMastery"},
 	// CHE (5–8)
-	{5, "CHE", 3, false, "Comparison"},
-	{6, "CHE", 3, false, "Efficacy"},
-	{7, "CHE", 3, false, "AchievementExpectation"},
-	{8, "CHE", 3, true, "SkillMastery"},
+	{5, SubjectCHE, 3, false, "Comparison"},
+	{6, SubjectCHE, 3, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 3, true, "SkillMastery"},
 	// BIO (9–12)
-	{9, "BIO", 2, false, "Comparison"},
-	{10, "BIO", 2, false, "Efficacy"},
-	{11, "BIO", 3, false, "AchievementExpectation"},
-	{12, "BIO", 4, true, "SkillMastery"},
+	{9, SubjectBIO, 2, false, "Comparison"},
+	{10, SubjectBIO, 2, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 4, true, "SkillMastery"},
 	// GEO (13–16)
-	{13, "GEO", 2, false, "Comparison"},
-	{14, "GEO", 2, false, "Efficacy"},
-	{15, "GEO", 3, false, "AchievementExpectation"},
-	{16, "GEO", 4, true, "SkillMastery"},
+	{13, SubjectGEO, 2, false, "Comparison"},
+	{14, SubjectGEO, 2, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 4, true, "SkillMastery"},
 	// HIS (17–20)
-	{17, "HIS", 2, false, "Comparison"},
-	{18, "HIS", 2, false, "Efficacy"},
-	{19, "HIS", 3, false, "AchievementExpectation"},
-	{20, "HIS", 4, true, "SkillMastery"},
+	{17, SubjectHIS, 2, false, "Comparison"},
+	{18, SubjectHIS, 2, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 4, true, "SkillMastery"},
 	// POL (21–24)
-	{21, "POL", 3, false, "Comparison"},
-	{22, "POL", 3, false, "Efficacy"},
-	{23, "POL", 3, false, "AchievementExpectation"},
-	{24, "POL", 3, true, "SkillMastery"},
+	{21, SubjectPOL, 3, false, "Comparison"},
+	{22, SubjectPOL, 3, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
 // ============ PHY_GEO_CHE：匹配（Aligned） ============
@@ -450,35 +450,35 @@ var ASC_Mismatch_HIS_GEO_BIO = []ASCAnswer{
 // 其他（BIO / HIS / POL）中性（3,3,3,3）
 var ASC_Aligned_PHY_GEO_CHE = []ASCAnswer{
 	// PHY (1–4)
-	{1, "PHY", 5, false, "Comparison"},
-	{2, "PHY", 5, false, "Efficacy"},
-	{3, "PHY", 5, false, "AchievementExpectation"},
-	{4, "PHY", 1, true, "SkillMastery"},
+	{1, SubjectPHY, 5, false, "Comparison"},
+	{2, SubjectPHY, 5, false, "Efficacy"},
+	{3, SubjectPHY, 5, false, "AchievementExpectation"},
+	{4, SubjectPHY, 1, true, "SkillMastery"},
 	// CHE (5–8)
-	{5, "CHE", 5, false, "Comparison"},
-	{6, "CHE", 5, false, "Efficacy"},
-	{7, "CHE", 5, false, "AchievementExpectation"},
-	{8, "CHE", 1, true, "SkillMastery"},
+	{5, SubjectCHE, 5, false, "Comparison"},
+	{6, SubjectCHE, 5, false, "Efficacy"},
+	{7, SubjectCHE, 5, false, "AchievementExpectation"},
+	{8, SubjectCHE, 1, true, "SkillMastery"},
 	// BIO (9–12)
-	{9, "BIO", 3, false, "Comparison"},
-	{10, "BIO", 3, false, "Efficacy"},
-	{11, "BIO", 3, false, "AchievementExpectation"},
-	{12, "BIO", 3, true, "SkillMastery"},
+	{9, SubjectBIO, 3, false, "Comparison"},
+	{10, SubjectBIO, 3, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 3, true, "SkillMastery"},
 	// GEO (13–16)
-	{13, "GEO", 5, false, "Comparison"},
-	{14, "GEO", 5, false, "Efficacy"},
-	{15, "GEO", 5, false, "AchievementExpectation"},
-	{16, "GEO", 1, true, "SkillMastery"},
+	{13, SubjectGEO, 5, false, "Comparison"},
+	{14, SubjectGEO, 5, false, "Efficacy"},
+	{15, SubjectGEO, 5, false, "AchievementExpectation"},
+	{16, SubjectGEO, 1, true, "SkillMastery"},
 	// HIS (17–20)
-	{17, "HIS", 3, false, "Comparison"},
-	{18, "HIS", 3, false, "Efficacy"},
-	{19, "HIS", 3, false, "AchievementExpectation"},
-	{20, "HIS", 3, true, "SkillMastery"},
+	{17, SubjectHIS, 3, false, "Comparison"},
+	{18, SubjectHIS, 3, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 3, true, "SkillMastery"},
 	// POL (21–24)
-	{21, "POL", 3, false, "Comparison"},
-	{22, "POL", 3, false, "Efficacy"},
-	{23, "POL", 3, false, "AchievementExpectation"},
-	{24, "POL", 3, true, "SkillMastery"},
+	{21, SubjectPOL, 3, false, "Comparison"},
+	{22, SubjectPOL, 3, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
 // ============ PHY_GEO_CHE：不匹配（Mismatch） ============
@@ -486,107 +486,35 @@ var ASC_Aligned_PHY_GEO_CHE = []ASCAnswer{
 // 其他（BIO / HIS / POL）维持中性（3,3,3,3）
 var ASC_Mismatch_PHY_GEO_CHE = []ASCAnswer{
 	// PHY (1–4)
-	{1, "PHY", 2, false, "Comparison"},
-	{2, "PHY", 2, false, "Efficacy"},
-	{3, "PHY", 3, false, "AchievementExpectation"},
-	{4, "PHY", 4, true, "SkillMastery"},
+	{1, SubjectPHY, 2, false, "Comparison"},
+	{2, SubjectPHY, 2, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 4, true, "SkillMastery"},
 	// CHE (5–8)
-	{5, "CHE", 2, false, "Comparison"},
-	{6, "CHE", 2, false, "Efficacy"},
-	{7, "CHE", 3, false, "AchievementExpectation"},
-	{8, "CHE", 4, true, "SkillMastery"},
+	{5, SubjectCHE, 2, false, "Comparison"},
+	{6, SubjectCHE, 2, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 4, true, "SkillMastery"},
 	// BIO (9–12)
-	{9, "BIO", 3, false, "Comparison"},
-	{10, "BIO", 3, false, "Efficacy"},
-	{11, "BIO", 3, false, "AchievementExpectation"},
-	{12, "BIO", 3, true, "SkillMastery"},
+	{9, SubjectBIO, 3, false, "Comparison"},
+	{10, SubjectBIO, 3, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 3, true, "SkillMastery"},
 	// GEO (13–16)
-	{13, "GEO", 2, false, "Comparison"},
-	{14, "GEO", 2, false, "Efficacy"},
-	{15, "GEO", 3, false, "AchievementExpectation"},
-	{16, "GEO", 4, true, "SkillMastery"},
+	{13, SubjectGEO, 2, false, "Comparison"},
+	{14, SubjectGEO, 2, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 4, true, "SkillMastery"},
 	// HIS (17–20)
-	{17, "HIS", 3, false, "Comparison"},
-	{18, "HIS", 3, false, "Efficacy"},
-	{19, "HIS", 3, false, "AchievementExpectation"},
-	{20, "HIS", 3, true, "SkillMastery"},
+	{17, SubjectHIS, 3, false, "Comparison"},
+	{18, SubjectHIS, 3, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 3, true, "SkillMastery"},
 	// POL (21–24)
-	{21, "POL", 3, false, "Comparison"},
-	{22, "POL", 3, false, "Efficacy"},
-	{23, "POL", 3, false, "AchievementExpectation"},
-	{24, "POL", 3, true, "SkillMastery"},
-}
-
-// ============ HIS_GEO_ART：匹配（Aligned） ============
-// 历史 / 地理 / （以艺术相关题对应 HIS/GEO 为载体）为兴趣主科（5,5,5,1）
-// 其他（PHY / CHE / BIO / POL）中性（3,3,3,3）
-var ASC_Aligned_HIS_GEO_ART = []ASCAnswer{
-	// PHY (1–4)
-	{1, "PHY", 3, false, "Comparison"},
-	{2, "PHY", 3, false, "Efficacy"},
-	{3, "PHY", 3, false, "AchievementExpectation"},
-	{4, "PHY", 3, true, "SkillMastery"},
-	// CHE (5–8)
-	{5, "CHE", 3, false, "Comparison"},
-	{6, "CHE", 3, false, "Efficacy"},
-	{7, "CHE", 3, false, "AchievementExpectation"},
-	{8, "CHE", 3, true, "SkillMastery"},
-	// BIO (9–12)
-	{9, "BIO", 3, false, "Comparison"},
-	{10, "BIO", 3, false, "Efficacy"},
-	{11, "BIO", 3, false, "AchievementExpectation"},
-	{12, "BIO", 3, true, "SkillMastery"},
-	// GEO (13–16)
-	{13, "GEO", 5, false, "Comparison"},
-	{14, "GEO", 5, false, "Efficacy"},
-	{15, "GEO", 5, false, "AchievementExpectation"},
-	{16, "GEO", 1, true, "SkillMastery"},
-	// HIS (17–20)
-	{17, "HIS", 5, false, "Comparison"},
-	{18, "HIS", 5, false, "Efficacy"},
-	{19, "HIS", 5, false, "AchievementExpectation"},
-	{20, "HIS", 1, true, "SkillMastery"},
-	// POL (21–24)
-	{21, "POL", 3, false, "Comparison"},
-	{22, "POL", 3, false, "Efficacy"},
-	{23, "POL", 3, false, "AchievementExpectation"},
-	{24, "POL", 3, true, "SkillMastery"},
-}
-
-// ============ HIS_GEO_ART：不匹配（Mismatch） ============
-// 历史 / 地理 / 艺术方向兴趣高但能力低（2,2,3,4）
-// 其他（PHY / CHE / BIO / POL）中性（3,3,3,3）
-var ASC_Mismatch_HIS_GEO_ART = []ASCAnswer{
-	// PHY (1–4)
-	{1, "PHY", 3, false, "Comparison"},
-	{2, "PHY", 3, false, "Efficacy"},
-	{3, "PHY", 3, false, "AchievementExpectation"},
-	{4, "PHY", 3, true, "SkillMastery"},
-	// CHE (5–8)
-	{5, "CHE", 3, false, "Comparison"},
-	{6, "CHE", 3, false, "Efficacy"},
-	{7, "CHE", 3, false, "AchievementExpectation"},
-	{8, "CHE", 3, true, "SkillMastery"},
-	// BIO (9–12)
-	{9, "BIO", 3, false, "Comparison"},
-	{10, "BIO", 3, false, "Efficacy"},
-	{11, "BIO", 3, false, "AchievementExpectation"},
-	{12, "BIO", 3, true, "SkillMastery"},
-	// GEO (13–16)
-	{13, "GEO", 2, false, "Comparison"},
-	{14, "GEO", 2, false, "Efficacy"},
-	{15, "GEO", 3, false, "AchievementExpectation"},
-	{16, "GEO", 4, true, "SkillMastery"},
-	// HIS (17–20)
-	{17, "HIS", 2, false, "Comparison"},
-	{18, "HIS", 2, false, "Efficacy"},
-	{19, "HIS", 3, false, "AchievementExpectation"},
-	{20, "HIS", 4, true, "SkillMastery"},
-	// POL (21–24)
-	{21, "POL", 3, false, "Comparison"},
-	{22, "POL", 3, false, "Efficacy"},
-	{23, "POL", 3, false, "AchievementExpectation"},
-	{24, "POL", 3, true, "SkillMastery"},
+	{21, SubjectPOL, 3, false, "Comparison"},
+	{22, SubjectPOL, 3, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
 // ============ HIS_POL_BIO：匹配（Aligned） ============
@@ -594,35 +522,35 @@ var ASC_Mismatch_HIS_GEO_ART = []ASCAnswer{
 // 其他（PHY / CHE / GEO）中性（3,3,3,3）
 var ASC_Aligned_HIS_POL_BIO = []ASCAnswer{
 	// PHY (1–4)
-	{1, "PHY", 3, false, "Comparison"},
-	{2, "PHY", 3, false, "Efficacy"},
-	{3, "PHY", 3, false, "AchievementExpectation"},
-	{4, "PHY", 3, true, "SkillMastery"},
+	{1, SubjectPHY, 3, false, "Comparison"},
+	{2, SubjectPHY, 3, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 3, true, "SkillMastery"},
 	// CHE (5–8)
-	{5, "CHE", 3, false, "Comparison"},
-	{6, "CHE", 3, false, "Efficacy"},
-	{7, "CHE", 3, false, "AchievementExpectation"},
-	{8, "CHE", 3, true, "SkillMastery"},
+	{5, SubjectCHE, 3, false, "Comparison"},
+	{6, SubjectCHE, 3, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 3, true, "SkillMastery"},
 	// BIO (9–12)
-	{9, "BIO", 5, false, "Comparison"},
-	{10, "BIO", 5, false, "Efficacy"},
-	{11, "BIO", 5, false, "AchievementExpectation"},
-	{12, "BIO", 1, true, "SkillMastery"},
+	{9, SubjectBIO, 5, false, "Comparison"},
+	{10, SubjectBIO, 5, false, "Efficacy"},
+	{11, SubjectBIO, 5, false, "AchievementExpectation"},
+	{12, SubjectBIO, 1, true, "SkillMastery"},
 	// GEO (13–16)
-	{13, "GEO", 3, false, "Comparison"},
-	{14, "GEO", 3, false, "Efficacy"},
-	{15, "GEO", 3, false, "AchievementExpectation"},
-	{16, "GEO", 3, true, "SkillMastery"},
+	{13, SubjectGEO, 3, false, "Comparison"},
+	{14, SubjectGEO, 3, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 3, true, "SkillMastery"},
 	// HIS (17–20)
-	{17, "HIS", 5, false, "Comparison"},
-	{18, "HIS", 5, false, "Efficacy"},
-	{19, "HIS", 5, false, "AchievementExpectation"},
-	{20, "HIS", 1, true, "SkillMastery"},
+	{17, SubjectHIS, 5, false, "Comparison"},
+	{18, SubjectHIS, 5, false, "Efficacy"},
+	{19, SubjectHIS, 5, false, "AchievementExpectation"},
+	{20, SubjectHIS, 1, true, "SkillMastery"},
 	// POL (21–24)
-	{21, "POL", 5, false, "Comparison"},
-	{22, "POL", 5, false, "Efficacy"},
-	{23, "POL", 5, false, "AchievementExpectation"},
-	{24, "POL", 1, true, "SkillMastery"},
+	{21, SubjectPOL, 5, false, "Comparison"},
+	{22, SubjectPOL, 5, false, "Efficacy"},
+	{23, SubjectPOL, 5, false, "AchievementExpectation"},
+	{24, SubjectPOL, 1, true, "SkillMastery"},
 }
 
 // ============ HIS_POL_BIO：不匹配（Mismatch） ============
@@ -630,35 +558,35 @@ var ASC_Aligned_HIS_POL_BIO = []ASCAnswer{
 // 其他（PHY / CHE / GEO）中性（3,3,3,3）
 var ASC_Mismatch_HIS_POL_BIO = []ASCAnswer{
 	// PHY (1–4)
-	{1, "PHY", 3, false, "Comparison"},
-	{2, "PHY", 3, false, "Efficacy"},
-	{3, "PHY", 3, false, "AchievementExpectation"},
-	{4, "PHY", 3, true, "SkillMastery"},
+	{1, SubjectPHY, 3, false, "Comparison"},
+	{2, SubjectPHY, 3, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 3, true, "SkillMastery"},
 	// CHE (5–8)
-	{5, "CHE", 3, false, "Comparison"},
-	{6, "CHE", 3, false, "Efficacy"},
-	{7, "CHE", 3, false, "AchievementExpectation"},
-	{8, "CHE", 3, true, "SkillMastery"},
+	{5, SubjectCHE, 3, false, "Comparison"},
+	{6, SubjectCHE, 3, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 3, true, "SkillMastery"},
 	// BIO (9–12)
-	{9, "BIO", 2, false, "Comparison"},
-	{10, "BIO", 2, false, "Efficacy"},
-	{11, "BIO", 3, false, "AchievementExpectation"},
-	{12, "BIO", 4, true, "SkillMastery"},
+	{9, SubjectBIO, 2, false, "Comparison"},
+	{10, SubjectBIO, 2, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 4, true, "SkillMastery"},
 	// GEO (13–16)
-	{13, "GEO", 3, false, "Comparison"},
-	{14, "GEO", 3, false, "Efficacy"},
-	{15, "GEO", 3, false, "AchievementExpectation"},
-	{16, "GEO", 3, true, "SkillMastery"},
+	{13, SubjectGEO, 3, false, "Comparison"},
+	{14, SubjectGEO, 3, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 3, true, "SkillMastery"},
 	// HIS (17–20)
-	{17, "HIS", 2, false, "Comparison"},
-	{18, "HIS", 2, false, "Efficacy"},
-	{19, "HIS", 3, false, "AchievementExpectation"},
-	{20, "HIS", 4, true, "SkillMastery"},
+	{17, SubjectHIS, 2, false, "Comparison"},
+	{18, SubjectHIS, 2, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 4, true, "SkillMastery"},
 	// POL (21–24)
-	{21, "POL", 2, false, "Comparison"},
-	{22, "POL", 2, false, "Efficacy"},
-	{23, "POL", 3, false, "AchievementExpectation"},
-	{24, "POL", 4, true, "SkillMastery"},
+	{21, SubjectPOL, 2, false, "Comparison"},
+	{22, SubjectPOL, 2, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 4, true, "SkillMastery"},
 }
 
 // =======================
@@ -666,39 +594,35 @@ var ASC_Mismatch_HIS_POL_BIO = []ASCAnswer{
 // =======================
 
 var AllASCCombos = map[string]map[string][]ASCAnswer{
-	"PHY_CHE_BIO": {
+	ComboPHY_CHE_BIO: {
 		"aligned":  ASC_Aligned_PHY_CHE_BIO,
 		"mismatch": ASC_Mismatch_PHY_CHE_BIO,
 	},
-	"PHY_CHE_GEO": {
+	ComboPHY_CHE_GEO: {
 		"aligned":  ASC_Aligned_PHY_CHE_GEO,
 		"mismatch": ASC_Mismatch_PHY_CHE_GEO,
 	},
-	"CHE_BIO_GEO": {
+	ComboCHE_BIO_GEO: {
 		"aligned":  ASC_Aligned_CHE_BIO_GEO,
 		"mismatch": ASC_Mismatch_CHE_BIO_GEO,
 	},
-	"PHY_BIO_GEO": {
+	ComboPHY_BIO_GEO: {
 		"aligned":  ASC_Aligned_PHY_BIO_GEO,
 		"mismatch": ASC_Mismatch_PHY_BIO_GEO,
 	},
-	"HIS_GEO_POL": {
+	ComboHIS_GEO_POL: {
 		"aligned":  ASC_Aligned_HIS_GEO_POL,
 		"mismatch": ASC_Mismatch_HIS_GEO_POL,
 	},
-	"HIS_GEO_BIO": {
+	ComboHIS_GEO_BIO: {
 		"aligned":  ASC_Aligned_HIS_GEO_BIO,
 		"mismatch": ASC_Mismatch_HIS_GEO_BIO,
 	},
-	"PHY_GEO_CHE": {
+	ComboPHY_GEO_CHE: {
 		"aligned":  ASC_Aligned_PHY_GEO_CHE,
 		"mismatch": ASC_Mismatch_PHY_GEO_CHE,
 	},
-	"HIS_GEO_ART": {
-		"aligned":  ASC_Aligned_HIS_GEO_ART,
-		"mismatch": ASC_Mismatch_HIS_GEO_ART,
-	},
-	"HIS_POL_BIO": {
+	ComboHIS_POL_BIO: {
 		"aligned":  ASC_Aligned_HIS_POL_BIO,
 		"mismatch": ASC_Mismatch_HIS_POL_BIO,
 	},

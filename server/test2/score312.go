@@ -8,27 +8,72 @@ import (
 	"strings"
 )
 
-// =============================
-// 3+1+2 组合推荐算法（最终修正版）
-// 分层架构 + 全国平均覆盖率 + 修正心理学逻辑
-// =============================
-//
-// 阶段一（Anchor 主科决策）:
-//   S1 = 0.5*Fit(anchor) + 0.3*(Ability/5) + 0.2*AnchorBaseCoverage
-//
-// 阶段二（辅科组合优化）:
-//   S23 = 0.4*AvgFit(aux) + 0.3*MinFit(aux) + 0.3*(ComboCoverage - BaseCoverage) + 0.1*GlobalCos
-//
-// 阶段三（综合评分）:
-//   Sfinal = 0.6*S1 + 0.4*S23
-//
-// 其中：
-//   - MinFit 取两辅科中较小的 Fit（反映匹配短板）
-//   - ExpansionRate = ComboCoverage - BaseCoverage（反映社会机会扩展）
-//   - RiskPenalty 不再单独使用（风险自然通过 MinFit 体现）
-// =============================
+/*
+RunDemo312（3+1+2模式）
+目标：
+先选择1个主干学科（物理或历史），然后从剩余的4个学科中选择2个作为辅科，形成3学科组合。
 
-// 全国平均覆盖率表（键名需与 Combo 常量一致）
+步骤：
+阶段一：主干学科（Anchor）评分（S1）
+对于每个主干学科（物理或历史），计算：
+
+S1 = anchW_Fit * Fit(anchor) + anchW_Ability * (Ability(anchor)/5) + anchW_Cover * AnchorBaseCoverage(anchor)
+其中：
+
+Fit(anchor)：该主干学科的Fit值。
+
+Ability(anchor)：该主干学科的能力值。
+
+AnchorBaseCoverage(anchor)：该主干学科的基线覆盖率（来自AnchorBaseCoverage表）。
+
+阶段二：辅科组合评分（S23）
+对于每个主干学科，从剩余的4个学科中任选2个作为辅科，计算：
+
+平均兴趣匹配度（avgFit）：两个辅科的Fit值的平均值。
+
+最小兴趣匹配度（minFit）：两个辅科的Fit值的最小值。
+
+扩展覆盖率（expansion）：组合的覆盖率（来自Coverage312表）减去主干学科的基线覆盖率，且最小为0。
+
+全局余弦相似度（globalCos）：同3+3模式。
+
+则：
+
+S23 = auxW_AvgFit * avgFit + auxW_MinFit * minFit + auxW_Expansion * expansion + auxW_GlobalCos * globalCos
+
+阶段三：综合评分（Sfinal）
+Sfinal = lambda1 * S1 + lambda2 * S23
+权重说明（默认权重）：
+阶段一权重：
+
+anchW_Fit（主干学科兴趣匹配度）：0.5
+
+anchW_Ability（主干学科能力）：0.3
+
+anchW_Cover（主干学科基线覆盖率）：0.2
+
+阶段二权重：
+
+auxW_AvgFit（辅科平均兴趣匹配度）：0.4
+
+auxW_MinFit（辅科最小兴趣匹配度）：0.3
+
+auxW_Expansion（扩展覆盖率）：0.3
+
+auxW_GlobalCos（全局余弦相似度）：0.1
+
+阶段三权重：
+
+lambda1（主干学科得分权重）：0.6
+
+lambda2（辅科组合得分权重）：0.4
+
+注意：
+在阶段二中，扩展覆盖率（expansion）的计算使用了math.Max(0, cov - baseCov)，确保不会因为覆盖率低于基线而出现负值。
+
+*/
+
+// Coverage312 全国平均覆盖率表（键名需与 Combo 常量一致）
 var Coverage312 = map[string]float64{
 	ComboPHY_CHE_BIO: 0.95,
 	ComboPHY_CHE_GEO: 0.92,

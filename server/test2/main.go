@@ -71,8 +71,9 @@ func main() {
 		riasec := AllRIASECCombos[combo]
 		asc := AllASCCombos[combo][category]
 
-		// 3) 直接跑 RunDemo（alpha/beta/gamma 传 0 走默认 0.4/0.4/0.2）
-		RunDemo(riasec, asc, 0, 0, 0)
+		// 3) 直接跑 RunDemo33（alpha/beta/gamma 传 0 走默认 0.4/0.4/0.2）
+		//RunDemo33(riasec, asc, 0, 0, 0)
+		RunDemo312(riasec, asc, 0, 0, 0)
 	default:
 		panic("unknown stage parameter")
 	}

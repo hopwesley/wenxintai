@@ -19,10 +19,10 @@ import (
 // - Fit = α·(zA - zI) + β·cos(I, A) + γ·AbilityShare
 //   （默认 α=0.4, β=0.4, γ=0.2；可按省/校样本校准）
 
+// SubjectScores
 // ---------------------------------------
 // 固定变量与类型定义
 // ---------------------------------------
-
 type SubjectScores struct {
 	Subject string  `json:"subject"`
 	I       float64 `json:"interest"`     // 1–5
@@ -39,15 +39,15 @@ type RadarPayload struct {
 	Ability  []float64 `json:"ability_pct"`
 }
 
+// DimCalib
 // ---------------------------------------
 // 参数配置
 // ---------------------------------------
-
 var DimCalib = map[string]float64{
 	"R": 0.82, "I": 0.87, "A": 0.78, "S": 0.80, "E": 0.75, "C": 0.72,
 }
 
-// 兴趣→学科权重矩阵（最终版）
+// Wfinal 兴趣→学科权重矩阵（最终版）
 var Wfinal = map[string]map[string]float64{
 	"PHY": {"R": 0.30, "I": 0.35, "C": 0.15, "E": 0.10, "S": 0.05, "A": 0.05},
 	"CHE": {"R": 0.25, "I": 0.35, "C": 0.20, "E": 0.10, "S": 0.05, "A": 0.05},
@@ -215,10 +215,10 @@ func cosineSim(a, b map[string]float64) float64 {
 func round1(x float64) float64 { return math.Round(x*10) / 10 }
 func round2(x float64) float64 { return math.Round(x*100) / 100 }
 
+// BuildScores
 // ---------------------------------------
 // 核心融合评分流程
 // ---------------------------------------
-
 func BuildScores(
 	riasecAnswers []RIASECAnswer,
 	ascAnswers []ASCAnswer,
@@ -264,7 +264,7 @@ func BuildScores(
 	return out, cos
 }
 
-// 雷达图载荷
+// Radar 雷达图载荷
 func Radar(scores []SubjectScores) RadarPayload {
 	ip, ap := make([]float64, 6), make([]float64, 6)
 	idx := map[string]int{
@@ -283,10 +283,10 @@ func Radar(scores []SubjectScores) RadarPayload {
 	return RadarPayload{Subjects: Subjects, Interest: ip, Ability: ap}
 }
 
+// Combo
 // ---------------------------------------
 // 组合推荐模块
 // ---------------------------------------
-
 type Combo struct {
 	Subs   [3]string
 	Score  float64
@@ -314,7 +314,7 @@ var ComboRarity = map[string]float64{
 	ComboHIS_POL_BIO: 5,
 }
 
-// 稀有度惩罚
+// RarityPenalty 稀有度惩罚
 func RarityPenalty(subs [3]string) float64 {
 	key := strings.Join(subs[:], "_")
 	if v, ok := ComboRarity[key]; ok {
@@ -323,50 +323,82 @@ func RarityPenalty(subs [3]string) float64 {
 	return 12
 }
 
-// 组合打分
+// Weights 组合打分
 type Weights struct{ W1, W2, W3, W4, W5 float64 }
 
+// ScoreCombos
+// ------------------------
+// 修正版：组合打分逻辑
+// ------------------------
 func ScoreCombos(scores []SubjectScores, globalCos float64, w Weights) []Combo {
 	m := map[string]SubjectScores{}
 	for _, s := range scores {
 		m[s.Subject] = s
 	}
 
+	// 生成所有 6选3 组合
 	combos := generateAllCombos(Subjects)
-	out := []Combo{}
+	var out []Combo
 
 	for _, subs := range combos {
-		key := strings.Join([]string{subs[0], subs[1], subs[2]}, "+")
+		key := strings.Join([]string{subs[0], subs[1], subs[2]}, "_")
+
 		if !AllowedCombos[key] {
-			continue
+			continue // 跳过不在允许列表内的组合
 		}
 
-		a := m[subs[0]]
-		b := m[subs[1]]
-		c := m[subs[2]]
-
-		fitMean := (a.Fit + b.Fit + c.Fit) / 3.0
-		minAbilityPct := min3(a.APct, b.APct, c.APct)
-
-		// 风险惩罚：高兴趣低能力（差值>15）
-		riskPenalty := 0.0
-		for _, x := range []SubjectScores{a, b, c} {
-			if x.APct < 50 && x.IPct > 75 && (x.IPct-x.APct) > 15 {
-				riskPenalty += 1.0
+		// ------------------------
+		// 计算加权得分
+		// ------------------------
+		var fitSum, minA, minI float64 = 0, 999, 999
+		for _, s := range subs {
+			fitSum += m[s].Fit
+			if m[s].A < minA {
+				minA = m[s].A
+			}
+			if m[s].I < minI {
+				minI = m[s].I
 			}
 		}
 
+		avgFit := fitSum / 3.0
 		rarity := RarityPenalty(subs)
-		score := w.W1*fitMean + w.W2*minAbilityPct + w.W3*globalCos - w.W4*rarity - w.W5*riskPenalty
+		// 风险惩罚：若最低能力低于 3，减 0.2 分
+		riskPenalty := 0.0
+		if minA < 3 {
+			riskPenalty = 0.2
+		}
 
-		reason := fmt.Sprintf(
-			"组合[%s,%s,%s]：平均Fit=%.1f；最低能力=%.0f；方向一致性=%.2f；稀有度惩罚=%.0f；风险项=%.0f。",
-			subs[0], subs[1], subs[2], fitMean, minAbilityPct, globalCos, rarity, riskPenalty,
-		)
-		out = append(out, Combo{Subs: subs, Score: round2(score), Reason: reason})
+		// 计算组合最终分
+		score := w.W1*avgFit -
+			w.W2*rarity/10.0 +
+			w.W3*globalCos +
+			w.W4*minA/5.0 -
+			w.W5*riskPenalty
+
+		out = append(out, Combo{
+			Subs:  [3]string{subs[0], subs[1], subs[2]},
+			Score: math.Round(score*100) / 100,
+			Reason: fmt.Sprintf("平均Fit=%.2f, 最低能力=%.1f, 稀有度=%.1f",
+				avgFit, minA, rarity),
+		})
 	}
 
+	// ------------------------
+	// 排序与输出
+	// ------------------------
 	sort.Slice(out, func(i, j int) bool { return out[i].Score > out[j].Score })
+
+	// 若没有推荐结果，输出调试信息
+	if len(out) == 0 {
+		fmt.Println("[Warn] No valid combination found. Check key format or rarity values.")
+		return out
+	}
+
+	// 仅保留前 5 个
+	if len(out) > 5 {
+		out = out[:5]
+	}
 	return out
 }
 
@@ -383,20 +415,10 @@ func generateAllCombos(ss []string) [][3]string {
 	return res
 }
 
-func min3(a, b, c float64) float64 {
-	if a > b {
-		a = b
-	}
-	if a > c {
-		a = c
-	}
-	return a
-}
-
+// RunDemo
 // ---------------------------------------
 // 演示入口
 // ---------------------------------------
-
 func RunDemo(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64) {
 	if alpha == 0 && beta == 0 && gamma == 0 {
 		alpha, beta, gamma = 0.4, 0.4, 0.2

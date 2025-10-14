@@ -130,7 +130,7 @@ var AllRIASECCombos = map[string][]RIASECAnswer{
 }
 
 func TestRIASECAnswer() {
-	combo := "PHY_CHE_BIO"
+	combo := ComboPHY_CHE_BIO
 	answers := AllRIASECCombos[combo]
 	data, _ := json.MarshalIndent(answers, "", "  ")
 	fmt.Println(string(data))

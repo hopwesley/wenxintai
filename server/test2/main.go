@@ -62,6 +62,17 @@ func main() {
 	case "answer":
 		TestRIASECAnswer()
 		TestASCAnswer()
+	case "demo":
+		// 1) 选择一个组合与能力场景
+		combo := ComboPHY_CHE_BIO
+		category := "aligned" // 或 "mismatch"
+
+		// 2) 拿到样本答案
+		riasec := AllRIASECCombos[combo]
+		asc := AllASCCombos[combo][category]
+
+		// 3) 直接跑 RunDemo（alpha/beta/gamma 传 0 走默认 0.4/0.4/0.2）
+		RunDemo(riasec, asc, 0, 0, 0)
 	default:
 		panic("unknown stage parameter")
 	}

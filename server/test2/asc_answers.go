@@ -630,7 +630,7 @@ var AllASCCombos = map[string]map[string][]ASCAnswer{
 
 func TestASCAnswer() {
 	// 示例：获取 HIS_GEO_POL 的匹配型 ASC 答案
-	combo := "HIS_GEO_POL"
+	combo := ComboHIS_GEO_POL
 	category := "aligned" // 可改为 "mismatch"
 
 	if comboData, ok := AllASCCombos[combo]; ok {

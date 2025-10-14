@@ -13,10 +13,11 @@ type ASCAnswer struct {
 	Subtype string `json:"subtype"`
 }
 
+// AscAlignedPhyCheBio
 // ============ PHY_CHE_BIO：匹配（Aligned） ============
 // 物理/化学/生物：高分（Comparison/Efficacy/Achievement=5；SkillMastery=1）
 // 其他学科：中性（GEO/HIS/POL 题设给 3；HIS/POL 的 Comparison 稍低 2 以拉开差距）
-var ASC_Aligned_PHY_CHE_BIO = []ASCAnswer{
+var AscAlignedPhyCheBio = []ASCAnswer{
 	// PHY (1–4)
 	{1, SubjectPHY, 5, false, "Comparison"},
 	{2, SubjectPHY, 5, false, "Efficacy"},
@@ -49,10 +50,11 @@ var ASC_Aligned_PHY_CHE_BIO = []ASCAnswer{
 	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
+// AscMismatchPhyCheBio
 // ============ PHY_CHE_BIO：不匹配（Mismatch） ============
 // 物理/化学/生物：低分（Comparison/Efficacy ~2；Achievement ~3；SkillMastery 4）
 // 其他学科：中性 3，突出“不支持该理科组合”的对比效果
-var ASC_Mismatch_PHY_CHE_BIO = []ASCAnswer{
+var AscMismatchPhyCheBio = []ASCAnswer{
 	// PHY (1–4)
 	{1, SubjectPHY, 2, false, "Comparison"},
 	{2, SubjectPHY, 2, false, "Efficacy"},
@@ -85,10 +87,11 @@ var ASC_Mismatch_PHY_CHE_BIO = []ASCAnswer{
 	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
+// AscAlignedPhyCheGeo
 // ============ PHY_CHE_GEO：匹配（Aligned） ============
 // 物理 / 化学 / 地理 为兴趣主科：高分（5,5,5,1）
 // 其他（BIO / HIS / POL）中性（3,3,3,3）
-var ASC_Aligned_PHY_CHE_GEO = []ASCAnswer{
+var AscAlignedPhyCheGeo = []ASCAnswer{
 	// PHY (1–4)
 	{1, SubjectPHY, 5, false, "Comparison"},
 	{2, SubjectPHY, 5, false, "Efficacy"},
@@ -121,10 +124,11 @@ var ASC_Aligned_PHY_CHE_GEO = []ASCAnswer{
 	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
+// AscMismatchPhyCheGeo
 // ============ PHY_CHE_GEO：不匹配（Mismatch） ============
 // 物理 / 化学 / 地理 为兴趣主科但能力低（2,2,3,4）
 // 其他（BIO / HIS / POL）维持中性（3,3,3,3）
-var ASC_Mismatch_PHY_CHE_GEO = []ASCAnswer{
+var AscMismatchPhyCheGeo = []ASCAnswer{
 	// PHY (1–4)
 	{1, SubjectPHY, 2, false, "Comparison"},
 	{2, SubjectPHY, 2, false, "Efficacy"},
@@ -157,10 +161,11 @@ var ASC_Mismatch_PHY_CHE_GEO = []ASCAnswer{
 	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
+// AscAlignedCheBioGeo
 // ============ CHE_BIO_GEO：匹配（Aligned） ============
 // 化学 / 生物 / 地理 为兴趣主科（5,5,5,1）
 // 其他（PHY / HIS / POL）中性（3,3,3,3）
-var ASC_Aligned_CHE_BIO_GEO = []ASCAnswer{
+var AscAlignedCheBioGeo = []ASCAnswer{
 	// PHY (1–4)
 	{1, SubjectPHY, 3, false, "Comparison"},
 	{2, SubjectPHY, 3, false, "Efficacy"},
@@ -193,10 +198,11 @@ var ASC_Aligned_CHE_BIO_GEO = []ASCAnswer{
 	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
+// AscMismatchCheBioGeo
 // ============ CHE_BIO_GEO：不匹配（Mismatch） ============
 // 化学 / 生物 / 地理 为兴趣主科但能力低（2,2,3,4）
 // 其他（PHY / HIS / POL）维持中性（3,3,3,3）
-var ASC_Mismatch_CHE_BIO_GEO = []ASCAnswer{
+var AscMismatchCheBioGeo = []ASCAnswer{
 	// PHY (1–4)
 	{1, SubjectPHY, 3, false, "Comparison"},
 	{2, SubjectPHY, 3, false, "Efficacy"},
@@ -229,10 +235,11 @@ var ASC_Mismatch_CHE_BIO_GEO = []ASCAnswer{
 	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
+// AscAlignedPhyBioGeo
 // ============ PHY_BIO_GEO：匹配（Aligned） ============
 // 物理 / 生物 / 地理 为兴趣主科（5,5,5,1）
 // 其他（CHE / HIS / POL）中性（3,3,3,3）
-var ASC_Aligned_PHY_BIO_GEO = []ASCAnswer{
+var AscAlignedPhyBioGeo = []ASCAnswer{
 	// PHY (1–4)
 	{1, SubjectPHY, 5, false, "Comparison"},
 	{2, SubjectPHY, 5, false, "Efficacy"},
@@ -265,10 +272,11 @@ var ASC_Aligned_PHY_BIO_GEO = []ASCAnswer{
 	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
+// AscMismatchPhyBioGeo
 // ============ PHY_BIO_GEO：不匹配（Mismatch） ============
 // 物理 / 生物 / 地理 为兴趣主科但能力低（2,2,3,4）
 // 其他（CHE / HIS / POL）维持中性（3,3,3,3）
-var ASC_Mismatch_PHY_BIO_GEO = []ASCAnswer{
+var AscMismatchPhyBioGeo = []ASCAnswer{
 	// PHY (1–4)
 	{1, SubjectPHY, 2, false, "Comparison"},
 	{2, SubjectPHY, 2, false, "Efficacy"},
@@ -301,10 +309,11 @@ var ASC_Mismatch_PHY_BIO_GEO = []ASCAnswer{
 	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
+// AscAlignedHisGeoPol
 // ============ HIS_GEO_POL：匹配（Aligned） ============
 // 历史 / 地理 / 政治 为兴趣主科（5,5,5,1）
 // 其他（PHY / CHE / BIO）中性（3,3,3,3）
-var ASC_Aligned_HIS_GEO_POL = []ASCAnswer{
+var AscAlignedHisGeoPol = []ASCAnswer{
 	// PHY (1–4)
 	{1, SubjectPHY, 3, false, "Comparison"},
 	{2, SubjectPHY, 3, false, "Efficacy"},
@@ -337,10 +346,11 @@ var ASC_Aligned_HIS_GEO_POL = []ASCAnswer{
 	{24, SubjectPOL, 1, true, "SkillMastery"},
 }
 
+// AscMismatchHisGeoPol
 // ============ HIS_GEO_POL：不匹配（Mismatch） ============
 // 历史 / 地理 / 政治 为兴趣主科但能力低（2,2,3,4）
 // 其他（PHY / CHE / BIO）中性（3,3,3,3）
-var ASC_Mismatch_HIS_GEO_POL = []ASCAnswer{
+var AscMismatchHisGeoPol = []ASCAnswer{
 	// PHY (1–4)
 	{1, SubjectPHY, 3, false, "Comparison"},
 	{2, SubjectPHY, 3, false, "Efficacy"},
@@ -373,10 +383,11 @@ var ASC_Mismatch_HIS_GEO_POL = []ASCAnswer{
 	{24, SubjectPOL, 4, true, "SkillMastery"},
 }
 
+// AscAlignedHisGeoBio
 // ============ HIS_GEO_BIO：匹配（Aligned） ============
 // 历史 / 地理 / 生物 为兴趣主科（5,5,5,1）
 // 其他（PHY / CHE / POL）中性（3,3,3,3）
-var ASC_Aligned_HIS_GEO_BIO = []ASCAnswer{
+var AscAlignedHisGeoBio = []ASCAnswer{
 	// PHY (1–4)
 	{1, SubjectPHY, 3, false, "Comparison"},
 	{2, SubjectPHY, 3, false, "Efficacy"},
@@ -409,10 +420,11 @@ var ASC_Aligned_HIS_GEO_BIO = []ASCAnswer{
 	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
+// AscMismatchHisGeoBio
 // ============ HIS_GEO_BIO：不匹配（Mismatch） ============
 // 历史 / 地理 / 生物 为兴趣主科但能力低（2,2,3,4）
 // 其他（PHY / CHE / POL）中性（3,3,3,3）
-var ASC_Mismatch_HIS_GEO_BIO = []ASCAnswer{
+var AscMismatchHisGeoBio = []ASCAnswer{
 	// PHY (1–4)
 	{1, SubjectPHY, 3, false, "Comparison"},
 	{2, SubjectPHY, 3, false, "Efficacy"},
@@ -445,10 +457,11 @@ var ASC_Mismatch_HIS_GEO_BIO = []ASCAnswer{
 	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
+// AscAlignedPhyGeoChe
 // ============ PHY_GEO_CHE：匹配（Aligned） ============
 // 物理 / 地理 / 化学 为兴趣主科（5,5,5,1）
 // 其他（BIO / HIS / POL）中性（3,3,3,3）
-var ASC_Aligned_PHY_GEO_CHE = []ASCAnswer{
+var AscAlignedPhyGeoChe = []ASCAnswer{
 	// PHY (1–4)
 	{1, SubjectPHY, 5, false, "Comparison"},
 	{2, SubjectPHY, 5, false, "Efficacy"},
@@ -481,10 +494,11 @@ var ASC_Aligned_PHY_GEO_CHE = []ASCAnswer{
 	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
+// AscMismatchPhyGeoChe
 // ============ PHY_GEO_CHE：不匹配（Mismatch） ============
 // 物理 / 地理 / 化学 为兴趣主科但能力低（2,2,3,4）
 // 其他（BIO / HIS / POL）维持中性（3,3,3,3）
-var ASC_Mismatch_PHY_GEO_CHE = []ASCAnswer{
+var AscMismatchPhyGeoChe = []ASCAnswer{
 	// PHY (1–4)
 	{1, SubjectPHY, 2, false, "Comparison"},
 	{2, SubjectPHY, 2, false, "Efficacy"},
@@ -517,10 +531,11 @@ var ASC_Mismatch_PHY_GEO_CHE = []ASCAnswer{
 	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
+// AscAlignedHisPolBio
 // ============ HIS_POL_BIO：匹配（Aligned） ============
 // 历史 / 政治 / 生物 为兴趣主科（5,5,5,1）
 // 其他（PHY / CHE / GEO）中性（3,3,3,3）
-var ASC_Aligned_HIS_POL_BIO = []ASCAnswer{
+var AscAlignedHisPolBio = []ASCAnswer{
 	// PHY (1–4)
 	{1, SubjectPHY, 3, false, "Comparison"},
 	{2, SubjectPHY, 3, false, "Efficacy"},
@@ -553,10 +568,11 @@ var ASC_Aligned_HIS_POL_BIO = []ASCAnswer{
 	{24, SubjectPOL, 1, true, "SkillMastery"},
 }
 
+// AscMismatchHisPolBio
 // ============ HIS_POL_BIO：不匹配（Mismatch） ============
 // 历史 / 政治 / 生物 为兴趣主科但能力低（2,2,3,4）
 // 其他（PHY / CHE / GEO）中性（3,3,3,3）
-var ASC_Mismatch_HIS_POL_BIO = []ASCAnswer{
+var AscMismatchHisPolBio = []ASCAnswer{
 	// PHY (1–4)
 	{1, SubjectPHY, 3, false, "Comparison"},
 	{2, SubjectPHY, 3, false, "Efficacy"},
@@ -589,42 +605,42 @@ var ASC_Mismatch_HIS_POL_BIO = []ASCAnswer{
 	{24, SubjectPOL, 4, true, "SkillMastery"},
 }
 
+// AllASCCombos
 // =======================
 // 统一映射表 AllASCCombos
 // =======================
-
 var AllASCCombos = map[string]map[string][]ASCAnswer{
 	ComboPHY_CHE_BIO: {
-		"aligned":  ASC_Aligned_PHY_CHE_BIO,
-		"mismatch": ASC_Mismatch_PHY_CHE_BIO,
+		"aligned":  AscAlignedPhyCheBio,
+		"mismatch": AscMismatchPhyCheBio,
 	},
 	ComboPHY_CHE_GEO: {
-		"aligned":  ASC_Aligned_PHY_CHE_GEO,
-		"mismatch": ASC_Mismatch_PHY_CHE_GEO,
+		"aligned":  AscAlignedPhyCheGeo,
+		"mismatch": AscMismatchPhyCheGeo,
 	},
 	ComboCHE_BIO_GEO: {
-		"aligned":  ASC_Aligned_CHE_BIO_GEO,
-		"mismatch": ASC_Mismatch_CHE_BIO_GEO,
+		"aligned":  AscAlignedCheBioGeo,
+		"mismatch": AscMismatchCheBioGeo,
 	},
 	ComboPHY_BIO_GEO: {
-		"aligned":  ASC_Aligned_PHY_BIO_GEO,
-		"mismatch": ASC_Mismatch_PHY_BIO_GEO,
+		"aligned":  AscAlignedPhyBioGeo,
+		"mismatch": AscMismatchPhyBioGeo,
 	},
 	ComboHIS_GEO_POL: {
-		"aligned":  ASC_Aligned_HIS_GEO_POL,
-		"mismatch": ASC_Mismatch_HIS_GEO_POL,
+		"aligned":  AscAlignedHisGeoPol,
+		"mismatch": AscMismatchHisGeoPol,
 	},
 	ComboHIS_GEO_BIO: {
-		"aligned":  ASC_Aligned_HIS_GEO_BIO,
-		"mismatch": ASC_Mismatch_HIS_GEO_BIO,
+		"aligned":  AscAlignedHisGeoBio,
+		"mismatch": AscMismatchHisGeoBio,
 	},
 	ComboPHY_GEO_CHE: {
-		"aligned":  ASC_Aligned_PHY_GEO_CHE,
-		"mismatch": ASC_Mismatch_PHY_GEO_CHE,
+		"aligned":  AscAlignedPhyGeoChe,
+		"mismatch": AscMismatchPhyGeoChe,
 	},
 	ComboHIS_POL_BIO: {
-		"aligned":  ASC_Aligned_HIS_POL_BIO,
-		"mismatch": ASC_Mismatch_HIS_POL_BIO,
+		"aligned":  AscAlignedHisPolBio,
+		"mismatch": AscMismatchHisPolBio,
 	},
 }
 

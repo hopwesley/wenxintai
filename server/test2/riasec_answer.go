@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// RIASECAnswer
 // ========================
 // RIASEC Answer Structure
 // ========================
@@ -19,8 +20,9 @@ type RIASECAnswer struct {
 // R:1–5, I:6–10, A:11–15, S:16–20, E:21–25, C:26–30
 // ========================
 
+// RiasecPhyCheBio
 // ---------- 1. 理科核心：物理+化学+生物 ----------
-var RIASEC_PHY_CHE_BIO = []RIASECAnswer{
+var RiasecPhyCheBio = []RIASECAnswer{
 	// R
 	{1, "R", 5}, {2, "R", 5}, {3, "R", 4}, {4, "R", 5}, {5, "R", 4},
 	// I
@@ -35,8 +37,9 @@ var RIASEC_PHY_CHE_BIO = []RIASECAnswer{
 	{26, "C", 4}, {27, "C", 4}, {28, "C", 5}, {29, "C", 4}, {30, "C", 4},
 }
 
+// RiasecPhyCheGeo
 // ---------- 2. 理科应用型：物理+化学+地理 ----------
-var RIASEC_PHY_CHE_GEO = []RIASECAnswer{
+var RiasecPhyCheGeo = []RIASECAnswer{
 	{1, "R", 5}, {2, "R", 5}, {3, "R", 5}, {4, "R", 4}, {5, "R", 5},
 	{6, "I", 4}, {7, "I", 4}, {8, "I", 5}, {9, "I", 4}, {10, "I", 4},
 	{11, "A", 2}, {12, "A", 3}, {13, "A", 2}, {14, "A", 2}, {15, "A", 3},
@@ -45,8 +48,9 @@ var RIASEC_PHY_CHE_GEO = []RIASECAnswer{
 	{26, "C", 5}, {27, "C", 4}, {28, "C", 5}, {29, "C", 4}, {30, "C", 5},
 }
 
+// RiasecCheBioGeo
 // ---------- 3. 自然科学型：化学+生物+地理 ----------
-var RIASEC_CHE_BIO_GEO = []RIASECAnswer{
+var RiasecCheBioGeo = []RIASECAnswer{
 	{1, "R", 3}, {2, "R", 4}, {3, "R", 3}, {4, "R", 3}, {5, "R", 4},
 	{6, "I", 5}, {7, "I", 5}, {8, "I", 4}, {9, "I", 5}, {10, "I", 4},
 	{11, "A", 2}, {12, "A", 2}, {13, "A", 3}, {14, "A", 2}, {15, "A", 3},
@@ -55,8 +59,9 @@ var RIASEC_CHE_BIO_GEO = []RIASECAnswer{
 	{26, "C", 4}, {27, "C", 4}, {28, "C", 4}, {29, "C", 5}, {30, "C", 4},
 }
 
+// RiasecPhyBioGeo
 // ---------- 4. 理科探究型：物理+生物+地理 ----------
-var RIASEC_PHY_BIO_GEO = []RIASECAnswer{
+var RiasecPhyBioGeo = []RIASECAnswer{
 	{1, "R", 4}, {2, "R", 5}, {3, "R", 4}, {4, "R", 4}, {5, "R", 5},
 	{6, "I", 5}, {7, "I", 4}, {8, "I", 5}, {9, "I", 5}, {10, "I", 5},
 	{11, "A", 2}, {12, "A", 3}, {13, "A", 2}, {14, "A", 2}, {15, "A", 3},
@@ -65,8 +70,9 @@ var RIASEC_PHY_BIO_GEO = []RIASECAnswer{
 	{26, "C", 4}, {27, "C", 4}, {28, "C", 4}, {29, "C", 5}, {30, "C", 4},
 }
 
+// RiasecHisGeoPol
 // ---------- 5. 文科核心：历史+地理+政治 ----------
-var RIASEC_HIS_GEO_POL = []RIASECAnswer{
+var RiasecHisGeoPol = []RIASECAnswer{
 	{1, "R", 2}, {2, "R", 2}, {3, "R", 3}, {4, "R", 2}, {5, "R", 3},
 	{6, "I", 3}, {7, "I", 4}, {8, "I", 3}, {9, "I", 3}, {10, "I", 3},
 	{11, "A", 5}, {12, "A", 4}, {13, "A", 5}, {14, "A", 5}, {15, "A", 4},
@@ -75,8 +81,9 @@ var RIASEC_HIS_GEO_POL = []RIASECAnswer{
 	{26, "C", 3}, {27, "C", 3}, {28, "C", 3}, {29, "C", 4}, {30, "C", 3},
 }
 
+// RiasecHisGeoBio
 // ---------- 6. 文理交叉：历史+地理+生物 ----------
-var RIASEC_HIS_GEO_BIO = []RIASECAnswer{
+var RiasecHisGeoBio = []RIASECAnswer{
 	{1, "R", 3}, {2, "R", 3}, {3, "R", 4}, {4, "R", 3}, {5, "R", 3},
 	{6, "I", 4}, {7, "I", 4}, {8, "I", 4}, {9, "I", 5}, {10, "I", 4},
 	{11, "A", 4}, {12, "A", 3}, {13, "A", 4}, {14, "A", 4}, {15, "A", 3},
@@ -85,8 +92,9 @@ var RIASEC_HIS_GEO_BIO = []RIASECAnswer{
 	{26, "C", 3}, {27, "C", 4}, {28, "C", 3}, {29, "C", 3}, {30, "C", 4},
 }
 
+// RiasecPhyGeoChe
 // ---------- 7. 工科扩展：物理+地理+化学 ----------
-var RIASEC_PHY_GEO_CHE = []RIASECAnswer{
+var RiasecPhyGeoChe = []RIASECAnswer{
 	{1, "R", 5}, {2, "R", 5}, {3, "R", 4}, {4, "R", 5}, {5, "R", 4},
 	{6, "I", 4}, {7, "I", 4}, {8, "I", 5}, {9, "I", 4}, {10, "I", 4},
 	{11, "A", 2}, {12, "A", 3}, {13, "A", 2}, {14, "A", 2}, {15, "A", 2},
@@ -95,18 +103,9 @@ var RIASEC_PHY_GEO_CHE = []RIASECAnswer{
 	{26, "C", 5}, {27, "C", 4}, {28, "C", 5}, {29, "C", 4}, {30, "C", 5},
 }
 
-// ---------- 8. 艺术文科：历史+地理+艺术 ----------
-var RIASEC_HIS_GEO_ART = []RIASECAnswer{
-	{1, "R", 2}, {2, "R", 2}, {3, "R", 3}, {4, "R", 2}, {5, "R", 3},
-	{6, "I", 3}, {7, "I", 3}, {8, "I", 2}, {9, "I", 3}, {10, "I", 3},
-	{11, "A", 5}, {12, "A", 5}, {13, "A", 4}, {14, "A", 5}, {15, "A", 5},
-	{16, "S", 4}, {17, "S", 3}, {18, "S", 4}, {19, "S", 4}, {20, "S", 4},
-	{21, "E", 4}, {22, "E", 4}, {23, "E", 3}, {24, "E", 4}, {25, "E", 3},
-	{26, "C", 2}, {27, "C", 3}, {28, "C", 2}, {29, "C", 3}, {30, "C", 2},
-}
-
+// RiasecHisPolBio
 // ---------- 9. 教育社会：历史+政治+生物 ----------
-var RIASEC_HIS_POL_BIO = []RIASECAnswer{
+var RiasecHisPolBio = []RIASECAnswer{
 	{1, "R", 2}, {2, "R", 3}, {3, "R", 2}, {4, "R", 3}, {5, "R", 2},
 	{6, "I", 3}, {7, "I", 4}, {8, "I", 3}, {9, "I", 4}, {10, "I", 3},
 	{11, "A", 4}, {12, "A", 4}, {13, "A", 3}, {14, "A", 4}, {15, "A", 3},
@@ -115,18 +114,19 @@ var RIASEC_HIS_POL_BIO = []RIASECAnswer{
 	{26, "C", 3}, {27, "C", 3}, {28, "C", 4}, {29, "C", 3}, {30, "C", 3},
 }
 
+// AllRIASECCombos
 // ========================
 // 索引表
 // ========================
 var AllRIASECCombos = map[string][]RIASECAnswer{
-	ComboPHY_CHE_BIO: RIASEC_PHY_CHE_BIO,
-	ComboPHY_CHE_GEO: RIASEC_PHY_CHE_GEO,
-	ComboCHE_BIO_GEO: RIASEC_CHE_BIO_GEO,
-	ComboPHY_BIO_GEO: RIASEC_PHY_BIO_GEO,
-	ComboHIS_GEO_POL: RIASEC_HIS_GEO_POL,
-	ComboHIS_GEO_BIO: RIASEC_HIS_GEO_BIO,
-	ComboPHY_GEO_CHE: RIASEC_PHY_GEO_CHE,
-	ComboHIS_POL_BIO: RIASEC_HIS_POL_BIO,
+	ComboPHY_CHE_BIO: RiasecPhyCheBio,
+	ComboPHY_CHE_GEO: RiasecPhyCheGeo,
+	ComboCHE_BIO_GEO: RiasecCheBioGeo,
+	ComboPHY_BIO_GEO: RiasecPhyBioGeo,
+	ComboHIS_GEO_POL: RiasecHisGeoPol,
+	ComboHIS_GEO_BIO: RiasecHisGeoBio,
+	ComboPHY_GEO_CHE: RiasecPhyGeoChe,
+	ComboHIS_POL_BIO: RiasecHisPolBio,
 }
 
 func TestRIASECAnswer() {

@@ -185,7 +185,10 @@ func RunDemo33(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta
 		alpha, beta, gamma = 0.4, 0.4, 0.2
 	}
 
-	scores, globalCos := BuildScores(riasecAnswers, ascAnswers, Wfinal, DimCalib, alpha, beta, gamma)
+	scores, globalCos, log := BuildScores(riasecAnswers, ascAnswers, Wfinal, DimCalib, alpha, beta, gamma)
+	b, _ := json.MarshalIndent(log, "", "  ")
+	fmt.Println(string(b))
+
 	ws := Weights{W1: 0.5, W2: 0.3, W3: 0.1, W4: 0.1, W5: 0.1}
 	combRank := ScoreCombos33(scores, globalCos, ws)
 

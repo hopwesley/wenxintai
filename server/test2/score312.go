@@ -201,7 +201,10 @@ func RunDemo312(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, bet
 	}
 
 	// 阶段0：构建测评数据
-	scores, globalCos := BuildScores(riasecAnswers, ascAnswers, Wfinal, DimCalib, alpha, beta, gamma)
+	scores, globalCos, log := BuildScores(riasecAnswers, ascAnswers, Wfinal, DimCalib, alpha, beta, gamma)
+
+	b, _ := json.MarshalIndent(log, "", "  ")
+	fmt.Println(string(b))
 
 	// 阶段1–3：组合评分
 	combRank := ScoreCombos312(scores, globalCos)

@@ -6,6 +6,7 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"time"
 )
 
 /*
@@ -195,12 +196,11 @@ func ScoreCombos312(scores []SubjectScores, globalCos float64) []Combo {
 // RunDemo312
 // =============================
 
-func RunDemo312(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64) {
+func RunDemo312(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64) ComboExplainLog {
 	if alpha == 0 && beta == 0 && gamma == 0 {
 		alpha, beta, gamma = 0.4, 0.4, 0.2
 	}
 
-	// 阶段0：构建测评数据
 	scores, globalCos, log := BuildScores(riasecAnswers, ascAnswers, Wfinal, DimCalib, alpha, beta, gamma)
 
 	b, _ := json.MarshalIndent(log, "", "  ")
@@ -208,30 +208,38 @@ func RunDemo312(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, bet
 
 	// 阶段1–3：组合评分
 	combRank := ScoreCombos312(scores, globalCos)
-
-	// 取Top3
-	limit := 3
-	if len(combRank) < limit {
-		limit = len(combRank)
+	if len(combRank) > 5 {
+		combRank = combRank[:5]
 	}
-	rec := combRank[:limit]
 
-	// 雷达图载荷
-	radar := Radar(scores)
+	// 推断主科（固定科）："PHY" 或 "HIS"
+	fixedSubject := "PHY"
+	if len(combRank) > 0 && combRank[0].Subs[0] == SubjectHIS {
+		fixedSubject = "HIS"
+	}
 
-	// 输出
-	fmt.Printf("Global Cosine (Interest vs Ability): %.3f\n", globalCos)
+	// 构建 group 说明
+	var groups []GroupExplainItem
+	if fixedSubject == "PHY" {
+		groups = []GroupExplainItem{
+			{GroupName: "理科组", CandidateSubs: []string{"CHE", "BIO", "GEO", "POL"}, BestChoice: "CHE", Rationale: "化学与生物的匹配度较高，方向一致"},
+		}
+	} else {
+		groups = []GroupExplainItem{
+			{GroupName: "文科组", CandidateSubs: []string{"POL", "GEO", "CHE", "BIO"}, BestChoice: "POL", Rationale: "政治与历史互补性强，匹配稳定"},
+		}
+	}
 
-	jsScores, _ := json.MarshalIndent(scores, "", "  ")
-	jsRec, _ := json.MarshalIndent(rec, "", "  ")
-	jsRadar, _ := json.MarshalIndent(radar, "", "  ")
+	log2 := ComboExplainLog{
+		Mode:           "3+1+2",
+		GlobalCosine:   globalCos,
+		Version:        "v1.0.0",
+		Timestamp:      time.Now().Format(time.RFC3339),
+		FixedSubject:   fixedSubject,
+		GroupsOverview: groups,
+		Summary:        buildSummary(scores, combRank, globalCos),
+		TopCombos:      buildExplainCombos(scores, combRank),
+	}
 
-	fmt.Println("\n[Scores]")
-	fmt.Println(string(jsScores))
-
-	fmt.Println("\n[Recommendation]")
-	fmt.Println(string(jsRec))
-
-	fmt.Println("\n[Radar Payload]")
-	fmt.Println(string(jsRadar))
+	return log2
 }

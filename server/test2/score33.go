@@ -6,6 +6,7 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"time"
 )
 
 /**
@@ -180,7 +181,8 @@ func generateAllCombos(ss []string) [][3]string {
 // ---------------------------------------
 // 演示入口
 // ---------------------------------------
-func RunDemo33(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64) {
+
+func RunDemo33(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64) ComboExplainLog {
 	if alpha == 0 && beta == 0 && gamma == 0 {
 		alpha, beta, gamma = 0.4, 0.4, 0.2
 	}
@@ -192,26 +194,19 @@ func RunDemo33(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta
 	ws := Weights{W1: 0.5, W2: 0.3, W3: 0.1, W4: 0.1, W5: 0.1}
 	combRank := ScoreCombos33(scores, globalCos, ws)
 
-	limit := 3
-	if len(combRank) < limit {
-		limit = len(combRank)
+	if len(combRank) > 5 {
+		combRank = combRank[:5]
 	}
-	rec := combRank[:limit]
 
-	radar := Radar(scores)
+	// 生成日志结构
+	log2 := ComboExplainLog{
+		Mode:         "3+3",
+		GlobalCosine: globalCos,
+		Version:      "v1.0.0",
+		Timestamp:    time.Now().Format(time.RFC3339),
+		Summary:      buildSummary(scores, combRank, globalCos),
+		TopCombos:    buildExplainCombos(scores, combRank),
+	}
 
-	fmt.Printf("Global Cosine (Interest vs Ability): %.3f\n", globalCos)
-
-	jsScores, _ := json.MarshalIndent(scores, "", "  ")
-	jsRec, _ := json.MarshalIndent(rec, "", "  ")
-	jsRadar, _ := json.MarshalIndent(radar, "", "  ")
-
-	fmt.Println("\n[Scores]")
-	fmt.Println(string(jsScores))
-
-	fmt.Println("\n[Recommendation]")
-	fmt.Println(string(jsRec))
-
-	fmt.Println("\n[Radar Payload]")
-	fmt.Println(string(jsRadar))
+	return log2
 }

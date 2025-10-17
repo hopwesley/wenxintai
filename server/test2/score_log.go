@@ -1,6 +1,9 @@
 package main
 
-import "sort"
+import (
+	"math"
+	"sort"
+)
 
 // =======================
 // 结构定义部分
@@ -142,4 +145,186 @@ type GroupExplainItem struct {
 	CandidateSubs []string `json:"candidate_subjects"` // ["BIO","GEO"]
 	BestChoice    string   `json:"best_choice"`        // "BIO"
 	Rationale     string   `json:"rationale"`          // “BIO 兴趣与能力匹配度高 15%”
+}
+
+// ======================================
+// 辅助函数：生成 Summary
+// ======================================
+
+func buildSummary(scores []SubjectScores, combos []Combo, globalCos float64) ComboSummary {
+	if len(combos) == 0 {
+		return ComboSummary{}
+	}
+
+	bestFit := combos[0].Score
+	stability := 1.0
+	if len(combos) > 1 {
+		var fits []float64
+		for _, c := range combos {
+			fits = append(fits, c.Score)
+		}
+		stability = 1 - std(fits)
+	}
+
+	// 粗略计算能力均衡度
+	var abilityVals []float64
+	for _, s := range scores {
+		abilityVals = append(abilityVals, s.A)
+	}
+	balance := 1 - std(abilityVals)/5.0
+
+	// 估计类别
+	bestCategory := "理科"
+	for _, s := range combos[0].Subs {
+		if s == "HIS" || s == "POL" {
+			bestCategory = "文科"
+			break
+		}
+	}
+
+	// 风险等级：若最小能力低于 3
+	riskLevel := "低"
+	for _, s := range scores {
+		if s.A < 3 {
+			riskLevel = "中"
+			break
+		}
+	}
+
+	comment := "整体理科倾向明显，匹配度稳定"
+	if bestCategory == "文科" {
+		comment = "整体文科倾向明显，学科匹配度良好"
+	}
+
+	return ComboSummary{
+		BestCategory:      bestCategory,
+		BestFit:           bestFit,
+		Stability:         math.Round(stability*100) / 100,
+		Balance:           math.Round(balance*100) / 100,
+		InterestAlignment: math.Round(globalCos*1000) / 1000,
+		RiskLevel:         riskLevel,
+		Commentary:        comment,
+	}
+}
+
+// ======================================
+// 辅助函数：生成组合解释
+// ======================================
+
+func buildExplainCombos(scores []SubjectScores, combos []Combo) []ComboExplainItem {
+	var res []ComboExplainItem
+	m := map[string]SubjectScores{}
+	for _, s := range scores {
+		m[s.Subject] = s
+	}
+
+	for i, c := range combos {
+		var fitProfile []FitPoint
+		for _, sub := range c.Subs {
+			s := m[sub]
+			fp := FitPoint{
+				Subject:        s.Subject,
+				Fit:            math.Round(s.Fit*100) / 100,
+				AbilityPct:     math.Round(s.APct*100) / 100,
+				InterestPct:    math.Round(s.IPct*100) / 100,
+				ZGap:           math.Round(s.ZGap*100) / 100,
+				Interpretation: interpretFit(s),
+			}
+			fitProfile = append(fitProfile, fp)
+		}
+
+		category := "理科"
+		for _, sub := range c.Subs {
+			if sub == "HIS" || sub == "POL" {
+				category = "文科"
+				break
+			}
+		}
+
+		riskLevel := "低"
+		for _, sub := range c.Subs {
+			if m[sub].A < 3 {
+				riskLevel = "中"
+				break
+			}
+		}
+
+		summary := "该组合匹配度较高，能力与兴趣方向一致。"
+		if category == "文科" {
+			summary = "该组合在文科方向上较为匹配，兴趣与能力均衡。"
+		}
+
+		item := ComboExplainItem{
+			Rank:         i + 1,
+			Subjects:     []string{c.Subs[0], c.Subs[1], c.Subs[2]},
+			Category:     category,
+			AvgFit:       math.Round(c.Score*100) / 100,
+			Stability:    0.9,
+			Balance:      0.85,
+			InterestBias: detectInterestBias(scores),
+			Strengths:    []string{"兴趣与能力均高", "学科匹配度平衡"},
+			Weaknesses:   []string{},
+			FitProfile:   fitProfile,
+			RiskLevel:    riskLevel,
+			SummaryText:  summary,
+		}
+		res = append(res, item)
+	}
+	return res
+}
+
+// ======================================
+// 工具函数
+// ======================================
+
+func std(vals []float64) float64 {
+	if len(vals) == 0 {
+		return 0
+	}
+	mean := avg(vals)
+	var sum float64
+	for _, v := range vals {
+		sum += (v - mean) * (v - mean)
+	}
+	return math.Sqrt(sum / float64(len(vals)))
+}
+
+func avg(vals []float64) float64 {
+	if len(vals) == 0 {
+		return 0
+	}
+	var sum float64
+	for _, v := range vals {
+		sum += v
+	}
+	return sum / float64(len(vals))
+}
+
+func interpretFit(s SubjectScores) string {
+	if s.Fit > 0.6 && s.A > 4 {
+		return "兴趣高且能力强"
+	}
+	if s.Fit > 0.5 && s.A < 3 {
+		return "兴趣良好但能力略弱"
+	}
+	if s.Fit < 0.4 {
+		return "匹配度偏低"
+	}
+	return "总体匹配良好"
+}
+
+func detectInterestBias(scores []SubjectScores) string {
+	var highI, highR float64
+	for _, s := range scores {
+		switch s.Subject {
+		case "PHY", "CHE":
+			highR += s.I
+		case "BIO", "GEO":
+			highI += s.I
+		}
+	}
+	if highR > highI {
+		return "偏动手/实践"
+	}
+	return "偏探究/分析"
 }

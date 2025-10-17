@@ -223,33 +223,18 @@ func BuildScores(
 	W map[string]map[string]float64,
 	f map[string]float64,
 	alpha, beta, gamma float64,
-) ([]SubjectScores, float64, BuildScoresLog) {
+) ([]SubjectScores, float64, CommonSection) {
 
-	var log BuildScoresLog
-	log.Params = LogParams{Alpha: alpha, Beta: beta, Gamma: gamma}
+	var log CommonSection
 
 	// ---- 1. RIASEC 兴趣均值 ----
 	ria := meanRIASEC(riasecAnswers)
-	log.RIASECMean = LogRIASECMean{
-		Values: map[string]float64{
-			"R": ria.R, "I": ria.I, "A": ria.A,
-			"S": ria.S, "E": ria.E, "C": ria.C,
-		},
-	}
 
 	// ---- 2. 兴趣投影 ----
 	I := projectInterest(ria, W, f)
-	log.InterestProjection = LogInterestProjection{
-		Values:  I,
-		Ranking: sortByValueDesc(I),
-	}
 
 	// ---- 3. 能力 ----
 	A := subjectAbility(ascAnswers)
-	log.Ability = LogAbility{
-		Values:  A,
-		Percent: toPercentMap(A),
-	}
 
 	// ---- 4. 标准化 ----
 	IZ := z6(I)
@@ -258,15 +243,9 @@ func BuildScores(
 	for _, s := range Subjects {
 		ZGap[s] = AZ[s] - IZ[s]
 	}
-	log.Standardization = LogStandardization{
-		ZInterest: IZ,
-		ZAbility:  AZ,
-		ZGap:      ZGap,
-	}
 
 	// ---- 5. 一致性 ----
 	cos := cosineSim(I, A)
-	log.Params.GlobalCosine = cos
 
 	sumA := 0.0
 	for _, s := range Subjects {
@@ -276,14 +255,9 @@ func BuildScores(
 	for _, s := range Subjects {
 		shareA[s] = safeDiv(A[s], sumA)
 	}
-	log.Consistency = LogConsistency{
-		AbilityShare: shareA,
-		TotalAbility: sumA,
-	}
 
 	// ---- 6. Fit 融合 ----
 	out := make([]SubjectScores, 0, len(Subjects))
-	log.FitDetail = make(map[string]LogFitDetail)
 
 	for _, s := range Subjects {
 		ipct := toPct(I[s])
@@ -301,15 +275,6 @@ func BuildScores(
 			ZGap:    round2(zgap),
 			Fit:     round2(fit),
 		})
-
-		log.FitDetail[s] = LogFitDetail{
-			Fit:         round2(fit),
-			AlphaTerm:   round2(alpha * zgap),
-			BetaTerm:    round2(beta * cos),
-			GammaTerm:   round2(gamma * share),
-			AbilityPct:  math.Round(apct),
-			InterestPct: math.Round(ipct),
-		}
 	}
 
 	// ---- 7. 可视化数据 ----

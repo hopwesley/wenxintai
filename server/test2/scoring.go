@@ -488,13 +488,3 @@ func Radar(scores []SubjectScores) RadarPayload {
 	}
 	return RadarPayload{Subjects: Subjects, Interest: ip, Ability: ap}
 }
-
-// Combo
-// ---------------------------------------
-// 组合推荐模块
-// ---------------------------------------
-type Combo struct {
-	Subs   [3]string
-	Score  float64
-	Reason string
-}

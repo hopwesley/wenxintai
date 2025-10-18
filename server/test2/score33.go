@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"os"
 	"sort"
 	"strings"
+	"time"
 )
 
 /**
@@ -153,16 +155,16 @@ func RunDemo33(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta
 
 	var paramPrompt ParamForAIPrompt
 	scores, globalCos, log := BuildScores(riasecAnswers, ascAnswers, Wfinal, DimCalib, alpha, beta, gamma)
-	b, _ := json.MarshalIndent(log, "", "  ")
-	fmt.Println(string(b))
 
 	paramPrompt.Common = log
 
 	ws := Weights{W1: 0.5, W2: 0.3, W3: 0.1, W4: 0.1, W5: 0.1}
 	paramPrompt.Mode33 = ScoreCombos33(scores, globalCos, ws)
 
-	b, _ = json.MarshalIndent(paramPrompt, "", "  ")
-	fmt.Println(string(b))
+	content, _ := json.MarshalIndent(&paramPrompt, "", "  ")
+	ts := time.Now().Format("20060102_150405")
+	filename := fmt.Sprintf("report_param_%s_%s.json", "3+3", ts) // 增加了模块名
+	_ = os.WriteFile(filename, content, 0644)
 
 	return &paramPrompt
 }

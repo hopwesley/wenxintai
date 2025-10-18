@@ -74,6 +74,14 @@ func main() {
 		RunDemo33(riasec, asc, 0, 0, 0)
 		RunDemo312(riasec, asc, 0, 0, 0)
 
+	case "report":
+		filePath := os.Args[2]
+		apiKey := os.Args[3]
+		err := TestReport(apiKey, filePath)
+		if err != nil {
+			panic(err)
+		}
+
 	default:
 		panic("unknown stage parameter")
 	}

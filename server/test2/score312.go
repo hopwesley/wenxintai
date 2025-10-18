@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"os"
 	"strings"
+	"time"
 )
 
 /*
@@ -233,8 +235,10 @@ func RunDemo312(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, bet
 	paramForPrompt.Common = commonParam
 	paramForPrompt.Mode312 = ScoreCombos312(scores, globalCos)
 
-	b, _ := json.MarshalIndent(&paramForPrompt, "", "  ")
-	fmt.Println(string(b))
+	content, _ := json.MarshalIndent(&paramForPrompt, "", "  ")
+	ts := time.Now().Format("20060102_150405")
+	filename := fmt.Sprintf("report_param_%s_%s.json", "3+1+2", ts) // 增加了模块名
+	_ = os.WriteFile(filename, content, 0644)
 
 	return &paramForPrompt
 }

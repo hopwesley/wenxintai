@@ -6,7 +6,6 @@ import (
 	"math"
 	"sort"
 	"strings"
-	"time"
 )
 
 /**
@@ -55,36 +54,6 @@ riskPenalty = {0.2 if minA < 3, 0 otherwise}
 ws := Weights{W1: 0.5, W2: 0.3, W3: 0.1, W4: 0.1, W5: 0.1}
 */
 
-var AllowedCombos = map[string]bool{
-	ComboPHY_CHE_BIO: true,
-	ComboPHY_CHE_GEO: true,
-	ComboPHY_BIO_GEO: true,
-	ComboCHE_BIO_GEO: true,
-	ComboHIS_GEO_POL: true,
-	ComboHIS_GEO_BIO: true,
-	ComboPHY_GEO_CHE: true,
-	ComboHIS_POL_BIO: true,
-}
-
-var ComboRarity = map[string]float64{
-	ComboPHY_CHE_BIO: 0,
-	ComboPHY_CHE_GEO: 0,
-	ComboCHE_BIO_GEO: 0,
-	ComboPHY_BIO_GEO: 0,
-	ComboHIS_GEO_POL: 5,
-	ComboHIS_GEO_BIO: 5,
-	ComboHIS_POL_BIO: 5,
-}
-
-// RarityPenalty 稀有度惩罚
-func RarityPenalty(subs [3]string) float64 {
-	key := strings.Join(subs[:], "_")
-	if v, ok := ComboRarity[key]; ok {
-		return v
-	}
-	return 12
-}
-
 // Weights 组合打分
 type Weights struct{ W1, W2, W3, W4, W5 float64 }
 
@@ -92,89 +61,84 @@ type Weights struct{ W1, W2, W3, W4, W5 float64 }
 // ------------------------
 // 修正版：组合打分逻辑
 // ------------------------
-func ScoreCombos33(scores []SubjectScores, globalCos float64, w Weights) []Combo {
+func ScoreCombos33(scores []SubjectScores, globalCos float64, w Weights) *Mode33Section {
 	m := map[string]SubjectScores{}
 	for _, s := range scores {
 		m[s.Subject] = s
 	}
 
-	// 生成所有 6选3 组合
-	combos := generateAllCombos(Subjects)
-	var out []Combo
+	var combos []Combo33CoreData
 
-	for _, subs := range combos {
-		key := strings.Join([]string{subs[0], subs[1], subs[2]}, "_")
-
-		if !AllowedCombos[key] {
-			continue // 跳过不在允许列表内的组合
+	for _, comboKey := range AllCombos33 {
+		subjs := strings.Split(comboKey, "_")
+		if len(subjs) != 3 {
+			continue
 		}
+		s1, s2, s3 := subjs[0], subjs[1], subjs[2]
 
-		// ------------------------
-		// 计算加权得分
-		// ------------------------
-		var fitSum, minA, minI float64 = 0, 999, 999
-		for _, s := range subs {
-			fitSum += m[s].Fit
-			if m[s].A < minA {
-				minA = m[s].A
-			}
-			if m[s].I < minI {
-				minI = m[s].I
-			}
-		}
+		// 计算平均匹配度
+		avgFit := (m[s1].Fit + m[s2].Fit + m[s3].Fit) / 3.0
 
-		avgFit := fitSum / 3.0
-		rarity := RarityPenalty(subs)
-		// 风险惩罚：若最低能力低于 3，减 0.2 分
-		riskPenalty := 0.0
+		// 计算最低能力
+		minA := math.Min(m[s1].A, math.Min(m[s2].A, m[s3].A))
+
+		// 稀有性值
+		rarity := RarityValue(comboKey) // 从组合映射表获取 (0,5,12)
+
+		// 风险惩罚
+		risk := 0.0
 		if minA < 3 {
-			riskPenalty = 0.2
+			risk = 0.2
 		}
-
 		// 计算组合最终分
 		score := w.W1*avgFit -
 			w.W2*rarity/10.0 +
 			w.W3*globalCos +
 			w.W4*minA/5.0 -
-			w.W5*riskPenalty
+			w.W5*risk
 
-		out = append(out, Combo{
-			Subs:  [3]string{subs[0], subs[1], subs[2]},
-			Score: math.Round(score*100) / 100,
-			Reason: fmt.Sprintf("平均Fit=%.2f, 最低能力=%.1f, 稀有度=%.1f",
-				avgFit, minA, rarity),
+		combos = append(combos, Combo33CoreData{
+			Subjects:    [3]string{s1, s2, s3},
+			AvgFit:      round3(avgFit),
+			MinAbility:  round3(minA),
+			Rarity:      round3(rarity), // 虽是离散值，保持统一风格
+			RiskPenalty: round3(risk),
+			Score:       round3(score),
 		})
 	}
 
-	// ------------------------
-	// 排序与输出
-	// ------------------------
-	sort.Slice(out, func(i, j int) bool { return out[i].Score > out[j].Score })
+	sort.Slice(combos, func(i, j int) bool {
+		if combos[i].Score == combos[j].Score {
+			return combos[i].MinAbility > combos[j].MinAbility
+		}
+		return combos[i].Score > combos[j].Score
+	})
 
-	// 若没有推荐结果，输出调试信息
-	if len(out) == 0 {
-		fmt.Println("[Warn] No valid combination found. Check key format or rarity values.")
-		return out
+	// 仅保留前5名
+	if len(combos) > 5 {
+		combos = combos[:5]
 	}
 
-	// 仅保留前 5 个
-	if len(out) > 5 {
-		out = out[:5]
+	return &Mode33Section{
+		TopCombinations: combos,
 	}
-	return out
 }
 
-func generateAllCombos(ss []string) [][3]string {
-	var res [][3]string
-	n := len(ss)
-	for i := 0; i < n; i++ {
-		for j := i + 1; j < n; j++ {
-			for k := j + 1; k < n; k++ {
-				res = append(res, [3]string{ss[i], ss[j], ss[k]})
-			}
-		}
+// RarityValue
+// ===========================================
+// 返回组合的稀有性数值：0=常见，5=中等，12=稀有
+// ===========================================
+func RarityValue(combo string) float64 {
+	switch combo {
+	case ComboPHY_CHE_BIO, ComboHIS_GEO_POL:
+		return 0
+	case ComboPHY_CHE_GEO, ComboPHY_BIO_GEO, ComboCHE_BIO_GEO, ComboHIS_GEO_BIO:
+		return 5
+	case ComboPHY_GEO_CHE, ComboHIS_POL_BIO:
+		return 12
+	default:
+		return 5 // 默认中等稀有
 	}
-	return res
 }
 
 // RunDemo33
@@ -182,31 +146,23 @@ func generateAllCombos(ss []string) [][3]string {
 // 演示入口
 // ---------------------------------------
 
-func RunDemo33(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64) ComboExplainLog {
+func RunDemo33(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64) *ParamForAIPrompt {
 	if alpha == 0 && beta == 0 && gamma == 0 {
 		alpha, beta, gamma = 0.4, 0.4, 0.2
 	}
 
+	var paramPrompt ParamForAIPrompt
 	scores, globalCos, log := BuildScores(riasecAnswers, ascAnswers, Wfinal, DimCalib, alpha, beta, gamma)
 	b, _ := json.MarshalIndent(log, "", "  ")
 	fmt.Println(string(b))
 
+	paramPrompt.Common = log
+
 	ws := Weights{W1: 0.5, W2: 0.3, W3: 0.1, W4: 0.1, W5: 0.1}
-	combRank := ScoreCombos33(scores, globalCos, ws)
+	paramPrompt.Mode33 = ScoreCombos33(scores, globalCos, ws)
 
-	if len(combRank) > 5 {
-		combRank = combRank[:5]
-	}
+	b, _ = json.MarshalIndent(paramPrompt, "", "  ")
+	fmt.Println(string(b))
 
-	// 生成日志结构
-	log2 := ComboExplainLog{
-		Mode:         "3+3",
-		GlobalCosine: globalCos,
-		Version:      "v1.0.0",
-		Timestamp:    time.Now().Format(time.RFC3339),
-		Summary:      buildSummary(scores, combRank, globalCos),
-		TopCombos:    buildExplainCombos(scores, combRank),
-	}
-
-	return log2
+	return &paramPrompt
 }

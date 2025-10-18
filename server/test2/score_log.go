@@ -10,9 +10,9 @@ package main
 //
 // ===========================================
 type ParamForAIPrompt struct {
-	Common  CommonSection  `json:"common"`     // 通用部分：兴趣-能力整体特征
-	Mode33  Mode33Section  `json:"mode_3_3"`   // 3+3 模式部分
-	Mode312 Mode312Section `json:"mode_3_1_2"` // 3+1+2 模式部分
+	Common  *CommonSection  `json:"common"`     // 通用部分：兴趣-能力整体特征
+	Mode33  *Mode33Section  `json:"mode_3_3"`   // 3+3 模式部分
+	Mode312 *Mode312Section `json:"mode_3_1_2"` // 3+1+2 模式部分
 }
 
 // CommonSection
@@ -57,7 +57,6 @@ type SubjectProfileData struct {
 	CosineLocal   float64 `json:"cosine_local"`   // 兴趣与能力方向一致性
 	ZGap          float64 `json:"z_gap"`          // 兴趣-能力差异 (zA - zI)
 	Fit           float64 `json:"fit"`            // 综合匹配度 (最终得分)
-	RiskFlag      bool    `json:"risk_flag"`      // 是否存在潜在风险 (低能力或兴趣过偏)
 }
 
 // DerivedIndicatorData
@@ -76,8 +75,65 @@ type DerivedIndicatorData struct {
 	RiskSubjects           []string `json:"risk_subjects"`
 }
 
-// Mode33Section 3+3 模式：组合推荐与匹配核心结果
-type Mode33Section struct{}
-
 // Mode312Section 3+1+2 模式：主干+辅科组合与阶段性特征
-type Mode312Section struct{}
+// ===========================================
+// 3+1+2 模式的核心过程参数（仅记录必要信息）
+// 用于解释算法过程与结果，非展示层。
+// ===========================================
+type Mode312Section struct {
+	AnchorPHY AnchorCoreData `json:"anchor_phy"` // 理科主干（物理组）
+	AnchorHIS AnchorCoreData `json:"anchor_his"` // 文科主干（历史组）
+}
+
+// AnchorCoreData
+// 表示单个主干学科（Anchor）的完整阶段信息
+type AnchorCoreData struct {
+	Subject      string          `json:"subject"`       // 主干学科 ("PHY" / "HIS")
+	Fit          float64         `json:"fit"`           // 匹配度（兴趣-能力契合）
+	AbilityNorm  float64         `json:"ability_norm"`  // 归一化能力（0~1）
+	TermFit      float64         `json:"term_fit"`      // 契合度项贡献
+	TermAbility  float64         `json:"term_ability"`  // 能力项贡献
+	TermCoverage float64         `json:"term_coverage"` // 覆盖项贡献
+	S1           float64         `json:"s1"`            // 阶段一综合得分（主干稳定性）
+	Combos       []ComboCoreData `json:"combos"`        // 阶段二组合结果
+	SFinal       float64         `json:"s_final"`       // 阶段三综合分（用于排序）
+}
+
+// ComboCoreData
+// 属于特定 Anchor 的辅科组合信息
+type ComboCoreData struct {
+	Aux1 string `json:"aux1"` // 辅科1
+	Aux2 string `json:"aux2"` // 辅科2
+
+	// —— 直接可解释的中间量 ——
+	AvgFit    float64 `json:"avg_fit"`   // 两辅科平均匹配度
+	MinFit    float64 `json:"min_fit"`   // 两辅科最小匹配度
+	Expansion float64 `json:"expansion"` // 净扩展度（>=0）
+
+	// —— 已含权重的“分项贡献” ——（安全可解释，防公式反推）
+	TermAvgFit    float64 `json:"term_avg_fit"`
+	TermMinFit    float64 `json:"term_min_fit"`
+	TermExpansion float64 `json:"term_expansion"`
+	TermGlobalCos float64 `json:"term_global_cos"`
+
+	// —— 阶段结果 ——
+	S23 float64 `json:"s23"` // 阶段二得分（组合层）
+}
+
+// Mode33Section 3+3 模式：组合推荐与匹配核心结果
+type Mode33Section struct {
+	TopCombinations []Combo33CoreData `json:"top_combinations"` // 前5推荐组合
+}
+
+// Combo33CoreData
+// ===========================================
+// 表示单个 3科组合的可解释数据
+// ===========================================
+type Combo33CoreData struct {
+	Subjects    [3]string `json:"subjects"`     // 三科组合
+	AvgFit      float64   `json:"avg_fit"`      // 平均匹配度（原始值）
+	MinAbility  float64   `json:"min_ability"`  // 最低能力（原始值）
+	Rarity      float64   `json:"rarity"`       // 稀有性（原始值 0/5/12）
+	RiskPenalty float64   `json:"risk_penalty"` // 风险惩罚（原始值 0 或 0.2）
+	Score       float64   `json:"score"`        // 综合推荐得分（最终输出）
+}

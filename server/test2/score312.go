@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"sort"
 	"strings"
-	"time"
 )
 
 /*
@@ -116,130 +114,127 @@ var (
 	lambda1, lambda2 = 0.6, 0.4
 )
 
+// ScoreCombos312
 // =============================
 // 核心算法逻辑
 // =============================
-
-func ScoreCombos312(scores []SubjectScores, globalCos float64) []Combo {
+func ScoreCombos312(scores []SubjectScores, globalCos float64) *Mode312Section {
 	m := map[string]SubjectScores{}
 	for _, s := range scores {
 		m[s.Subject] = s
 	}
 
-	anchors := []string{SubjectPHY, SubjectHIS}
-	var out []Combo
+	// 生成两个固定方向的 Anchor
+	anchorPHY := buildAnchor312(SubjectPHY, m, globalCos)
+	anchorHIS := buildAnchor312(SubjectHIS, m, globalCos)
 
-	for _, anchor := range anchors {
-		// 阶段一：Anchor 主干得分
-		fit := m[anchor].Fit
-		ab := m[anchor].A
-		baseCov := AnchorBaseCoverage[anchor]
-		S1 := anchW_Fit*fit + anchW_Ability*(ab/5.0) + anchW_Cover*baseCov
+	return &Mode312Section{
+		AnchorPHY: anchorPHY,
+		AnchorHIS: anchorHIS,
+	}
+}
 
-		// 辅科候选池
-		var auxPool []string
-		if anchor == SubjectPHY {
-			auxPool = []string{SubjectCHE, SubjectBIO, SubjectGEO, SubjectPOL}
-		} else {
-			auxPool = []string{SubjectGEO, SubjectPOL, SubjectCHE, SubjectBIO}
-		}
+// buildAnchor312
+// --------------------------------------
+// 按主干方向（PHY/HIS）计算阶段一与阶段二结果
+// --------------------------------------
+func buildAnchor312(anchor string, m map[string]SubjectScores, globalCos float64) AnchorCoreData {
+	// 阶段一计算
+	fit := m[anchor].Fit
+	abNorm := m[anchor].A / 5.0
+	baseCov := AnchorBaseCoverage[anchor]
 
-		// 生成4选2组合
-		for i := 0; i < len(auxPool); i++ {
-			for j := i + 1; j < len(auxPool); j++ {
-				s2, s3 := auxPool[i], auxPool[j]
-				key := strings.Join([]string{anchor, s2, s3}, "_")
+	termFit := anchW_Fit * fit
+	termAbility := anchW_Ability * abNorm
+	termCoverage := anchW_Cover * baseCov
 
-				// 检查覆盖率合法性
-				cov, ok := Coverage312[key]
-				if !ok {
-					continue
-				}
+	S1 := termFit + termAbility + termCoverage
 
-				// 阶段二：辅科组合优化
-				avgFit := (m[s2].Fit + m[s3].Fit) / 2.0
-				minFit := math.Min(m[s2].Fit, m[s3].Fit)
-				// 商业/展示版（更平滑）
-				expansion := math.Max(0, cov-baseCov)
+	// 构建辅科候选池
+	var auxPool []string
+	if anchor == SubjectPHY {
+		auxPool = AuxPoolPHY
+	} else {
+		auxPool = AuxPoolHIS
+	}
 
-				S23 := auxW_AvgFit*avgFit +
-					auxW_MinFit*minFit +
-					auxW_Expansion*expansion +
-					auxW_GlobalCos*globalCos
+	// 阶段二：计算辅科组合
+	var combos []ComboCoreData
+	var maxSFinal float64
 
-				// 阶段三：综合评分
-				final := lambda1*S1 + lambda2*S23
+	for i := 0; i < len(auxPool); i++ {
+		for j := i + 1; j < len(auxPool); j++ {
+			s2, s3 := auxPool[i], auxPool[j]
+			key := strings.Join([]string{anchor, s2, s3}, "_")
 
-				out = append(out, Combo{
-					Subs:  [3]string{anchor, s2, s3},
-					Score: math.Round(final*100) / 100,
-					Reason: fmt.Sprintf("S1=%.2f(主干:%s, Fit=%.2f, Ab=%.1f, Cov=%.2f); "+
-						"S23=%.2f(辅科:%s+%s, AvgFit=%.2f, MinFit=%.2f, Expansion=%.2f, GlobalCos=%.2f)",
-						S1, anchor, fit, ab, baseCov,
-						S23, s2, s3, avgFit, minFit, expansion, globalCos),
-				})
+			cov, ok := Coverage312[key]
+			if !ok {
+				continue
 			}
+
+			avgFit := (m[s2].Fit + m[s3].Fit) / 2.0
+			minFit := math.Min(m[s2].Fit, m[s3].Fit)
+			expansion := math.Max(0, cov-baseCov)
+
+			// 阶段二计算
+			termAvgFit := auxW_AvgFit * avgFit
+			termMinFit := auxW_MinFit * minFit
+			termExpansion := auxW_Expansion * expansion
+			termGlobalCos := auxW_GlobalCos * globalCos
+
+			S23 := termAvgFit + termMinFit + termExpansion + termGlobalCos
+
+			// 阶段三计算
+			SFinal := lambda1*S1 + lambda2*S23
+			if SFinal > maxSFinal {
+				maxSFinal = SFinal
+			}
+
+			combos = append(combos, ComboCoreData{
+				Aux1:          s2,
+				Aux2:          s3,
+				AvgFit:        round3(avgFit),
+				MinFit:        round3(minFit),
+				Expansion:     round3(expansion),
+				TermAvgFit:    round3(termAvgFit),
+				TermMinFit:    round3(termMinFit),
+				TermExpansion: round3(termExpansion),
+				TermGlobalCos: round3(termGlobalCos),
+				S23:           round3(S23),
+			})
 		}
 	}
 
-	// 排序
-	sort.Slice(out, func(i, j int) bool { return out[i].Score > out[j].Score })
-
-	// 仅保留前5
-	if len(out) > 5 {
-		out = out[:5]
+	return AnchorCoreData{
+		Subject:      anchor,
+		Fit:          round3(fit),
+		AbilityNorm:  round3(abNorm),
+		TermFit:      round3(termFit),
+		TermAbility:  round3(termAbility),
+		TermCoverage: round3(termCoverage),
+		S1:           round3(S1),
+		SFinal:       round3(maxSFinal),
+		Combos:       combos,
 	}
-	return out
 }
 
 // =============================
 // RunDemo312
 // =============================
 
-func RunDemo312(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64) ComboExplainLog {
+func RunDemo312(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64) *ParamForAIPrompt {
 	if alpha == 0 && beta == 0 && gamma == 0 {
 		alpha, beta, gamma = 0.4, 0.4, 0.2
 	}
 
-	scores, globalCos, log := BuildScores(riasecAnswers, ascAnswers, Wfinal, DimCalib, alpha, beta, gamma)
+	scores, globalCos, commonParam := BuildScores(riasecAnswers, ascAnswers, Wfinal, DimCalib, alpha, beta, gamma)
 
-	b, _ := json.MarshalIndent(log, "", "  ")
+	var paramForPrompt ParamForAIPrompt
+	paramForPrompt.Common = commonParam
+	paramForPrompt.Mode312 = ScoreCombos312(scores, globalCos)
+
+	b, _ := json.MarshalIndent(&paramForPrompt, "", "  ")
 	fmt.Println(string(b))
 
-	// 阶段1–3：组合评分
-	combRank := ScoreCombos312(scores, globalCos)
-	if len(combRank) > 5 {
-		combRank = combRank[:5]
-	}
-
-	// 推断主科（固定科）："PHY" 或 "HIS"
-	fixedSubject := "PHY"
-	if len(combRank) > 0 && combRank[0].Subs[0] == SubjectHIS {
-		fixedSubject = "HIS"
-	}
-
-	// 构建 group 说明
-	var groups []GroupExplainItem
-	if fixedSubject == "PHY" {
-		groups = []GroupExplainItem{
-			{GroupName: "理科组", CandidateSubs: []string{"CHE", "BIO", "GEO", "POL"}, BestChoice: "CHE", Rationale: "化学与生物的匹配度较高，方向一致"},
-		}
-	} else {
-		groups = []GroupExplainItem{
-			{GroupName: "文科组", CandidateSubs: []string{"POL", "GEO", "CHE", "BIO"}, BestChoice: "POL", Rationale: "政治与历史互补性强，匹配稳定"},
-		}
-	}
-
-	log2 := ComboExplainLog{
-		Mode:           "3+1+2",
-		GlobalCosine:   globalCos,
-		Version:        "v1.0.0",
-		Timestamp:      time.Now().Format(time.RFC3339),
-		FixedSubject:   fixedSubject,
-		GroupsOverview: groups,
-		Summary:        buildSummary(scores, combRank, globalCos),
-		TopCombos:      buildExplainCombos(scores, combRank),
-	}
-
-	return log2
+	return &paramForPrompt
 }

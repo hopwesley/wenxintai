@@ -48,3 +48,25 @@ var Subjects = []string{
 	SubjectHIS,
 	SubjectPOL,
 }
+
+// AllCombos33 用于 3+3 模式遍历
+var AllCombos33 = []string{
+	ComboPHY_CHE_BIO,
+	ComboPHY_CHE_GEO,
+	ComboPHY_BIO_GEO,
+	ComboCHE_BIO_GEO,
+	ComboHIS_GEO_POL,
+	ComboHIS_GEO_BIO,
+	ComboPHY_GEO_CHE,
+	ComboHIS_POL_BIO,
+}
+
+// Aux pools for Mode 3+1+2
+
+var AuxPoolPHY = []string{ // 物理主干下的辅科池
+	SubjectCHE, SubjectBIO, SubjectGEO, SubjectPOL,
+}
+
+var AuxPoolHIS = []string{ // 历史主干下的辅科池
+	SubjectGEO, SubjectPOL, SubjectCHE, SubjectBIO,
+}

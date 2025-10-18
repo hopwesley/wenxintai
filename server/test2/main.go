@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -72,14 +71,8 @@ func main() {
 		riasec := AllRIASECCombos[combo]
 		asc := AllASCCombos[combo][category]
 
-		// 3) 直接跑 RunDemo33（alpha/beta/gamma 传 0 走默认 0.4/0.4/0.2）
-		//log33 := RunDemo33(riasec, asc, 0, 0, 0)
-		//b, _ := json.MarshalIndent(log33, "", "  ")
-		//fmt.Println(string(b))
-
-		log312 := RunDemo312(riasec, asc, 0, 0, 0)
-		b, _ := json.MarshalIndent(log312, "", "  ")
-		fmt.Println(string(b))
+		RunDemo33(riasec, asc, 0, 0, 0)
+		RunDemo312(riasec, asc, 0, 0, 0)
 
 	default:
 		panic("unknown stage parameter")

@@ -226,7 +226,7 @@ func BuildScores(
 	W map[string]map[string]float64,
 	f map[string]float64,
 	alpha, beta, gamma float64,
-) ([]SubjectScores, float64, CommonSection) {
+) ([]SubjectScores, float64, *CommonSection) {
 
 	var log CommonSection
 
@@ -271,12 +271,12 @@ func BuildScores(
 
 		out = append(out, SubjectScores{
 			Subject: s,
-			I:       round1(I[s]),
-			A:       round1(A[s]),
+			I:       I[s],
+			A:       A[s],
 			IPct:    math.Round(ipct),
 			APct:    math.Round(apct),
-			ZGap:    round2(zgap),
-			Fit:     round2(fit),
+			ZGap:    zgap,
+			Fit:     fit,
 		})
 	}
 
@@ -285,15 +285,14 @@ func BuildScores(
 	for _, s := range Subjects {
 		subjectProfiles = append(subjectProfiles, SubjectProfileData{
 			Subject:       s,
-			InterestScore: round2(I[s]),
-			AbilityScore:  round2(A[s]),
-			InterestPct:   toPct(I[s]),
-			AbilityPct:    toPct(A[s]),
-			AbilityShare:  shareA[s],
-			CosineLocal:   cos,
-			ZGap:          ZGap[s],
-			Fit:           findFit(out, s),
-			RiskFlag:      false, // 暂不标记，在派生部分综合评估
+			InterestScore: round3(I[s]),
+			AbilityScore:  round3(A[s]),
+			InterestPct:   round3(toPct(I[s])),
+			AbilityPct:    round3(toPct(A[s])),
+			AbilityShare:  round3(shareA[s]),
+			CosineLocal:   round3(cos),
+			ZGap:          round3(ZGap[s]),
+			Fit:           round3(findFit(out, s)),
 		})
 	}
 
@@ -301,14 +300,14 @@ func BuildScores(
 	fits := extractFit(out)
 	overall := OverallProfileData{
 		GlobalCosine:     round3(cos),
-		AvgFitScore:      mean(fits),
-		FitVariance:      variance(fits),
-		ZGapMean:         mean(mapValues(ZGap)),
-		ZGapRange:        rangeOf(mapValues(ZGap)),
-		AbilityVariance:  variance(mapValues(A)),
-		InterestVariance: variance(mapValues(I)),
-		BalanceIndex:     1.0 / (1.0 + math.Sqrt(variance(mapValues(A)))), // 方差越低，均衡度越高
-		TotalAbility:     sumA,
+		AvgFitScore:      round3(mean(fits)),
+		FitVariance:      round3(variance(fits)),
+		ZGapMean:         round3(mean(mapValues(ZGap))),
+		ZGapRange:        round3(rangeOf(mapValues(ZGap))),
+		AbilityVariance:  round3(variance(mapValues(A))),
+		InterestVariance: round3(variance(mapValues(I))),
+		BalanceIndex:     round3(1.0 / (1.0 + math.Sqrt(variance(mapValues(A))))),
+		TotalAbility:     round3(sumA),
 	}
 
 	// ---- 10. 计算 DerivedIndicatorData ----
@@ -367,7 +366,7 @@ func BuildScores(
 	// ---- 11. 汇总 DerivedIndicators ----
 	log.DerivedIndicators = DerivedIndicatorData{
 		DominantScore:          dominantScore,
-		FitStdDev:              fitStd,
+		FitStdDev:              round3(fitStd),
 		HighInterestLowAbility: hiLow,
 		HighAbilityLowInterest: loHi,
 		TopSubjects:            topSubs,
@@ -381,7 +380,7 @@ func BuildScores(
 	log.SubjectProfiles = subjectProfiles
 
 	fmt.Printf("Radar Visualization:\n%v\n", Radar(out))
-	return out, cos, log
+	return out, cos, &log
 }
 
 // ========== 工具函数 ==========

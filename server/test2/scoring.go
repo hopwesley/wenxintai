@@ -31,12 +31,6 @@ type SubjectScores struct {
 	Fit     float64 `json:"fit"`          // 融合评分（越高越推荐）
 }
 
-type RadarPayload struct {
-	Subjects []string  `json:"subjects"`
-	Interest []float64 `json:"interest_pct"`
-	Ability  []float64 `json:"ability_pct"`
-}
-
 // DimCalib
 // ---------------------------------------
 // 参数配置

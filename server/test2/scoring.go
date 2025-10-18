@@ -468,8 +468,6 @@ func minInt(a, b int) int {
 	return b
 }
 
-func round1(x float64) float64 { return math.Round(x*10) / 10 }
-func round2(x float64) float64 { return math.Round(x*100) / 100 }
 func round3(x float64) float64 { return math.Round(x*1000) / 1000 }
 
 // Radar 雷达图载荷

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 )
 
@@ -210,13 +211,15 @@ func cosineSim(a, b map[string]float64) float64 {
 	return dot / (na * nb)
 }
 
-func round1(x float64) float64 { return math.Round(x*10) / 10 }
-func round2(x float64) float64 { return math.Round(x*100) / 100 }
-
 // BuildScores
-// ---------------------------------------
-// 核心融合评分流程
-// ---------------------------------------
+// ===========================================
+// 计算兴趣、能力及综合匹配指标，并生成可解释性结构。
+// 返回：
+//   - SubjectScores: 每科分数
+//   - globalCosine: 全局一致性
+//   - CommonSection: 用于 AI 报告解释的核心参数
+//
+// ===========================================
 func BuildScores(
 	riasecAnswers []RIASECAnswer,
 	ascAnswers []ASCAnswer,
@@ -247,6 +250,7 @@ func BuildScores(
 	// ---- 5. 一致性 ----
 	cos := cosineSim(I, A)
 
+	// ---- 6. 能力占比 ----
 	sumA := 0.0
 	for _, s := range Subjects {
 		sumA += A[s]
@@ -256,9 +260,8 @@ func BuildScores(
 		shareA[s] = safeDiv(A[s], sumA)
 	}
 
-	// ---- 6. Fit 融合 ----
+	// ---- 7. 每科 Fit ----
 	out := make([]SubjectScores, 0, len(Subjects))
-
 	for _, s := range Subjects {
 		ipct := toPct(I[s])
 		apct := toPct(A[s])
@@ -277,11 +280,198 @@ func BuildScores(
 		})
 	}
 
-	// ---- 7. 可视化数据 ----
-	radar := Radar(out)
-	fmt.Println(radar)
+	// ---- 8. 构建 SubjectProfiles ----
+	var subjectProfiles []SubjectProfileData
+	for _, s := range Subjects {
+		subjectProfiles = append(subjectProfiles, SubjectProfileData{
+			Subject:       s,
+			InterestScore: round2(I[s]),
+			AbilityScore:  round2(A[s]),
+			InterestPct:   toPct(I[s]),
+			AbilityPct:    toPct(A[s]),
+			AbilityShare:  shareA[s],
+			CosineLocal:   cos,
+			ZGap:          ZGap[s],
+			Fit:           findFit(out, s),
+			RiskFlag:      false, // 暂不标记，在派生部分综合评估
+		})
+	}
+
+	// ---- 9. 计算 OverallProfileData ----
+	fits := extractFit(out)
+	overall := OverallProfileData{
+		GlobalCosine:     round3(cos),
+		AvgFitScore:      mean(fits),
+		FitVariance:      variance(fits),
+		ZGapMean:         mean(mapValues(ZGap)),
+		ZGapRange:        rangeOf(mapValues(ZGap)),
+		AbilityVariance:  variance(mapValues(A)),
+		InterestVariance: variance(mapValues(I)),
+		BalanceIndex:     1.0 / (1.0 + math.Sqrt(variance(mapValues(A)))), // 方差越低，均衡度越高
+		TotalAbility:     sumA,
+	}
+
+	// ---- 10. 计算 DerivedIndicatorData ----
+
+	// ① 学科方向判定
+	stemShare := shareA[SubjectPHY] + shareA[SubjectCHE] + shareA[SubjectBIO]
+	artsShare := shareA[SubjectHIS] + shareA[SubjectPOL] + shareA[SubjectGEO]
+
+	den := stemShare + artsShare
+	dominantScore := 0.0
+	if den > 0 {
+		dominantScore = (stemShare - artsShare) / den
+	}
+	dominantScore = round3(dominantScore)
+
+	// ② 稳定性
+	fitStd := math.Sqrt(variance(fits))
+
+	// ③ 错配统计
+	var hiLow, loHi, riskSubs []string
+	for _, s := range Subjects {
+		ip := toPct(I[s])
+		ap := toPct(A[s])
+		if ip > 70 && ap < 40 {
+			hiLow = append(hiLow, s)
+		}
+		if ap > 70 && ip < 40 {
+			loHi = append(loHi, s)
+		}
+		if A[s] < 3.0 || math.Abs(ZGap[s]) > 1.0 {
+			riskSubs = append(riskSubs, s)
+		}
+	}
+
+	// ④ 风险数值化计算
+	n := float64(len(Subjects))
+	lowAbilityRatio := float64(len(riskSubs)) / n
+	zgapMeanAbs := meanAbs(mapValues(ZGap))
+	mismatchRatio := float64(len(hiLow)+len(loHi)) / n
+	riskScore := 0.4*lowAbilityRatio + 0.3*zgapMeanAbs/2.0 + 0.2*mismatchRatio + 0.1*fitStd
+	if riskScore > 1.0 {
+		riskScore = 1.0
+	}
+
+	// ⑤ 优劣势学科
+	sort.Slice(out, func(i, j int) bool { return out[i].Fit > out[j].Fit })
+	var topSubs []string
+	var weakSubs []string
+	for i := 0; i < minInt(3, len(out)); i++ {
+		topSubs = append(topSubs, out[i].Subject)
+	}
+	for i := len(out) - 1; i >= 0 && len(weakSubs) < 3; i-- {
+		weakSubs = append(weakSubs, out[i].Subject)
+	}
+
+	// ---- 11. 汇总 DerivedIndicators ----
+	log.DerivedIndicators = DerivedIndicatorData{
+		DominantScore:          dominantScore,
+		FitStdDev:              fitStd,
+		HighInterestLowAbility: hiLow,
+		HighAbilityLowInterest: loHi,
+		TopSubjects:            topSubs,
+		WeakSubjects:           weakSubs,
+		RiskScore:              round3(riskScore),
+		RiskSubjects:           riskSubs,
+	}
+
+	// ---- 12. 汇总 CommonSection ----
+	log.OverallProfile = overall
+	log.SubjectProfiles = subjectProfiles
+
+	fmt.Printf("Radar Visualization:\n%v\n", Radar(out))
 	return out, cos, log
 }
+
+// ========== 工具函数 ==========
+
+func findFit(arr []SubjectScores, subj string) float64 {
+	for _, s := range arr {
+		if s.Subject == subj {
+			return s.Fit
+		}
+	}
+	return 0
+}
+
+func extractFit(arr []SubjectScores) []float64 {
+	out := make([]float64, len(arr))
+	for i, s := range arr {
+		out[i] = s.Fit
+	}
+	return out
+}
+
+func mapValues(m map[string]float64) []float64 {
+	out := make([]float64, 0, len(m))
+	for _, v := range m {
+		out = append(out, v)
+	}
+	return out
+}
+
+func variance(xs []float64) float64 {
+	if len(xs) < 2 {
+		return 0
+	}
+	m := mean(xs)
+	sum := 0.0
+	for _, v := range xs {
+		d := v - m
+		sum += d * d
+	}
+	return sum / float64(len(xs))
+}
+
+func mean(xs []float64) float64 {
+	if len(xs) == 0 {
+		return 0
+	}
+	sum := 0.0
+	for _, v := range xs {
+		sum += v
+	}
+	return sum / float64(len(xs))
+}
+
+func meanAbs(xs []float64) float64 {
+	if len(xs) == 0 {
+		return 0
+	}
+	sum := 0.0
+	for _, v := range xs {
+		sum += math.Abs(v)
+	}
+	return sum / float64(len(xs))
+}
+
+func rangeOf(xs []float64) float64 {
+	if len(xs) == 0 {
+		return 0
+	}
+	minV, maxV := xs[0], xs[0]
+	for _, v := range xs {
+		if v < minV {
+			minV = v
+		}
+		if v > maxV {
+			maxV = v
+		}
+	}
+	return maxV - minV
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func round1(x float64) float64 { return math.Round(x*10) / 10 }
+func round2(x float64) float64 { return math.Round(x*100) / 100 }
+func round3(x float64) float64 { return math.Round(x*1000) / 1000 }
 
 // Radar 雷达图载荷
 func Radar(scores []SubjectScores) RadarPayload {

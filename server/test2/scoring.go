@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"math"
-	"sort"
 	"strings"
 )
 
@@ -226,9 +225,9 @@ func BuildScores(
 	W map[string]map[string]float64,
 	f map[string]float64,
 	alpha, beta, gamma float64,
-) ([]SubjectScores, float64, *CommonSection) {
+) *FullScoreResult {
 
-	var log CommonSection
+	var common CommonSection
 
 	// ---- 1. RIASEC 兴趣均值 ----
 	ria := meanRIASEC(riasecAnswers)
@@ -249,6 +248,7 @@ func BuildScores(
 
 	// ---- 5. 一致性 ----
 	cos := cosineSim(I, A)
+	common.GlobalCosine = round3(cos)
 
 	// ---- 6. 能力占比 ----
 	sumA := 0.0
@@ -284,103 +284,33 @@ func BuildScores(
 	var subjectProfiles []SubjectProfileData
 	for _, s := range Subjects {
 		subjectProfiles = append(subjectProfiles, SubjectProfileData{
-			Subject:       s,
-			InterestScore: round3(I[s]),
-			AbilityScore:  round3(A[s]),
-			InterestPct:   round3(toPct(I[s])),
-			AbilityPct:    round3(toPct(A[s])),
-			AbilityShare:  round3(shareA[s]),
-			CosineLocal:   round3(cos),
-			ZGap:          round3(ZGap[s]),
-			Fit:           round3(findFit(out, s)),
+			Subject:      s,
+			InterestZ:    round3(I[s]),
+			AbilityZ:     round3(A[s]),
+			AbilityShare: round3(shareA[s]),
+			ZGap:         round3(ZGap[s]),
+			Fit:          round3(findFit(out, s)),
 		})
 	}
 
-	// ---- 9. 计算 OverallProfileData ----
-	fits := extractFit(out)
-	overall := OverallProfileData{
-		GlobalCosine:     round3(cos),
-		AvgFitScore:      round3(mean(fits)),
-		FitVariance:      round3(variance(fits)),
-		ZGapMean:         round3(mean(mapValues(ZGap))),
-		ZGapRange:        round3(rangeOf(mapValues(ZGap))),
-		AbilityVariance:  round3(variance(mapValues(A))),
-		InterestVariance: round3(variance(mapValues(I))),
-		BalanceIndex:     round3(1.0 / (1.0 + math.Sqrt(variance(mapValues(A))))),
-		TotalAbility:     round3(sumA),
-	}
+	common.Subjects = subjectProfiles
 
-	// ---- 10. 计算 DerivedIndicatorData ----
-
-	// ① 学科方向判定
-	stemShare := shareA[SubjectPHY] + shareA[SubjectCHE] + shareA[SubjectBIO]
-	artsShare := shareA[SubjectHIS] + shareA[SubjectPOL] + shareA[SubjectGEO]
-
-	den := stemShare + artsShare
-	dominantScore := 0.0
-	if den > 0 {
-		dominantScore = (stemShare - artsShare) / den
-	}
-	dominantScore = round3(dominantScore)
-
-	// ② 稳定性
-	fitStd := math.Sqrt(variance(fits))
-
-	// ③ 错配统计
-	var hiLow, loHi, riskSubs []string
+	// ---- 9. 构建 RadarData ----
+	var radar RadarData
 	for _, s := range Subjects {
-		ip := toPct(I[s])
-		ap := toPct(A[s])
-		if ip > 70 && ap < 40 {
-			hiLow = append(hiLow, s)
-		}
-		if ap > 70 && ip < 40 {
-			loHi = append(loHi, s)
-		}
-		if A[s] < 3.0 || math.Abs(ZGap[s]) > 1.0 {
-			riskSubs = append(riskSubs, s)
-		}
+		radar.Subjects = append(radar.Subjects, s)
+		radar.InterestPct = append(radar.InterestPct, round3(toPct(I[s])))
+		radar.AbilityPct = append(radar.AbilityPct, round3(toPct(A[s])))
 	}
 
-	// ④ 风险数值化计算
-	n := float64(len(Subjects))
-	lowAbilityRatio := float64(len(riskSubs)) / n
-	zgapMeanAbs := meanAbs(mapValues(ZGap))
-	mismatchRatio := float64(len(hiLow)+len(loHi)) / n
-	riskScore := 0.4*lowAbilityRatio + 0.3*zgapMeanAbs/2.0 + 0.2*mismatchRatio + 0.1*fitStd
-	if riskScore > 1.0 {
-		riskScore = 1.0
+	// ---- 10. 返回综合结果 ----
+	result := FullScoreResult{
+		Common: common,
+		Radar:  radar,
 	}
 
-	// ⑤ 优劣势学科
-	sort.Slice(out, func(i, j int) bool { return out[i].Fit > out[j].Fit })
-	var topSubs []string
-	var weakSubs []string
-	for i := 0; i < minInt(3, len(out)); i++ {
-		topSubs = append(topSubs, out[i].Subject)
-	}
-	for i := len(out) - 1; i >= 0 && len(weakSubs) < 3; i-- {
-		weakSubs = append(weakSubs, out[i].Subject)
-	}
-
-	// ---- 11. 汇总 DerivedIndicators ----
-	log.DerivedIndicators = DerivedIndicatorData{
-		DominantScore:          dominantScore,
-		FitStdDev:              round3(fitStd),
-		HighInterestLowAbility: hiLow,
-		HighAbilityLowInterest: loHi,
-		TopSubjects:            topSubs,
-		WeakSubjects:           weakSubs,
-		RiskScore:              round3(riskScore),
-		RiskSubjects:           riskSubs,
-	}
-
-	// ---- 12. 汇总 CommonSection ----
-	log.OverallProfile = overall
-	log.SubjectProfiles = subjectProfiles
-
-	fmt.Printf("Radar Visualization:\n%v\n", Radar(out))
-	return out, cos, &log
+	fmt.Printf("Radar Visualization:\n%+v\n", radar)
+	return &result
 }
 
 // ========== 工具函数 ==========

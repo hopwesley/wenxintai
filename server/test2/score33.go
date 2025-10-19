@@ -10,52 +10,6 @@ import (
 	"time"
 )
 
-/**
- 1. RunDemo33（3+3模式）
-目标：
-从6个学科（物理、化学、生物、地理、历史、政治）中选出3个学科组成一个组合，并根据多个因素计算该组合的推荐分数。
-
-RunDemo33 (3+3模式) 数学逻辑
-核心评分公式：
-math
-Score = W₁ × avgFit - W₂ × (rarity/10) + W₃ × globalCos + W₄ × (minA/5) - W₅ × riskPenalty
-各分量详细解释：
-1.1 平均兴趣匹配度 (avgFit)
-math
-avgFit = (Fit₁ + Fit₂ + Fit₃) / 3
-其中单个学科的 Fit 计算来自 BuildScores：
-
-math
-Fit = α × (zA - zI) + β × cos(AZ, IZ) + γ × AbilityShare
-zA - zI: 能力与兴趣的 z-score 差异
-
-cos(AZ, IZ): 兴趣向量与能力向量的余弦相似度
-
-AbilityShare: 该科能力在总能力中的占比
-
-1.2 稀有度惩罚 (rarity)
-rarity ∈ {0, 5, 12}
-0: 常见组合 (PHY_CHE_BIO 等)
-
-5: 中等稀有 (HIS_GEO_POL 等)
-
-12: 默认稀有 (不在白名单的组合)
-
-1.3 全局余弦相似度 (globalCos)
-globalCos = cosine_similarity(I⃗, A⃗)
-衡量兴趣与能力在整个学科空间的方向一致性
-
-1.4 最低能力标准化 (minA/5)
-minA/5 ∈ [0.2, 1.0]
-将最低能力值从 [1,5] 缩放到 [0.2,1.0]
-
-1.5 风险惩罚 (riskPenalty)
-riskPenalty = {0.2 if minA < 3, 0 otherwise}
-当任一学科能力低于阈值时的固定惩罚
-默认权重配置：
-ws := Weights{W1: 0.5, W2: 0.3, W3: 0.1, W4: 0.1, W5: 0.1}
-*/
-
 // Weights 组合打分
 type Weights struct{ W1, W2, W3, W4, W5 float64 }
 
@@ -91,10 +45,7 @@ func ScoreCombos33(scores []SubjectScores, w Weights) *Mode33Section {
 		rarity := RarityValue(comboKey)
 
 		// 风险惩罚
-		risk := 0.0
-		if minA < 2.8 {
-			risk = 0.45
-		}
+		risk := calculateRiskPenalty(minA, avgFit)
 
 		comboCos := calcComboCos([]SubjectScores{sc1, sc2, sc3})
 
@@ -157,7 +108,7 @@ func RarityValue(combo string) float64 {
 
 func RunDemo33(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64) *ParamForAIPrompt {
 	if alpha == 0 && beta == 0 && gamma == 0 {
-		alpha, beta, gamma = 0.5, 0.2, 0.3
+		alpha, beta, gamma = 0.4, 0.4, 0.2
 	}
 
 	var paramPrompt ParamForAIPrompt

@@ -261,6 +261,8 @@ func BuildScores(
 
 		out = append(out, SubjectScores{
 			Subject: s,
+			I:       I[s],
+			A:       A[s],
 			AZ:      AZ[s],
 			IZ:      IZ[s],
 			Fit:     fit,
@@ -320,4 +322,25 @@ func calcComboCos(aux []SubjectScores) float64 {
 	}
 
 	return cosineSim(a, b)
+}
+
+func calculateRiskPenalty(minA, avgFit float64) float64 {
+	const (
+		MinAThreshold = 3.0
+		MaxPenalty    = 0.2 // 匹配 W5
+		FitWeight     = 0.5 // 提高至 ±50%
+	)
+
+	base := math.Max(0, (MinAThreshold-minA)/(MinAThreshold-1.0))
+	risk := MaxPenalty * base
+	risk *= 1 + FitWeight*(-avgFit)
+
+	if risk < 0 {
+		risk = 0
+	}
+	if risk > MaxPenalty*1.5 {
+		risk = MaxPenalty * 1.5
+	} // 上限 0.3
+
+	return risk
 }

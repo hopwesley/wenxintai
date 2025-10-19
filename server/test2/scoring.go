@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 	"strings"
 )
@@ -219,7 +218,7 @@ func BuildScores(
 	W map[string]map[string]float64,
 	f map[string]float64,
 	alpha, beta, gamma float64,
-) *FullScoreResult {
+) ([]SubjectScores, *FullScoreResult) {
 
 	var common CommonSection
 
@@ -267,26 +266,25 @@ func BuildScores(
 			Subject: s,
 			I:       I[s],
 			A:       A[s],
-			IPct:    math.Round(ipct),
-			APct:    math.Round(apct),
+			IPct:    round3(ipct),
+			APct:    round3(apct),
 			ZGap:    zgap,
 			Fit:     fit,
 		})
 	}
 
-	// ---- 8. 构建 SubjectProfiles ----
+	// ---- 8. 构建 CommonSection.Subjects ----
 	var subjectProfiles []SubjectProfileData
 	for _, s := range Subjects {
 		subjectProfiles = append(subjectProfiles, SubjectProfileData{
 			Subject:      s,
-			InterestZ:    round3(I[s]),
-			AbilityZ:     round3(A[s]),
+			InterestZ:    round3(IZ[s]),
+			AbilityZ:     round3(AZ[s]),
 			AbilityShare: round3(shareA[s]),
 			ZGap:         round3(ZGap[s]),
 			Fit:          round3(findFit(out, s)),
 		})
 	}
-
 	common.Subjects = subjectProfiles
 
 	// ---- 9. 构建 RadarData ----
@@ -297,14 +295,13 @@ func BuildScores(
 		radar.AbilityPct = append(radar.AbilityPct, round3(toPct(A[s])))
 	}
 
-	// ---- 10. 返回综合结果 ----
+	// ---- 10. 构建 FullScoreResult ----
 	result := FullScoreResult{
-		Common: common,
-		Radar:  radar,
+		Common: &common,
+		Radar:  &radar,
 	}
 
-	fmt.Printf("Radar Visualization:\n%+v\n", radar)
-	return &result
+	return out, &result
 }
 
 // ========== 工具函数 ==========

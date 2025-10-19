@@ -10,9 +10,9 @@ package main
 //
 // ===========================================
 type ParamForAIPrompt struct {
-	Common  *CommonSection  `json:"common"`     // 通用部分：兴趣-能力整体特征
-	Mode33  *Mode33Section  `json:"mode_3_3"`   // 3+3 模式部分
-	Mode312 *Mode312Section `json:"mode_3_1_2"` // 3+1+2 模式部分
+	Common  *CommonSection  `json:"common"`               // 通用部分：兴趣-能力整体特征
+	Mode33  *Mode33Section  `json:"mode_3_3,omitempty"`   // 3+3 模式部分
+	Mode312 *Mode312Section `json:"mode_3_1_2,omitempty"` // 3+1+2 模式部分
 }
 
 // CommonSection
@@ -108,6 +108,6 @@ type RadarData struct {
 }
 
 type FullScoreResult struct {
-	Common CommonSection `json:"common"` // 算法核心因子（Fit 计算）
-	Radar  RadarData     `json:"radar"`  // 展示数据（兴趣/能力雷达）
+	Common *CommonSection `json:"common"` // 算法核心因子（Fit 计算）
+	Radar  *RadarData     `json:"radar"`  // 展示数据（兴趣/能力雷达）
 }

@@ -154,17 +154,19 @@ func RunDemo33(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta
 	}
 
 	var paramPrompt ParamForAIPrompt
-	scores, globalCos, log := BuildScores(riasecAnswers, ascAnswers, Wfinal, DimCalib, alpha, beta, gamma)
+	scores, result := BuildScores(riasecAnswers, ascAnswers, Wfinal, DimCalib, alpha, beta, gamma)
 
-	paramPrompt.Common = log
+	paramPrompt.Common = result.Common
 
 	ws := Weights{W1: 0.5, W2: 0.3, W3: 0.1, W4: 0.1, W5: 0.1}
-	paramPrompt.Mode33 = ScoreCombos33(scores, globalCos, ws)
+	paramPrompt.Mode33 = ScoreCombos33(scores, result.Common.GlobalCosine, ws)
 
 	content, _ := json.MarshalIndent(&paramPrompt, "", "  ")
 	ts := time.Now().Format("20060102_150405")
 	filename := fmt.Sprintf("report_param_%s_%s.json", "3+3", ts) // 增加了模块名
 	_ = os.WriteFile(filename, content, 0644)
+
+	fmt.Printf("Radar Visualization:\n%+v\n", result.Radar)
 
 	return &paramPrompt
 }

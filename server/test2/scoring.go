@@ -7,13 +7,13 @@ import (
 
 // =======================================
 // score_fusion.go
-// 方案 A（维度加权平均）+ 方案 C（余弦匹配）的融合计分实现
+// 方案 IZ（维度加权平均）+ 方案 C（余弦匹配）的融合计分实现
 // =======================================
 // - 兴趣六维 → 维度加权 → W_final 投影到 6 科（Interest 1–5）
 // - 能力：ASC 每科 4 题（含反向题换算）平均（Ability 1–5）
 // - 标准化：z-score（在 6 科内部） & 0–100（用于雷达图）
 // - 余弦相似度：衡量兴趣与能力在“学科空间”的方向一致性
-// - Fit = α·(zA - zI) + β·cos(I, A) + γ·AbilityShare
+// - Fit = α·(zA - zI) + β·cos(AZ, IZ) + γ·AbilityShare
 //   （默认 α=0.4, β=0.4, γ=0.2；可按省/校样本校准）
 
 // SubjectScores
@@ -22,9 +22,11 @@ import (
 // ---------------------------------------
 type SubjectScores struct {
 	Subject string  `json:"subject"`
-	I       float64 `json:"interest"` // 1–5
-	A       float64 `json:"ability"`  // 1–5
-	Fit     float64 `json:"fit"`      // 融合评分（越高越推荐）
+	I       float64 `json:"interest"`   // 原始兴趣值1-5
+	A       float64 `json:"ability"`    // 原始能力值1-5
+	IZ      float64 `json:"interest_z"` // 兴趣Z-Score
+	AZ      float64 `json:"ability_z"`  // 能力Z-Score
+	Fit     float64 `json:"fit"`        // 匹配度
 }
 
 // DimCalib
@@ -237,7 +239,7 @@ func BuildScores(
 	}
 
 	// ---- 5. 一致性 ----
-	cos := cosineSim(I, A)
+	cos := cosineSim(IZ, AZ)
 	common.GlobalCosine = round3(cos)
 
 	// ---- 6. 能力占比 ----
@@ -259,8 +261,8 @@ func BuildScores(
 
 		out = append(out, SubjectScores{
 			Subject: s,
-			I:       I[s],
-			A:       A[s],
+			AZ:      AZ[s],
+			IZ:      IZ[s],
 			Fit:     fit,
 		})
 	}
@@ -313,8 +315,8 @@ func calcComboCos(aux []SubjectScores) float64 {
 	a := make(map[string]float64)
 	b := make(map[string]float64)
 	for _, sc := range aux {
-		a[sc.Subject] = sc.I
-		b[sc.Subject] = sc.A
+		a[sc.Subject] = sc.AZ
+		b[sc.Subject] = sc.IZ
 	}
 
 	return cosineSim(a, b)

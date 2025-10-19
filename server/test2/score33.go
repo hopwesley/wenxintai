@@ -26,10 +26,10 @@ avgFit = (Fit₁ + Fit₂ + Fit₃) / 3
 其中单个学科的 Fit 计算来自 BuildScores：
 
 math
-Fit = α × (zA - zI) + β × cos(I, A) + γ × AbilityShare
+Fit = α × (zA - zI) + β × cos(AZ, IZ) + γ × AbilityShare
 zA - zI: 能力与兴趣的 z-score 差异
 
-cos(I, A): 兴趣向量与能力向量的余弦相似度
+cos(AZ, IZ): 兴趣向量与能力向量的余弦相似度
 
 AbilityShare: 该科能力在总能力中的占比
 

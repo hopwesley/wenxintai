@@ -65,8 +65,8 @@ func main() {
 	case "demo":
 		// 1) 选择一个组合与能力场景
 		combo := ComboPHY_CHE_BIO
-		//category := "aligned" // 或 "mismatch"
-		category := "mismatch" // 或 "mismatch"
+		//category := "aligned"
+		category := "mismatch"
 
 		// 2) 拿到样本答案
 		riasec := AllRIASECCombos[combo]

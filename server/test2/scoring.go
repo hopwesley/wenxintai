@@ -22,12 +22,9 @@ import (
 // ---------------------------------------
 type SubjectScores struct {
 	Subject string  `json:"subject"`
-	I       float64 `json:"interest"`     // 1–5
-	A       float64 `json:"ability"`      // 1–5
-	IPct    float64 `json:"interest_pct"` // 0–100
-	APct    float64 `json:"ability_pct"`  // 0–100
-	ZGap    float64 `json:"zgap"`         // z(A) - z(I)
-	Fit     float64 `json:"fit"`          // 融合评分（越高越推荐）
+	I       float64 `json:"interest"` // 1–5
+	A       float64 `json:"ability"`  // 1–5
+	Fit     float64 `json:"fit"`      // 融合评分（越高越推荐）
 }
 
 // DimCalib
@@ -256,8 +253,6 @@ func BuildScores(
 	// ---- 7. 每科 Fit ----
 	out := make([]SubjectScores, 0, len(Subjects))
 	for _, s := range Subjects {
-		ipct := toPct(I[s])
-		apct := toPct(A[s])
 		zgap := AZ[s] - IZ[s]
 		share := safeDiv(A[s], sumA)
 		fit := alpha*zgap + beta*cos + gamma*share
@@ -266,9 +261,6 @@ func BuildScores(
 			Subject: s,
 			I:       I[s],
 			A:       A[s],
-			IPct:    round3(ipct),
-			APct:    round3(apct),
-			ZGap:    zgap,
 			Fit:     fit,
 		})
 	}
@@ -316,3 +308,14 @@ func findFit(arr []SubjectScores, subj string) float64 {
 }
 
 func round3(x float64) float64 { return math.Round(x*1000) / 1000 }
+
+func calcComboCos(aux []SubjectScores) float64 {
+	a := make(map[string]float64)
+	b := make(map[string]float64)
+	for _, sc := range aux {
+		a[sc.Subject] = sc.I
+		b[sc.Subject] = sc.A
+	}
+
+	return cosineSim(a, b)
+}

@@ -72,12 +72,13 @@ type ComboCoreData struct {
 	AvgFit    float64 `json:"avg_fit"`   // 两辅科平均匹配度
 	MinFit    float64 `json:"min_fit"`   // 两辅科最小匹配度
 	Expansion float64 `json:"expansion"` // 净扩展度（>=0）
+	ComboCos  float64 `json:"combo_cos"`
 
 	// —— 已含权重的“分项贡献” ——（安全可解释，防公式反推）
 	TermAvgFit    float64 `json:"term_avg_fit"`
 	TermMinFit    float64 `json:"term_min_fit"`
 	TermExpansion float64 `json:"term_expansion"`
-	TermGlobalCos float64 `json:"term_global_cos"`
+	TermCombosCos float64 `json:"term_combos_cos"`
 
 	// —— 阶段结果 ——
 	S23 float64 `json:"s23"` // 阶段二得分（组合层）
@@ -99,6 +100,7 @@ type Combo33CoreData struct {
 	Rarity      float64   `json:"rarity"`       // 稀有性（原始值 0/5/12）
 	RiskPenalty float64   `json:"risk_penalty"` // 风险惩罚（原始值 0 或 0.2）
 	Score       float64   `json:"score"`        // 综合推荐得分（最终输出）
+	ComboCosine float64   `json:"combo_cosine"`
 }
 
 type RadarData struct {

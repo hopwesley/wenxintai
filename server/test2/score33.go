@@ -61,9 +61,9 @@ type Weights struct{ W1, W2, W3, W4, W5 float64 }
 
 // ScoreCombos33
 // ------------------------
-// 修正版：组合打分逻辑
+// 组合打分逻辑
 // ------------------------
-func ScoreCombos33(scores []SubjectScores, globalCos float64, w Weights) *Mode33Section {
+func ScoreCombos33(scores []SubjectScores, w Weights) *Mode33Section {
 	m := map[string]SubjectScores{}
 	for _, s := range scores {
 		m[s.Subject] = s
@@ -78,24 +78,30 @@ func ScoreCombos33(scores []SubjectScores, globalCos float64, w Weights) *Mode33
 		}
 		s1, s2, s3 := subjs[0], subjs[1], subjs[2]
 
-		// 计算平均匹配度
-		avgFit := (m[s1].Fit + m[s2].Fit + m[s3].Fit) / 3.0
+		// 获取三科的 SubjectScores
+		sc1, sc2, sc3 := m[s1], m[s2], m[s3]
+
+		// 平均匹配度
+		avgFit := (sc1.Fit + sc2.Fit + sc3.Fit) / 3.0
 
 		// 计算最低能力
 		minA := math.Min(m[s1].A, math.Min(m[s2].A, m[s3].A))
 
 		// 稀有性值
-		rarity := RarityValue(comboKey) // 从组合映射表获取 (0,5,12)
+		rarity := RarityValue(comboKey)
 
 		// 风险惩罚
 		risk := 0.0
-		if minA < 3 {
-			risk = 0.2
+		if minA < 2.8 {
+			risk = 0.45
 		}
+
+		comboCos := calcComboCos([]SubjectScores{sc1, sc2, sc3})
+
 		// 计算组合最终分
 		score := w.W1*avgFit -
 			w.W2*rarity/10.0 +
-			w.W3*globalCos +
+			w.W3*comboCos +
 			w.W4*minA/5.0 -
 			w.W5*risk
 
@@ -105,6 +111,7 @@ func ScoreCombos33(scores []SubjectScores, globalCos float64, w Weights) *Mode33
 			MinAbility:  round3(minA),
 			Rarity:      round3(rarity), // 虽是离散值，保持统一风格
 			RiskPenalty: round3(risk),
+			ComboCosine: round3(comboCos),
 			Score:       round3(score),
 		})
 	}
@@ -150,7 +157,7 @@ func RarityValue(combo string) float64 {
 
 func RunDemo33(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64) *ParamForAIPrompt {
 	if alpha == 0 && beta == 0 && gamma == 0 {
-		alpha, beta, gamma = 0.4, 0.4, 0.2
+		alpha, beta, gamma = 0.5, 0.2, 0.3
 	}
 
 	var paramPrompt ParamForAIPrompt
@@ -158,8 +165,16 @@ func RunDemo33(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta
 
 	paramPrompt.Common = result.Common
 
-	ws := Weights{W1: 0.5, W2: 0.3, W3: 0.1, W4: 0.1, W5: 0.1}
-	paramPrompt.Mode33 = ScoreCombos33(scores, result.Common.GlobalCosine, ws)
+	// 组合余弦相似度 + 风险约束的科学权重方案
+	ws := Weights{
+		W1: 0.45, // avgFit: 主导
+		W2: 0.20, // rarity: 竞争性平衡
+		W3: 0.25, // comboCos: 组合方向一致性
+		W4: 0.15, // minA: 能力底线保障
+		W5: 0.20, // riskPenalty: 触发式惩罚（0.04 扣分）
+	}
+
+	paramPrompt.Mode33 = ScoreCombos33(scores, ws)
 
 	content, _ := json.MarshalIndent(&paramPrompt, "", "  ")
 	ts := time.Now().Format("20060102_150405")

@@ -40,7 +40,7 @@ AnchorBaseCoverage(anchor)：该主干学科的基线覆盖率（来自AnchorBas
 
 则：
 
-S23 = auxW_AvgFit * avgFit + auxW_MinFit * minFit + auxW_Expansion * expansion + auxW_GlobalCos * globalCos
+S23 = auxW_AvgFit * avgFit + auxW_MinFit * minFit + auxW_Expansion * expansion + auxW_CombosCos * globalCos
 
 阶段三：综合评分（Sfinal）
 Sfinal = lambda1 * S1 + lambda2 * S23
@@ -61,7 +61,7 @@ auxW_MinFit（辅科最小兴趣匹配度）：0.3
 
 auxW_Expansion（扩展覆盖率）：0.3
 
-auxW_GlobalCos（全局余弦相似度）：0.1
+auxW_CombosCos（全局余弦相似度）：0.1
 
 阶段三权重：
 
@@ -108,7 +108,7 @@ var (
 
 // 阶段二权重（辅科组合）
 var (
-	auxW_AvgFit, auxW_MinFit, auxW_Expansion, auxW_GlobalCos = 0.4, 0.3, 0.3, 0.1
+	auxW_AvgFit, auxW_MinFit, auxW_Expansion, auxW_CombosCos = 0.45, 0.25, 0.2, 0.2
 )
 
 // 阶段三权重（综合）
@@ -120,15 +120,15 @@ var (
 // =============================
 // 核心算法逻辑
 // =============================
-func ScoreCombos312(scores []SubjectScores, globalCos float64) *Mode312Section {
+func ScoreCombos312(scores []SubjectScores) *Mode312Section {
 	m := map[string]SubjectScores{}
 	for _, s := range scores {
 		m[s.Subject] = s
 	}
 
 	// 生成两个固定方向的 Anchor
-	anchorPHY := buildAnchor312(SubjectPHY, m, globalCos)
-	anchorHIS := buildAnchor312(SubjectHIS, m, globalCos)
+	anchorPHY := buildAnchor312(SubjectPHY, m)
+	anchorHIS := buildAnchor312(SubjectHIS, m)
 
 	return &Mode312Section{
 		AnchorPHY: anchorPHY,
@@ -140,7 +140,7 @@ func ScoreCombos312(scores []SubjectScores, globalCos float64) *Mode312Section {
 // --------------------------------------
 // 按主干方向（PHY/HIS）计算阶段一与阶段二结果
 // --------------------------------------
-func buildAnchor312(anchor string, m map[string]SubjectScores, globalCos float64) AnchorCoreData {
+func buildAnchor312(anchor string, m map[string]SubjectScores) AnchorCoreData {
 	// 阶段一计算
 	fit := m[anchor].Fit
 	abNorm := m[anchor].A / 5.0
@@ -178,13 +178,14 @@ func buildAnchor312(anchor string, m map[string]SubjectScores, globalCos float64
 			minFit := math.Min(m[s2].Fit, m[s3].Fit)
 			expansion := math.Max(0, cov-baseCov)
 
+			comboCos := calcComboCos([]SubjectScores{m[anchor], m[s2], m[s3]})
 			// 阶段二计算
 			termAvgFit := auxW_AvgFit * avgFit
 			termMinFit := auxW_MinFit * minFit
 			termExpansion := auxW_Expansion * expansion
-			termGlobalCos := auxW_GlobalCos * globalCos
+			termCombosCos := auxW_CombosCos * comboCos
 
-			S23 := termAvgFit + termMinFit + termExpansion + termGlobalCos
+			S23 := termAvgFit + termMinFit + termExpansion + termCombosCos
 
 			// 阶段三计算
 			SFinal := lambda1*S1 + lambda2*S23
@@ -198,10 +199,11 @@ func buildAnchor312(anchor string, m map[string]SubjectScores, globalCos float64
 				AvgFit:        round3(avgFit),
 				MinFit:        round3(minFit),
 				Expansion:     round3(expansion),
+				ComboCos:      round3(comboCos),
 				TermAvgFit:    round3(termAvgFit),
 				TermMinFit:    round3(termMinFit),
 				TermExpansion: round3(termExpansion),
-				TermGlobalCos: round3(termGlobalCos),
+				TermCombosCos: round3(termCombosCos),
 				S23:           round3(S23),
 			})
 		}
@@ -226,18 +228,18 @@ func buildAnchor312(anchor string, m map[string]SubjectScores, globalCos float64
 
 func RunDemo312(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64) *ParamForAIPrompt {
 	if alpha == 0 && beta == 0 && gamma == 0 {
-		alpha, beta, gamma = 0.4, 0.4, 0.2
+		alpha, beta, gamma = 0.5, 0.2, 0.3
 	}
 
 	scores, result := BuildScores(riasecAnswers, ascAnswers, Wfinal, DimCalib, alpha, beta, gamma)
 
 	var paramForPrompt ParamForAIPrompt
 	paramForPrompt.Common = result.Common
-	paramForPrompt.Mode312 = ScoreCombos312(scores, result.Common.GlobalCosine)
+	paramForPrompt.Mode312 = ScoreCombos312(scores)
 
 	content, _ := json.MarshalIndent(&paramForPrompt, "", "  ")
 	ts := time.Now().Format("20060102_150405")
-	filename := fmt.Sprintf("report_param_%s_%s.json", "3+1+2", ts) // 增加了模块名
+	filename := fmt.Sprintf("report_param_%s_%s.json", "3+1+2", ts)
 	_ = os.WriteFile(filename, content, 0644)
 
 	fmt.Printf("Radar Visualization:\n%+v\n", result.Radar)

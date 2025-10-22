@@ -118,18 +118,17 @@ func RunDemo33(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta
 
 	// 组合余弦相似度 + 风险约束的科学权重方案
 	ws := Weights{
-		W1: 0.45, // avgFit: 主导
-		W2: 0.20, // rarity: 竞争性平衡
-		W3: 0.25, // comboCos: 组合方向一致性
-		W4: 0.15, // minA: 能力底线保障
-		W5: 0.20, // riskPenalty: 触发式惩罚（0.04 扣分）
+		W1: 0.45, // avgFit（主导）
+		W2: 0.10, // rarity/10（轻度调节，永不主导）
+		W3: 0.25, // comboCos（方向一致性）
+		W4: 0.20, // minA/5（能力底线）
+		W5: 0.25, // risk（低能力/不匹配时的刚性刹车）
 	}
 
 	paramPrompt.Mode33 = ScoreCombos33(scores, ws)
 
 	content, _ := json.MarshalIndent(&paramPrompt, "", "  ")
-	ts := time.Now().Format("20060102_150405")
-	filename := fmt.Sprintf("report_param_%s_%s.json", "3+3", ts) // 增加了模块名
+	filename := fmt.Sprintf("report_param_%s_%d.json", "3+3", time.Now().UnixMilli()) // 增加了模块名
 	_ = os.WriteFile(filename, content, 0644)
 
 	fmt.Printf("Radar Visualization:\n%+v\n", result.Radar)

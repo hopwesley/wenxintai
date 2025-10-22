@@ -64,7 +64,8 @@ func main() {
 		TestASCAnswer()
 	case "demo":
 		// 1) 选择一个组合与能力场景
-		combo := ComboPHY_CHE_BIO
+		//combo := ComboPHY_CHE_BIO
+		combo := ComboPHY_BIO_GEO
 		category := "aligned"
 		//category := "mismatch"
 
@@ -72,6 +73,12 @@ func main() {
 		riasec := AllRIASECCombos[combo]
 		asc := AllASCCombos[combo][category]
 
+		RunDemo33(riasec, asc, 0, 0, 0)
+		RunDemo312(riasec, asc, 0, 0, 0)
+
+		category = "mismatch"
+		riasec = AllRIASECCombos[combo]
+		asc = AllASCCombos[combo][category]
 		RunDemo33(riasec, asc, 0, 0, 0)
 		RunDemo312(riasec, asc, 0, 0, 0)
 

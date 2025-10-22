@@ -173,8 +173,7 @@ func RunDemo312(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, bet
 	paramForPrompt.Mode312 = ScoreCombos312(scores)
 
 	content, _ := json.MarshalIndent(&paramForPrompt, "", "  ")
-	ts := time.Now().Format("20060102_150405")
-	filename := fmt.Sprintf("report_param_%s_%s.json", "3+1+2", ts)
+	filename := fmt.Sprintf("report_param_%s_%d.json", "3+1+2", time.Now().UnixMilli())
 	_ = os.WriteFile(filename, content, 0644)
 
 	fmt.Printf("Radar Visualization:\n%+v\n", result.Radar)

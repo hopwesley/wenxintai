@@ -457,80 +457,6 @@ var AscMismatchHisGeoBio = []ASCAnswer{
 	{24, SubjectPOL, 3, true, "SkillMastery"},
 }
 
-// AscAlignedPhyGeoChe
-// ============ PHY_GEO_CHE：匹配（Aligned） ============
-// 物理 / 地理 / 化学 为兴趣主科（5,5,5,1）
-// 其他（BIO / HIS / POL）中性（3,3,3,3）
-var AscAlignedPhyGeoChe = []ASCAnswer{
-	// PHY (1–4)
-	{1, SubjectPHY, 5, false, "Comparison"},
-	{2, SubjectPHY, 5, false, "Efficacy"},
-	{3, SubjectPHY, 5, false, "AchievementExpectation"},
-	{4, SubjectPHY, 1, true, "SkillMastery"},
-	// CHE (5–8)
-	{5, SubjectCHE, 5, false, "Comparison"},
-	{6, SubjectCHE, 5, false, "Efficacy"},
-	{7, SubjectCHE, 5, false, "AchievementExpectation"},
-	{8, SubjectCHE, 1, true, "SkillMastery"},
-	// BIO (9–12)
-	{9, SubjectBIO, 3, false, "Comparison"},
-	{10, SubjectBIO, 3, false, "Efficacy"},
-	{11, SubjectBIO, 3, false, "AchievementExpectation"},
-	{12, SubjectBIO, 3, true, "SkillMastery"},
-	// GEO (13–16)
-	{13, SubjectGEO, 5, false, "Comparison"},
-	{14, SubjectGEO, 5, false, "Efficacy"},
-	{15, SubjectGEO, 5, false, "AchievementExpectation"},
-	{16, SubjectGEO, 1, true, "SkillMastery"},
-	// HIS (17–20)
-	{17, SubjectHIS, 3, false, "Comparison"},
-	{18, SubjectHIS, 3, false, "Efficacy"},
-	{19, SubjectHIS, 3, false, "AchievementExpectation"},
-	{20, SubjectHIS, 3, true, "SkillMastery"},
-	// POL (21–24)
-	{21, SubjectPOL, 3, false, "Comparison"},
-	{22, SubjectPOL, 3, false, "Efficacy"},
-	{23, SubjectPOL, 3, false, "AchievementExpectation"},
-	{24, SubjectPOL, 3, true, "SkillMastery"},
-}
-
-// AscMismatchPhyGeoChe
-// ============ PHY_GEO_CHE：不匹配（Mismatch） ============
-// 物理 / 地理 / 化学 为兴趣主科但能力低（2,2,3,4）
-// 其他（BIO / HIS / POL）维持中性（3,3,3,3）
-var AscMismatchPhyGeoChe = []ASCAnswer{
-	// PHY (1–4)
-	{1, SubjectPHY, 2, false, "Comparison"},
-	{2, SubjectPHY, 2, false, "Efficacy"},
-	{3, SubjectPHY, 3, false, "AchievementExpectation"},
-	{4, SubjectPHY, 4, true, "SkillMastery"},
-	// CHE (5–8)
-	{5, SubjectCHE, 2, false, "Comparison"},
-	{6, SubjectCHE, 2, false, "Efficacy"},
-	{7, SubjectCHE, 3, false, "AchievementExpectation"},
-	{8, SubjectCHE, 4, true, "SkillMastery"},
-	// BIO (9–12)
-	{9, SubjectBIO, 3, false, "Comparison"},
-	{10, SubjectBIO, 3, false, "Efficacy"},
-	{11, SubjectBIO, 3, false, "AchievementExpectation"},
-	{12, SubjectBIO, 3, true, "SkillMastery"},
-	// GEO (13–16)
-	{13, SubjectGEO, 2, false, "Comparison"},
-	{14, SubjectGEO, 2, false, "Efficacy"},
-	{15, SubjectGEO, 3, false, "AchievementExpectation"},
-	{16, SubjectGEO, 4, true, "SkillMastery"},
-	// HIS (17–20)
-	{17, SubjectHIS, 3, false, "Comparison"},
-	{18, SubjectHIS, 3, false, "Efficacy"},
-	{19, SubjectHIS, 3, false, "AchievementExpectation"},
-	{20, SubjectHIS, 3, true, "SkillMastery"},
-	// POL (21–24)
-	{21, SubjectPOL, 3, false, "Comparison"},
-	{22, SubjectPOL, 3, false, "Efficacy"},
-	{23, SubjectPOL, 3, false, "AchievementExpectation"},
-	{24, SubjectPOL, 3, true, "SkillMastery"},
-}
-
 // AscAlignedHisPolBio
 // ============ HIS_POL_BIO：匹配（Aligned） ============
 // 历史 / 政治 / 生物 为兴趣主科（5,5,5,1）
@@ -605,6 +531,376 @@ var AscMismatchHisPolBio = []ASCAnswer{
 	{24, SubjectPOL, 4, true, "SkillMastery"},
 }
 
+// AscAlignedPhyChePol
+// ============ PHY_CHE_POL：匹配（Aligned） ============
+// 物理 / 化学 / 政治 为兴趣主科（5,5,5,1；POL的Comparison为2）
+// 其他（BIO / GEO / HIS）中性（3,3,3,3）
+var AscAlignedPhyChePol = []ASCAnswer{
+	// PHY (1–4)
+	{1, SubjectPHY, 5, false, "Comparison"},
+	{2, SubjectPHY, 5, false, "Efficacy"},
+	{3, SubjectPHY, 5, false, "AchievementExpectation"},
+	{4, SubjectPHY, 1, true, "SkillMastery"},
+	// CHE (5–8)
+	{5, SubjectCHE, 5, false, "Comparison"},
+	{6, SubjectCHE, 5, false, "Efficacy"},
+	{7, SubjectCHE, 5, false, "AchievementExpectation"},
+	{8, SubjectCHE, 1, true, "SkillMastery"},
+	// BIO (9–12)
+	{9, SubjectBIO, 3, false, "Comparison"},
+	{10, SubjectBIO, 3, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 3, true, "SkillMastery"},
+	// GEO (13–16)
+	{13, SubjectGEO, 3, false, "Comparison"},
+	{14, SubjectGEO, 3, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 3, true, "SkillMastery"},
+	// HIS (17–20)
+	{17, SubjectHIS, 3, false, "Comparison"},
+	{18, SubjectHIS, 3, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 3, true, "SkillMastery"},
+	// POL (21–24)
+	{21, SubjectPOL, 2, false, "Comparison"}, // 参考理科组合，POL的Comparison稍低
+	{22, SubjectPOL, 5, false, "Efficacy"},
+	{23, SubjectPOL, 5, false, "AchievementExpectation"},
+	{24, SubjectPOL, 1, true, "SkillMastery"},
+}
+
+// AscMismatchPhyChePol
+// ============ PHY_CHE_POL：不匹配（Mismatch） ============
+// 物理 / 化学 / 政治 为兴趣主科但能力低（2,2,3,4）
+// 其他（BIO / GEO / HIS）中性（3,3,3,3）
+var AscMismatchPhyChePol = []ASCAnswer{
+	// PHY (1–4)
+	{1, SubjectPHY, 2, false, "Comparison"},
+	{2, SubjectPHY, 2, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 4, true, "SkillMastery"},
+	// CHE (5–8)
+	{5, SubjectCHE, 2, false, "Comparison"},
+	{6, SubjectCHE, 2, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 4, true, "SkillMastery"},
+	// BIO (9–12)
+	{9, SubjectBIO, 3, false, "Comparison"},
+	{10, SubjectBIO, 3, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 3, true, "SkillMastery"},
+	// GEO (13–16)
+	{13, SubjectGEO, 3, false, "Comparison"},
+	{14, SubjectGEO, 3, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 3, true, "SkillMastery"},
+	// HIS (17–20)
+	{17, SubjectHIS, 3, false, "Comparison"},
+	{18, SubjectHIS, 3, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 3, true, "SkillMastery"},
+	// POL (21–24)
+	{21, SubjectPOL, 2, false, "Comparison"},
+	{22, SubjectPOL, 2, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 4, true, "SkillMastery"},
+}
+
+// AscAlignedPhyBioPol
+// ============ PHY_BIO_POL：匹配（Aligned） ============
+// 物理 / 生物 / 政治 为兴趣主科（5,5,5,1；POL的Comparison为2）
+// 其他（CHE / GEO / HIS）中性（3,3,3,3）
+var AscAlignedPhyBioPol = []ASCAnswer{
+	// PHY (1–4)
+	{1, SubjectPHY, 5, false, "Comparison"},
+	{2, SubjectPHY, 5, false, "Efficacy"},
+	{3, SubjectPHY, 5, false, "AchievementExpectation"},
+	{4, SubjectPHY, 1, true, "SkillMastery"},
+	// CHE (5–8)
+	{5, SubjectCHE, 3, false, "Comparison"},
+	{6, SubjectCHE, 3, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 3, true, "SkillMastery"},
+	// BIO (9–12)
+	{9, SubjectBIO, 5, false, "Comparison"},
+	{10, SubjectBIO, 5, false, "Efficacy"},
+	{11, SubjectBIO, 5, false, "AchievementExpectation"},
+	{12, SubjectBIO, 1, true, "SkillMastery"},
+	// GEO (13–16)
+	{13, SubjectGEO, 3, false, "Comparison"},
+	{14, SubjectGEO, 3, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 3, true, "SkillMastery"},
+	// HIS (17–20)
+	{17, SubjectHIS, 3, false, "Comparison"},
+	{18, SubjectHIS, 3, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 3, true, "SkillMastery"},
+	// POL (21–24)
+	{21, SubjectPOL, 2, false, "Comparison"},
+	{22, SubjectPOL, 5, false, "Efficacy"},
+	{23, SubjectPOL, 5, false, "AchievementExpectation"},
+	{24, SubjectPOL, 1, true, "SkillMastery"},
+}
+
+// AscMismatchPhyBioPol
+// ============ PHY_BIO_POL：不匹配（Mismatch） ============
+// 物理 / 生物 / 政治 为兴趣主科但能力低（2,2,3,4）
+// 其他（CHE / GEO / HIS）中性（3,3,3,3）
+var AscMismatchPhyBioPol = []ASCAnswer{
+	// PHY (1–4)
+	{1, SubjectPHY, 2, false, "Comparison"},
+	{2, SubjectPHY, 2, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 4, true, "SkillMastery"},
+	// CHE (5–8)
+	{5, SubjectCHE, 3, false, "Comparison"},
+	{6, SubjectCHE, 3, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 3, true, "SkillMastery"},
+	// BIO (9–12)
+	{9, SubjectBIO, 2, false, "Comparison"},
+	{10, SubjectBIO, 2, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 4, true, "SkillMastery"},
+	// GEO (13–16)
+	{13, SubjectGEO, 3, false, "Comparison"},
+	{14, SubjectGEO, 3, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 3, true, "SkillMastery"},
+	// HIS (17–20)
+	{17, SubjectHIS, 3, false, "Comparison"},
+	{18, SubjectHIS, 3, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 3, true, "SkillMastery"},
+	// POL (21–24)
+	{21, SubjectPOL, 2, false, "Comparison"},
+	{22, SubjectPOL, 2, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 4, true, "SkillMastery"},
+}
+
+// AscAlignedPhyGeoPol
+// ============ PHY_GEO_POL：匹配（Aligned） ============
+// 物理 / 地理 / 政治 为兴趣主科（5,5,5,1；POL的Comparison为2）
+// 其他（CHE / BIO / HIS）中性（3,3,3,3）
+var AscAlignedPhyGeoPol = []ASCAnswer{
+	// PHY (1–4)
+	{1, SubjectPHY, 5, false, "Comparison"},
+	{2, SubjectPHY, 5, false, "Efficacy"},
+	{3, SubjectPHY, 5, false, "AchievementExpectation"},
+	{4, SubjectPHY, 1, true, "SkillMastery"},
+	// CHE (5–8)
+	{5, SubjectCHE, 3, false, "Comparison"},
+	{6, SubjectCHE, 3, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 3, true, "SkillMastery"},
+	// BIO (9–12)
+	{9, SubjectBIO, 3, false, "Comparison"},
+	{10, SubjectBIO, 3, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 3, true, "SkillMastery"},
+	// GEO (13–16)
+	{13, SubjectGEO, 5, false, "Comparison"},
+	{14, SubjectGEO, 5, false, "Efficacy"},
+	{15, SubjectGEO, 5, false, "AchievementExpectation"},
+	{16, SubjectGEO, 1, true, "SkillMastery"},
+	// HIS (17–20)
+	{17, SubjectHIS, 3, false, "Comparison"},
+	{18, SubjectHIS, 3, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 3, true, "SkillMastery"},
+	// POL (21–24)
+	{21, SubjectPOL, 2, false, "Comparison"},
+	{22, SubjectPOL, 5, false, "Efficacy"},
+	{23, SubjectPOL, 5, false, "AchievementExpectation"},
+	{24, SubjectPOL, 1, true, "SkillMastery"},
+}
+
+// AscMismatchPhyGeoPol
+// ============ PHY_GEO_POL：不匹配（Mismatch） ============
+// 物理 / 地理 / 政治 为兴趣主科但能力低（2,2,3,4）
+// 其他（CHE / BIO / HIS）中性（3,3,3,3）
+var AscMismatchPhyGeoPol = []ASCAnswer{
+	// PHY (1–4)
+	{1, SubjectPHY, 2, false, "Comparison"},
+	{2, SubjectPHY, 2, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 4, true, "SkillMastery"},
+	// CHE (5–8)
+	{5, SubjectCHE, 3, false, "Comparison"},
+	{6, SubjectCHE, 3, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 3, true, "SkillMastery"},
+	// BIO (9–12)
+	{9, SubjectBIO, 3, false, "Comparison"},
+	{10, SubjectBIO, 3, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 3, true, "SkillMastery"},
+	// GEO (13–16)
+	{13, SubjectGEO, 2, false, "Comparison"},
+	{14, SubjectGEO, 2, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 4, true, "SkillMastery"},
+	// HIS (17–20)
+	{17, SubjectHIS, 3, false, "Comparison"},
+	{18, SubjectHIS, 3, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 3, true, "SkillMastery"},
+	// POL (21–24)
+	{21, SubjectPOL, 2, false, "Comparison"},
+	{22, SubjectPOL, 2, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 4, true, "SkillMastery"},
+}
+
+// AscAlignedHisCheBio
+// ============ HIS_CHE_BIO：匹配（Aligned） ============
+// 历史 / 化学 / 生物 为兴趣主科（5,5,5,1；HIS的Comparison为2）
+// 其他（PHY / GEO / POL）中性（3,3,3,3）
+var AscAlignedHisCheBio = []ASCAnswer{
+	// PHY (1–4)
+	{1, SubjectPHY, 3, false, "Comparison"},
+	{2, SubjectPHY, 3, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 3, true, "SkillMastery"},
+	// CHE (5–8)
+	{5, SubjectCHE, 5, false, "Comparison"},
+	{6, SubjectCHE, 5, false, "Efficacy"},
+	{7, SubjectCHE, 5, false, "AchievementExpectation"},
+	{8, SubjectCHE, 1, true, "SkillMastery"},
+	// BIO (9–12)
+	{9, SubjectBIO, 5, false, "Comparison"},
+	{10, SubjectBIO, 5, false, "Efficacy"},
+	{11, SubjectBIO, 5, false, "AchievementExpectation"},
+	{12, SubjectBIO, 1, true, "SkillMastery"},
+	// GEO (13–16)
+	{13, SubjectGEO, 3, false, "Comparison"},
+	{14, SubjectGEO, 3, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 3, true, "SkillMastery"},
+	// HIS (17–20)
+	{17, SubjectHIS, 2, false, "Comparison"}, // 文科Comparison稍低
+	{18, SubjectHIS, 5, false, "Efficacy"},
+	{19, SubjectHIS, 5, false, "AchievementExpectation"},
+	{20, SubjectHIS, 1, true, "SkillMastery"},
+	// POL (21–24)
+	{21, SubjectPOL, 3, false, "Comparison"},
+	{22, SubjectPOL, 3, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 3, true, "SkillMastery"},
+}
+
+// AscMismatchHisCheBio
+// ============ HIS_CHE_BIO：不匹配（Mismatch） ============
+// 历史 / 化学 / 生物 为兴趣主科但能力低（2,2,3,4）
+// 其他（PHY / GEO / POL）中性（3,3,3,3）
+var AscMismatchHisCheBio = []ASCAnswer{
+	// PHY (1–4)
+	{1, SubjectPHY, 3, false, "Comparison"},
+	{2, SubjectPHY, 3, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 3, true, "SkillMastery"},
+	// CHE (5–8)
+	{5, SubjectCHE, 2, false, "Comparison"},
+	{6, SubjectCHE, 2, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 4, true, "SkillMastery"},
+	// BIO (9–12)
+	{9, SubjectBIO, 2, false, "Comparison"},
+	{10, SubjectBIO, 2, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 4, true, "SkillMastery"},
+	// GEO (13–16)
+	{13, SubjectGEO, 3, false, "Comparison"},
+	{14, SubjectGEO, 3, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 3, true, "SkillMastery"},
+	// HIS (17–20)
+	{17, SubjectHIS, 2, false, "Comparison"},
+	{18, SubjectHIS, 2, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 4, true, "SkillMastery"},
+	// POL (21–24)
+	{21, SubjectPOL, 3, false, "Comparison"},
+	{22, SubjectPOL, 3, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 3, true, "SkillMastery"},
+}
+
+// AscAlignedHisChePol
+// ============ HIS_CHE_POL：匹配（Aligned） ============
+// 历史 / 化学 / 政治 为兴趣主科（5,5,5,1；HIS/POL的Comparison为2）
+// 其他（PHY / BIO / GEO）中性（3,3,3,3）
+var AscAlignedHisChePol = []ASCAnswer{
+	// PHY (1–4)
+	{1, SubjectPHY, 3, false, "Comparison"},
+	{2, SubjectPHY, 3, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 3, true, "SkillMastery"},
+	// CHE (5–8)
+	{5, SubjectCHE, 5, false, "Comparison"},
+	{6, SubjectCHE, 5, false, "Efficacy"},
+	{7, SubjectCHE, 5, false, "AchievementExpectation"},
+	{8, SubjectCHE, 1, true, "SkillMastery"},
+	// BIO (9–12)
+	{9, SubjectBIO, 3, false, "Comparison"},
+	{10, SubjectBIO, 3, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 3, true, "SkillMastery"},
+	// GEO (13–16)
+	{13, SubjectGEO, 3, false, "Comparison"},
+	{14, SubjectGEO, 3, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 3, true, "SkillMastery"},
+	// HIS (17–20)
+	{17, SubjectHIS, 2, false, "Comparison"},
+	{18, SubjectHIS, 5, false, "Efficacy"},
+	{19, SubjectHIS, 5, false, "AchievementExpectation"},
+	{20, SubjectHIS, 1, true, "SkillMastery"},
+	// POL (21–24)
+	{21, SubjectPOL, 2, false, "Comparison"},
+	{22, SubjectPOL, 5, false, "Efficacy"},
+	{23, SubjectPOL, 5, false, "AchievementExpectation"},
+	{24, SubjectPOL, 1, true, "SkillMastery"},
+}
+
+// AscMismatchHisChePol
+// ============ HIS_CHE_POL：不匹配（Mismatch） ============
+// 历史 / 化学 / 政治 为兴趣主科但能力低（2,2,3,4）
+// 其他（PHY / BIO / GEO）中性（3,3,3,3）
+var AscMismatchHisChePol = []ASCAnswer{
+	// PHY (1–4)
+	{1, SubjectPHY, 3, false, "Comparison"},
+	{2, SubjectPHY, 3, false, "Efficacy"},
+	{3, SubjectPHY, 3, false, "AchievementExpectation"},
+	{4, SubjectPHY, 3, true, "SkillMastery"},
+	// CHE (5–8)
+	{5, SubjectCHE, 2, false, "Comparison"},
+	{6, SubjectCHE, 2, false, "Efficacy"},
+	{7, SubjectCHE, 3, false, "AchievementExpectation"},
+	{8, SubjectCHE, 4, true, "SkillMastery"},
+	// BIO (9–12)
+	{9, SubjectBIO, 3, false, "Comparison"},
+	{10, SubjectBIO, 3, false, "Efficacy"},
+	{11, SubjectBIO, 3, false, "AchievementExpectation"},
+	{12, SubjectBIO, 3, true, "SkillMastery"},
+	// GEO (13–16)
+	{13, SubjectGEO, 3, false, "Comparison"},
+	{14, SubjectGEO, 3, false, "Efficacy"},
+	{15, SubjectGEO, 3, false, "AchievementExpectation"},
+	{16, SubjectGEO, 3, true, "SkillMastery"},
+	// HIS (17–20)
+	{17, SubjectHIS, 2, false, "Comparison"},
+	{18, SubjectHIS, 2, false, "Efficacy"},
+	{19, SubjectHIS, 3, false, "AchievementExpectation"},
+	{20, SubjectHIS, 4, true, "SkillMastery"},
+	// POL (21–24)
+	{21, SubjectPOL, 2, false, "Comparison"},
+	{22, SubjectPOL, 2, false, "Efficacy"},
+	{23, SubjectPOL, 3, false, "AchievementExpectation"},
+	{24, SubjectPOL, 4, true, "SkillMastery"},
+}
+
 // AllASCCombos
 // =======================
 // 统一映射表 AllASCCombos
@@ -634,13 +930,29 @@ var AllASCCombos = map[string]map[string][]ASCAnswer{
 		"aligned":  AscAlignedHisGeoBio,
 		"mismatch": AscMismatchHisGeoBio,
 	},
-	ComboPHY_GEO_CHE: {
-		"aligned":  AscAlignedPhyGeoChe,
-		"mismatch": AscMismatchPhyGeoChe,
-	},
 	ComboHIS_POL_BIO: {
 		"aligned":  AscAlignedHisPolBio,
 		"mismatch": AscMismatchHisPolBio,
+	},
+	ComboPHY_CHE_POL: {
+		"aligned":  AscAlignedPhyChePol,
+		"mismatch": AscMismatchPhyChePol,
+	},
+	ComboPHY_BIO_POL: {
+		"aligned":  AscAlignedPhyBioPol,
+		"mismatch": AscMismatchPhyBioPol,
+	},
+	ComboPHY_GEO_POL: {
+		"aligned":  AscAlignedPhyGeoPol,
+		"mismatch": AscMismatchPhyGeoPol,
+	},
+	ComboHIS_CHE_BIO: {
+		"aligned":  AscAlignedHisCheBio,
+		"mismatch": AscMismatchHisCheBio,
+	},
+	ComboHIS_CHE_POL: {
+		"aligned":  AscAlignedHisChePol,
+		"mismatch": AscMismatchHisChePol,
 	},
 }
 

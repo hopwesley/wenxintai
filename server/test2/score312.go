@@ -88,61 +88,49 @@ func buildAnchor312(anchor string, m map[string]SubjectScores) AnchorCoreData {
 
 	S1 := termFit + termAbility + termCoverage
 
-	// 构建辅科候选池
-	var auxPool []string
-	if anchor == SubjectPHY {
-		auxPool = AuxPoolPHY
-	} else {
-		auxPool = AuxPoolHIS
-	}
-
-	// 阶段二：计算辅科组合
+	// 阶段二：计算辅科组合（改进版：直接遍历 Coverage312，过滤匹配 anchor 的键）
 	var combos []ComboCoreData
 	var maxSFinal = math.Inf(-1)
 
-	for i := 0; i < len(auxPool); i++ {
-		for j := i + 1; j < len(auxPool); j++ {
-			s2, s3 := auxPool[i], auxPool[j]
-			key := strings.Join([]string{anchor, s2, s3}, "_")
-
-			cov, ok := Coverage312[key]
-			if !ok {
-				continue
-			}
-
-			avgFit := (m[s2].Fit + m[s3].Fit) / 2.0
-			minFit := math.Min(m[s2].Fit, m[s3].Fit)
-			expansion := math.Max(0, cov-baseCov)
-
-			comboCos := calcComboCos([]SubjectScores{m[anchor], m[s2], m[s3]})
-			// 阶段二计算
-			termAvgFit := auxW_AvgFit * avgFit
-			termMinFit := auxW_MinFit * minFit
-			termExpansion := auxW_Expansion * expansion
-			termCombosCos := auxW_CombosCos * comboCos
-
-			S23 := termAvgFit + termMinFit + termExpansion + termCombosCos
-
-			// 阶段三计算
-			SFinal := lambda1*S1 + lambda2*S23
-			if SFinal > maxSFinal {
-				maxSFinal = SFinal
-			}
-
-			combos = append(combos, ComboCoreData{
-				Aux1:          s2,
-				Aux2:          s3,
-				AvgFit:        round3(avgFit),
-				MinFit:        round3(minFit),
-				Expansion:     round3(expansion),
-				ComboCos:      round3(comboCos),
-				TermAvgFit:    round3(termAvgFit),
-				TermMinFit:    round3(termMinFit),
-				TermExpansion: round3(termExpansion),
-				TermCombosCos: round3(termCombosCos),
-				S23:           round3(S23),
-			})
+	for key, cov := range Coverage312 {
+		parts := strings.Split(key, "_")
+		if len(parts) != 3 || parts[0] != anchor {
+			continue
 		}
+		s2, s3 := parts[1], parts[2]
+
+		avgFit := (m[s2].Fit + m[s3].Fit) / 2.0
+		minFit := math.Min(m[s2].Fit, m[s3].Fit)
+		expansion := math.Max(0, cov-baseCov)
+
+		comboCos := calcComboCos([]SubjectScores{m[anchor], m[s2], m[s3]})
+		// 阶段二计算
+		termAvgFit := auxW_AvgFit * avgFit
+		termMinFit := auxW_MinFit * minFit
+		termExpansion := auxW_Expansion * expansion
+		termCombosCos := auxW_CombosCos * comboCos
+
+		S23 := termAvgFit + termMinFit + termExpansion + termCombosCos
+
+		// 阶段三计算
+		SFinal := lambda1*S1 + lambda2*S23
+		if SFinal > maxSFinal {
+			maxSFinal = SFinal
+		}
+
+		combos = append(combos, ComboCoreData{
+			Aux1:          s2,
+			Aux2:          s3,
+			AvgFit:        round3(avgFit),
+			MinFit:        round3(minFit),
+			Expansion:     round3(expansion),
+			ComboCos:      round3(comboCos),
+			TermAvgFit:    round3(termAvgFit),
+			TermMinFit:    round3(termMinFit),
+			TermExpansion: round3(termExpansion),
+			TermCombosCos: round3(termCombosCos),
+			S23:           round3(S23),
+		})
 	}
 
 	return AnchorCoreData{

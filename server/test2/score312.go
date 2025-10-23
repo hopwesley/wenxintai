@@ -11,19 +11,20 @@ import (
 
 // Coverage312 全国平均覆盖率表（键名需与 Combo 常量一致）
 var Coverage312 = map[string]float64{
-	ComboPHY_CHE_BIO: 0.95,
-	ComboPHY_CHE_GEO: 0.92,
-	ComboPHY_CHE_POL: 0.78,
-	ComboPHY_BIO_GEO: 0.88,
-	ComboPHY_BIO_POL: 0.72,
-	ComboPHY_GEO_POL: 0.70,
+	// ===== 物理组 (Anchor = PHY) =====
+	ComboPHY_CHE_POL: 0.99, // 物化政 — 覆盖率最高，接近全开放
+	ComboPHY_CHE_BIO: 0.96, // 物化生 — 理工+医学主干
+	ComboPHY_CHE_GEO: 0.95, // 物化地 — 地质/材料方向
+	ComboPHY_BIO_GEO: 0.88, // 物生地 — 无化学组合中最优
+	ComboPHY_BIO_POL: 0.85, // 物生政 — 无化学+跨社科，下降明显
+	ComboPHY_GEO_POL: 0.83, // 物地政 — 理工边缘
 
-	ComboHIS_POL_GEO: 0.50,
-	ComboHIS_POL_BIO: 0.47,
-	ComboHIS_GEO_POL: 0.48,
-	ComboHIS_CHE_BIO: 0.42,
-	ComboHIS_CHE_POL: 0.47,
-	ComboHIS_BIO_GEO: 0.45,
+	// ===== 历史组 (Anchor = HIS) =====
+	ComboHIS_GEO_POL: 0.50, // 史地政 — 纯文科主流
+	ComboHIS_GEO_BIO: 0.48, // 史地生 — 文理交叉
+	ComboHIS_POL_BIO: 0.46, // 史政生 — 覆盖有限
+	ComboHIS_CHE_POL: 0.44, // 史化政 — 文理夹层
+	ComboHIS_CHE_BIO: 0.46, // 史化生 — 化学略加分
 }
 
 // AnchorBaseCoverage Anchor 基线覆盖率（全国平均）

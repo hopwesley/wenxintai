@@ -4,29 +4,20 @@ package main
 // 组合常量定义（3+3 + 3+1+2 模式通用修正版）
 // =======================================
 const (
-	// —— 原 3+3 模式 ——
-
 	ComboPHY_CHE_BIO = "PHY_CHE_BIO"
 	ComboPHY_CHE_GEO = "PHY_CHE_GEO"
 	ComboPHY_BIO_GEO = "PHY_BIO_GEO"
 	ComboCHE_BIO_GEO = "CHE_BIO_GEO"
 	ComboHIS_GEO_POL = "HIS_GEO_POL"
 	ComboHIS_GEO_BIO = "HIS_GEO_BIO"
-	ComboPHY_GEO_CHE = "PHY_GEO_CHE"
 	ComboHIS_POL_BIO = "HIS_POL_BIO"
-
-	// —— 新增：3+1+2 物理组（Anchor=PHY）——
 
 	ComboPHY_CHE_POL = "PHY_CHE_POL"
 	ComboPHY_BIO_POL = "PHY_BIO_POL"
 	ComboPHY_GEO_POL = "PHY_GEO_POL"
 
-	// —— 新增：3+1+2 历史组（Anchor=HIS）——
-
 	ComboHIS_CHE_BIO = "HIS_CHE_BIO"
 	ComboHIS_CHE_POL = "HIS_CHE_POL"
-	ComboHIS_BIO_GEO = "HIS_BIO_GEO"
-	ComboHIS_POL_GEO = "HIS_POL_GEO"
 )
 
 const (
@@ -53,12 +44,14 @@ var Subjects = []string{
 var AllCombos33 = []string{
 	ComboPHY_CHE_BIO,
 	ComboPHY_CHE_GEO,
+	ComboPHY_CHE_POL, // ← 添加
 	ComboPHY_BIO_GEO,
+	ComboPHY_BIO_POL, // ← 添加
 	ComboCHE_BIO_GEO,
 	ComboHIS_GEO_POL,
 	ComboHIS_GEO_BIO,
-	ComboPHY_GEO_CHE,
 	ComboHIS_POL_BIO,
+	ComboHIS_CHE_BIO, // ← 添加
 }
 
 // Aux pools for Mode 3+1+2

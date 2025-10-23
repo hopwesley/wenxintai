@@ -90,14 +90,21 @@ func ScoreCombos33(scores []SubjectScores, w Weights) *Mode33Section {
 // ===========================================
 func RarityValue(combo string) float64 {
 	switch combo {
-	case ComboPHY_CHE_BIO, ComboHIS_GEO_POL:
+	// === 强烈推荐组合（0分）===
+	case ComboPHY_CHE_BIO, ComboPHY_CHE_POL, ComboPHY_CHE_GEO, ComboHIS_GEO_POL:
 		return 0
-	case ComboPHY_CHE_GEO, ComboPHY_BIO_GEO, ComboCHE_BIO_GEO, ComboHIS_GEO_BIO:
+
+	// === 谨慎考虑组合（5分）===
+	case ComboPHY_BIO_GEO, ComboPHY_BIO_POL, ComboCHE_BIO_GEO, ComboHIS_GEO_BIO:
 		return 5
-	case ComboPHY_GEO_CHE, ComboHIS_POL_BIO:
+
+	// === 避免组合（12分）===
+	case ComboHIS_POL_BIO, ComboHIS_CHE_BIO:
 		return 12
+
+	// === 其他所有组合（12分）===
 	default:
-		return 5 // 默认中等稀有
+		return 12
 	}
 }
 

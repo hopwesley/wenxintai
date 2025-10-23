@@ -130,6 +130,7 @@ func buildAnchor312(anchor string, m map[string]SubjectScores) AnchorCoreData {
 			TermExpansion: round3(termExpansion),
 			TermCombosCos: round3(termCombosCos),
 			S23:           round3(S23),
+			SFinalCombo:   round3(SFinal),
 		})
 	}
 

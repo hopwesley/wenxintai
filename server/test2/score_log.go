@@ -81,7 +81,8 @@ type ComboCoreData struct {
 	TermCombosCos float64 `json:"term_combos_cos"`
 
 	// —— 阶段结果 ——
-	S23 float64 `json:"s23"` // 阶段二得分（组合层）
+	S23         float64 `json:"s23"`           // 阶段二得分（组合层）
+	SFinalCombo float64 `json:"s_final_combo"` // <-- 新增字段
 }
 
 // Mode33Section 3+3 模式：组合推荐与匹配核心结果

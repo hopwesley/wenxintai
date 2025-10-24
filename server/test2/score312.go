@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+var SubjectCluster = map[string]string{
+	"PHY": "STEM", "CHE": "STEM", "BIO": "STEM",
+	"HIS": "HUM", "GEO": "HUM", "POL": "HUM",
+}
+
 // Coverage312 全国本科招生专业覆盖率 每个选科组合可以报考的全国高校专业比例
 var Coverage312 = map[string]float64{
 	// ===== 物理组 (Anchor = PHY) =====
@@ -43,9 +48,13 @@ var (
 	anchW_Fit, anchW_Ability, anchW_Cover = 0.5, 0.3, 0.2
 )
 
-// 阶段二权重（辅科组合）
 var (
-	auxW_AvgFit, auxW_MinFit, auxW_Expansion, auxW_CombosCos = 0.45, 0.25, 0.2, 0.2
+	wAvgFit     = 0.25 // 三科平均Fit
+	wMinFit     = 0.15 // 三科最小Fit
+	wAuxAbility = 0.15 // 辅科能力：0.6*均值 + 0.4*最小（标准化）
+	wCoverage   = 0.25 // 覆盖率（查表）
+	wCosPos     = 0.10 // 三科兴趣-能力方向一致性（余弦正值）
+	wMixPenalty = 0.10 // 结构惩罚（跨簇×低能力×低覆盖^1.2），最终要“减去”
 )
 
 // 阶段三权重（综合）
@@ -71,6 +80,35 @@ func ScoreCombos312(scores []SubjectScores) *Mode312Section {
 		AnchorPHY: anchorPHY,
 		AnchorHIS: anchorHIS,
 	}
+}
+
+// 计算辅科竞争能力（标准化后）
+func calculateAuxAbility(s2, s3 string, m map[string]SubjectScores) float64 {
+	// 将 A (1~5) 归一化到 [0,1]
+	avgAbility := ((m[s2].A / 5.0) + (m[s3].A / 5.0)) / 2.0
+	minAbility := math.Min(m[s2].A/5.0, m[s3].A/5.0)
+
+	// 按照 0.6:0.4 加权组合，代表整体实力与短板平衡
+	return 0.6*avgAbility + 0.4*minAbility
+}
+
+// 计算结构惩罚 MixPenalty（无 PenaltyBoost）
+func calculateMixPenalty(anchor, s2, s3 string, m map[string]SubjectScores, coverage float64) float64 {
+	mixRatio := 0.0
+	anchorCluster := SubjectCluster[anchor]
+	if SubjectCluster[s2] != anchorCluster {
+		mixRatio += 0.5
+	}
+	if SubjectCluster[s3] != anchorCluster {
+		mixRatio += 0.5
+	}
+
+	minAbilityNorm := math.Min(m[anchor].A/5.0, math.Min(m[s2].A/5.0, m[s3].A/5.0))
+
+	abilityRisk := 1 - minAbilityNorm
+	coverageRisk := math.Pow(1-coverage, 1.2)
+
+	return mixRatio * abilityRisk * coverageRisk // 取值范围 [0,1]
 }
 
 // buildAnchor312
@@ -102,16 +140,16 @@ func buildAnchor312(anchor string, m map[string]SubjectScores) AnchorCoreData {
 
 		avgFit := (m[s2].Fit + m[s3].Fit) / 2.0
 		minFit := math.Min(m[s2].Fit, m[s3].Fit)
-		expansion := math.Max(0, cov-baseCov)
+		comboCosPos := calcComboCos([]SubjectScores{m[anchor], m[s2], m[s3]})
+		auxAbility := calculateAuxAbility(s2, s3, m)
+		mixPenalty := calculateMixPenalty(anchor, s2, s3, m, cov)
 
-		comboCos := calcComboCos([]SubjectScores{m[anchor], m[s2], m[s3]})
-		// 阶段二计算
-		termAvgFit := auxW_AvgFit * avgFit
-		termMinFit := auxW_MinFit * minFit
-		termExpansion := auxW_Expansion * expansion
-		termCombosCos := auxW_CombosCos * comboCos
-
-		S23 := termAvgFit + termMinFit + termExpansion + termCombosCos
+		S23 := 0.25*avgFit +
+			0.15*minFit +
+			0.15*auxAbility +
+			0.25*cov +
+			0.10*comboCosPos -
+			0.10*mixPenalty
 
 		// 阶段三计算
 		SFinal := lambda1*S1 + lambda2*S23
@@ -120,18 +158,16 @@ func buildAnchor312(anchor string, m map[string]SubjectScores) AnchorCoreData {
 		}
 
 		combos = append(combos, ComboCoreData{
-			Aux1:          s2,
-			Aux2:          s3,
-			AvgFit:        round3(avgFit),
-			MinFit:        round3(minFit),
-			Expansion:     round3(expansion),
-			ComboCos:      round3(comboCos),
-			TermAvgFit:    round3(termAvgFit),
-			TermMinFit:    round3(termMinFit),
-			TermExpansion: round3(termExpansion),
-			TermCombosCos: round3(termCombosCos),
-			S23:           round3(S23),
-			SFinalCombo:   round3(SFinal),
+			Aux1:        s2,
+			Aux2:        s3,
+			AvgFit:      round3(avgFit),
+			MinFit:      round3(minFit),
+			AuxAbility:  round3(auxAbility),
+			Coverage:    round3(cov),
+			ComboCos:    round3(comboCosPos),
+			MixPenalty:  round3(mixPenalty),
+			S23:         round3(S23),
+			SFinalCombo: round3(SFinal),
 		})
 	}
 

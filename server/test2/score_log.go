@@ -65,24 +65,16 @@ type AnchorCoreData struct {
 // ComboCoreData
 // 属于特定 Anchor 的辅科组合信息
 type ComboCoreData struct {
-	Aux1 string `json:"aux1"` // 辅科1
-	Aux2 string `json:"aux2"` // 辅科2
-
-	// —— 直接可解释的中间量 ——
-	AvgFit    float64 `json:"avg_fit"`   // 两辅科平均匹配度
-	MinFit    float64 `json:"min_fit"`   // 两辅科最小匹配度
-	Expansion float64 `json:"expansion"` // 净扩展度（>=0）
-	ComboCos  float64 `json:"combo_cos"`
-
-	// —— 已含权重的“分项贡献” ——（安全可解释，防公式反推）
-	TermAvgFit    float64 `json:"term_avg_fit"`
-	TermMinFit    float64 `json:"term_min_fit"`
-	TermExpansion float64 `json:"term_expansion"`
-	TermCombosCos float64 `json:"term_combos_cos"`
-
-	// —— 阶段结果 ——
-	S23         float64 `json:"s23"`           // 阶段二得分（组合层）
-	SFinalCombo float64 `json:"s_final_combo"` // <-- 新增字段
+	Aux1        string  `json:"aux1"`
+	Aux2        string  `json:"aux2"`
+	AvgFit      float64 `json:"avg_fit"`
+	MinFit      float64 `json:"min_fit"`
+	ComboCos    float64 `json:"combo_cos"`
+	AuxAbility  float64 `json:"auxAbility"`
+	Coverage    float64 `json:"coverage"`
+	MixPenalty  float64 `json:"mix_penalty"`
+	S23         float64 `json:"s23"`
+	SFinalCombo float64 `json:"s_final_combo"`
 }
 
 // Mode33Section 3+3 模式：组合推荐与匹配核心结果

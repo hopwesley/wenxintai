@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// Coverage312 全国平均覆盖率表（键名需与 Combo 常量一致）
+// Coverage312 全国本科招生专业覆盖率 每个选科组合可以报考的全国高校专业比例
 var Coverage312 = map[string]float64{
 	// ===== 物理组 (Anchor = PHY) =====
 	ComboPHY_CHE_POL: 0.99, // 物化政 — 覆盖率最高，接近全开放
@@ -138,6 +138,10 @@ func buildAnchor312(anchor string, m map[string]SubjectScores) AnchorCoreData {
 	sort.Slice(combos, func(i, j int) bool {
 		return combos[i].SFinalCombo > combos[j].SFinalCombo
 	})
+
+	if len(combos) > 3 {
+		combos = combos[:3]
+	}
 
 	return AnchorCoreData{
 		Subject:      anchor,

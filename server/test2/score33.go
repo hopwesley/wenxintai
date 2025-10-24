@@ -74,9 +74,8 @@ func ScoreCombos33(scores []SubjectScores, w Weights) *Mode33Section {
 		return combos[i].Score > combos[j].Score
 	})
 
-	// 仅保留前5名
-	if len(combos) > 5 {
-		combos = combos[:5]
+	if len(combos) > 3 {
+		combos = combos[:3]
 	}
 
 	return &Mode33Section{

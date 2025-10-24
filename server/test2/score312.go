@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"sort"
 	"strings"
 	"time"
 )
@@ -133,6 +134,10 @@ func buildAnchor312(anchor string, m map[string]SubjectScores) AnchorCoreData {
 			SFinalCombo:   round3(SFinal),
 		})
 	}
+
+	sort.Slice(combos, func(i, j int) bool {
+		return combos[i].SFinalCombo > combos[j].SFinalCombo
+	})
 
 	return AnchorCoreData{
 		Subject:      anchor,

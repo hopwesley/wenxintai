@@ -7,7 +7,6 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"time"
 )
 
 var SubjectCluster = map[string]string{
@@ -144,12 +143,12 @@ func buildAnchor312(anchor string, m map[string]SubjectScores) AnchorCoreData {
 		auxAbility := calculateAuxAbility(s2, s3, m)
 		mixPenalty := calculateMixPenalty(anchor, s2, s3, m, cov)
 
-		S23 := 0.25*avgFit +
-			0.15*minFit +
-			0.15*auxAbility +
-			0.25*cov +
-			0.10*comboCosPos -
-			0.10*mixPenalty
+		S23 := wAvgFit*avgFit +
+			wMinFit*minFit +
+			wAuxAbility*auxAbility +
+			wCoverage*cov +
+			wCosPos*comboCosPos -
+			wMixPenalty*mixPenalty
 
 		// 阶段三计算
 		SFinal := lambda1*S1 + lambda2*S23
@@ -196,7 +195,7 @@ func buildAnchor312(anchor string, m map[string]SubjectScores) AnchorCoreData {
 // RunDemo312
 // =============================
 
-func RunDemo312(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64) *ParamForAIPrompt {
+func RunDemo312(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64, idx, yesno string) *ParamForAIPrompt {
 	if alpha == 0 && beta == 0 && gamma == 0 {
 		alpha, beta, gamma = 0.4, 0.4, 0.2
 	}
@@ -208,7 +207,7 @@ func RunDemo312(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, bet
 	paramForPrompt.Mode312 = ScoreCombos312(scores)
 
 	content, _ := json.MarshalIndent(&paramForPrompt, "", "  ")
-	filename := fmt.Sprintf("report_param_%s_%d.json", "3+1+2", time.Now().UnixMilli())
+	filename := fmt.Sprintf("%s_report_param_%s_%s.json", idx, "3+1+2", yesno)
 	_ = os.WriteFile(filename, content, 0644)
 
 	fmt.Printf("Radar Visualization:\n%+v\n", result.Radar)

@@ -72,16 +72,16 @@ func main() {
 		riasec := AllRIASECCombos[combo]
 		asc := AllASCCombos[combo][category]
 
-		RunDemo33(riasec, asc, 0, 0, 0)
-		RunDemo312(riasec, asc, 0, 0, 0)
+		RunDemo33(riasec, asc, 0, 0, 0, os.Args[3], "yes")
+		RunDemo312(riasec, asc, 0, 0, 0, os.Args[3], "yes")
 
 		time.Sleep(1 * time.Second)
 
 		category = "mismatch"
 		riasec = AllRIASECCombos[combo]
 		asc = AllASCCombos[combo][category]
-		RunDemo33(riasec, asc, 0, 0, 0)
-		RunDemo312(riasec, asc, 0, 0, 0)
+		RunDemo33(riasec, asc, 0, 0, 0, os.Args[3], "no")
+		RunDemo312(riasec, asc, 0, 0, 0, os.Args[3], "no")
 
 	case "report":
 		filePath := os.Args[2]

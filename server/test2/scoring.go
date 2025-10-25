@@ -255,9 +255,21 @@ func BuildScores(
 	// ---- 7. 每科 Fit ----
 	out := make([]SubjectScores, 0, len(Subjects))
 	for _, s := range Subjects {
-		zgap := AZ[s] - IZ[s]
+
+		diff := math.Abs(AZ[s] - IZ[s])
+
+		// 分段幂次：中度差距从重惩罚，重度差距仍维持强惩罚
+		p := 1.1
+		if diff >= 1.0 {
+			p = 1.2
+		}
+		zgap := -math.Pow(diff, p)
+
+		// 软门控：低能力科目下调 fit，但不硬过滤
+		gate := 1.0 / (1.0 + math.Exp(-(AZ[s]+0.5)/0.2)) // 中心在 -0.5 附近
+
 		share := safeDiv(A[s], sumA)
-		fit := alpha*zgap + beta*cos + gamma*share
+		fit := gate * (alpha*zgap + beta*cos + gamma*share)
 
 		out = append(out, SubjectScores{
 			Subject: s,

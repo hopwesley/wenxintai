@@ -111,7 +111,7 @@ func RarityValue(combo string) float64 {
 // 演示入口
 // ---------------------------------------
 
-func RunDemo33(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64, idx, yesno string) *ParamForAIPrompt {
+func RunDemo33(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64, idx, yesno, combo string) *ParamForAIPrompt {
 	if alpha == 0 && beta == 0 && gamma == 0 {
 		alpha, beta, gamma = 0.4, 0.4, 0.2
 	}
@@ -133,7 +133,7 @@ func RunDemo33(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta
 	paramPrompt.Mode33 = ScoreCombos33(scores, ws)
 
 	content, _ := json.MarshalIndent(&paramPrompt, "", "  ")
-	filename := fmt.Sprintf("%s_report_param_%s_%s.json", idx, "3+3", yesno) // 增加了模块名
+	filename := fmt.Sprintf("%s_rp_%s_%s_%s.json", idx, combo, "3+3", yesno) // 增加了模块名
 	_ = os.WriteFile(filename, content, 0644)
 
 	fmt.Printf("Radar Visualization:\n%+v\n", result.Radar)

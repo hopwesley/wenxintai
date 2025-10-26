@@ -202,6 +202,16 @@ func cosineSim(a, b map[string]float64) float64 {
 	return dot / (na * nb)
 }
 
+func abilityGate(az, center, steep, floor float64) float64 {
+	// floor 可传 0 表示不用软下限；建议 0.2~0.25
+	x := (az - center) / steep
+	g := 1.0 / (1.0 + math.Exp(-x))
+	if floor > 0 && g < floor {
+		return floor
+	}
+	return g
+}
+
 // BuildScores
 // ===========================================
 // 计算兴趣、能力及综合匹配指标，并生成可解释性结构。
@@ -272,8 +282,7 @@ func BuildScores(
 		zgap := -math.Pow(diff, p)
 
 		// 软门控：低能力科目下调 fit，但不硬过滤
-		gate := 1.0 / (1.0 + math.Exp(-(AZ[s]+0.5)/0.2)) // 中心在 -0.5 附近
-
+		gate := 1.0 / (1.0 + math.Exp(-(AZ[s]+1.0)/0.45))
 		share := safeDiv(A[s], sumA)
 		fit := gate * (alpha*zgap + beta*cos + gamma*share)
 

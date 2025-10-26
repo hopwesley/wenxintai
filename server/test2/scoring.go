@@ -267,7 +267,7 @@ func BuildScores(
 
 	// 动态调整权重。假设 alpha, beta, gamma 是 BuildScores 的输入参数
 	alpha, beta, gamma = adjustWeights(alpha, beta, gamma, qualityScore)
-	common.QualityScore = qualityScore
+	common.QualityScore = round3(qualityScore)
 	// ---- 7. 每科 Fit ----
 	out := make([]SubjectScores, 0, len(Subjects))
 	for _, s := range Subjects {
@@ -284,7 +284,12 @@ func BuildScores(
 		// 软门控：低能力科目下调 fit，但不硬过滤
 		gate := 1.0 / (1.0 + math.Exp(-(AZ[s]+1.0)/0.45))
 		share := safeDiv(A[s], sumA)
-		fit := gate * (alpha*zgap + beta*cos + gamma*share)
+
+		alphaAdj := alpha
+		if AZ[s] > IZ[s] {
+			alphaAdj *= 0.5
+		}
+		fit := gate * (alphaAdj*zgap + beta*cos + gamma*share)
 
 		out = append(out, SubjectScores{
 			Subject: s,

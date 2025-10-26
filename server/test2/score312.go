@@ -91,10 +91,12 @@ func calculateAuxAbility(s2, s3 string, m map[string]SubjectScores) float64 {
 	return 0.6*avgAbility + 0.4*minAbility
 }
 
-// 计算结构惩罚 MixPenalty（无 PenaltyBoost）
+// 计算结构惩罚 MixPenalty（带软跨簇调节）
 func calculateMixPenalty(anchor, s2, s3 string, m map[string]SubjectScores, coverage float64) float64 {
 	mixRatio := 0.0
 	anchorCluster := SubjectCluster[anchor]
+
+	// —— 跨簇检测 ——
 	if SubjectCluster[s2] != anchorCluster {
 		mixRatio += 0.5
 	}
@@ -103,11 +105,23 @@ func calculateMixPenalty(anchor, s2, s3 string, m map[string]SubjectScores, cove
 	}
 
 	minAbilityNorm := math.Min(m[anchor].A/5.0, math.Min(m[s2].A/5.0, m[s3].A/5.0))
-
 	abilityRisk := 1 - minAbilityNorm
 	coverageRisk := math.Pow(1-coverage, 1.2)
 
-	return mixRatio * abilityRisk * coverageRisk // 取值范围 [0,1]
+	// ✅ 新增：软跨簇调节（理↔文组合减半惩罚）
+	softCross := false
+	if (anchorCluster == "STEM" && (SubjectCluster[s2] == "HUM" || SubjectCluster[s3] == "HUM")) ||
+		(anchorCluster == "HUM" && (SubjectCluster[s2] == "STEM" || SubjectCluster[s3] == "STEM")) {
+		softCross = true
+	}
+
+	basePenalty := mixRatio * abilityRisk * coverageRisk
+
+	if softCross {
+		basePenalty *= 0.5 // 理↔文 组合惩罚减半
+	}
+
+	return basePenalty // 范围仍在 [0,1]
 }
 
 // buildAnchor312

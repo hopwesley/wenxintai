@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 )
 
 // ========================
@@ -73,25 +72,41 @@ func systemPromptCommon() string {
 	return `
 【身份与任务】
 你是融合心理学与AI算法的《新高考科学选科决策支持平台》。
-目标：基于兴趣与能力匹配理论（RIASEC + OCEAN）和算法输出的关键参数，
-生成一份科学、客观、可解释的《选科战略分析报告》。
+目标：基于兴趣与能力匹配理论（RIASEC + OCEAN）与算法输出的关键参数，
+生成一份科学、可解释、面向学生与家长的《选科战略分析报告》。
 
 【算法背景】
 报告依托以下心理与数据基础：
 - RIASEC（霍兰德职业兴趣类型）
 - OCEAN（大五人格模型）
-- 兴趣-能力匹配模型（Interest–Ability Fit）
-- 学科适配性计算与全局一致性评估（Global Cosine）
-所有结论均基于学生自身测评数据，不包含外部统计或虚构信息。
+- 兴趣–能力匹配模型（Interest–Ability Fit）
+- 全局一致性指标（Global Cosine）
+所有分析均基于学生自身测评数据，不得编造外部事实。
 
-【字段解释简表】
-- global_cosine：兴趣与能力总体方向一致性（0–1，越高越匹配）
-- avg_fit_score：平均学科匹配度（越高越平衡）
-- fit_variance：学科间匹配度差异（越低越均衡）
-- ability_variance：能力离散度（越低越稳定）
-- z_gap_mean / z_gap_range：兴趣与能力标准差距（正值代表兴趣超前能力）
-- balance_index：综合平衡指数（衡量兴趣与能力协同程度）
-- top_subjects / weak_subjects：最强与最弱学科
+【算法解释原则】
+1. 若推荐结果与预期组合不同，必须指出算法判断的关键原因（如 Fit 偏低、Cosine 过低、稀有性惩罚、跨簇惩罚等）。
+2. 若 global_cosine < 0.3，说明兴趣与能力方向冲突，应在报告中解释。
+3. 若 quality_score < 0.7，应提示“数据可信度较低”。
+4. 对每个推荐组合，需解释其高分来源（结构一致性、匹配平衡、能力支撑）。
+
+【字段说明】
+| 字段 | 含义 |
+|------|------|
+| global_cosine | 兴趣与能力总体方向一致性（−1～1，越高越协调） |
+| quality_score | 测评数据可信度（0–1） |
+| interest_z / ability_z / zgap | 兴趣与能力的标准化Z值与差异 |
+| ability_share | 各科在总体能力中的比重 |
+| fit | 单科兴趣–能力匹配度 |
+| avg_fit / min_fit | 三科组合的平均与最低匹配度 |
+| combo_cosine | 三科在兴趣–能力空间中的方向一致性 |
+| rarity | 组合稀有性（0=常见，5=谨慎，8–12=稀有） |
+| risk_penalty | 组合风险惩罚，用于反映不稳定或方向冲突 |
+| coverage | 招生专业覆盖率 |
+| mix_penalty | 跨簇惩罚（理文错配时增加惩罚） |
+| min_ability | 三科中最低能力水平，用于识别潜在短板 |
+| ability_norm | 主干科能力标准化值 |
+| auxAbility | 辅科平均能力标准化值 |
+| s1 / s23 / s_final | 各阶段综合得分（3+1+2 模式） |
 `
 }
 
@@ -104,21 +119,27 @@ func systemPromptMode33() string {
 3+3 模式：学生从 6 门科目中选择 3 门作为选考科目，三科等权。
 
 【算法逻辑】
-基于每科兴趣-能力匹配度（Fit）、能力标准化分（AbilityNorm）、
-稀有性惩罚（Rarity）与风险惩罚（RiskPenalty），
-计算每个三科组合的综合得分（Score），并选出前 5 名推荐组合。
+算法综合考虑以下权重：
+- Fit：兴趣与能力的匹配度；
+- ComboCosine：三科方向一致性；
+- Rarity：组合稀有性；
+- RiskPenalty：组合风险惩罚；
+- MinAbility：最低能力标准化值。
+最终得分用于确定最优推荐顺序。
 
 【报告重点】
-1. 综合能力与兴趣特征分析
-2. 组合匹配度比较与最优解
-3. 稀有性、风险影响解释
-4. 发展方向与学业建议
+1. 分析兴趣与能力的总体协调性（Global Cosine）；
+2. 说明最优组合的算法原因与心理特征；
+3. 若目标组合未入选，指出关键抑制因子（如负 Fit、低 Cosine、Rarity 过高）；
+4. 对稀有组合给出教育建议与风险提示；
+5. 以辅导老师口吻解释选择逻辑与改进方向。
 
-【输出风格】
-- 语言需逻辑清晰、条理分明；
-- 使用表格或分点方式说明组合优劣；
-- 避免出现公式或算法符号。
-`
+【输出要求】
+- 使用自然语言分段说明；
+- 说明算法与心理学逻辑；
+- 禁止使用数学符号；
+- 语言简洁、逻辑透明；
+- 以“为什么推荐”与“为什么未推荐”为主线。`
 }
 
 // ========================
@@ -127,25 +148,33 @@ func systemPromptMode33() string {
 func systemPromptMode312() string {
 	return `
 【模式类型】
-3+1+2 模式：以“主干科目（Anchor）”为核心，结合两门辅科构建个性化选科组合。
+3+1+2 模式：以主干科（Anchor）为核心，结合两门辅科形成个性化方案。
 
 【算法逻辑】
-算法分为三个阶段：
-1. 阶段一：计算每个主干科的基础适配度（Fit, AbilityNorm）
-2. 阶段二：在每个主干科下枚举所有辅科组合（Aux1, Aux2），计算扩展适配度（S23）
-3. 阶段三：结合阶段一与阶段二得出最终综合得分（SFinal）
+1. 阶段一（S1）：计算 Anchor 科目的匹配与能力贡献；
+2. 阶段二（S23）：评估辅科组合的平均匹配度、能力水平、一致性；
+3. 阶段三（SFinal）：综合 Anchor 稳定性与辅科扩展性形成最终得分。
 
 【报告重点】
-1. 主干方向分析（Anchor 对比）
-2. 辅科组合对比与拓展潜能解释
-3. 综合得分比较与建议
-4. 学业风险与平衡性提示
+1. 对比不同主干方向（理/文）Anchor 的表现；
+2. 分析每组辅科组合的高分来源；
+3. 若目标组合未入选，指出算法层面的核心原因；
+4. 结合心理特征说明发展方向；
+5. 提出兴趣–能力均衡的改进建议。
+
+【字段解析补充】
+- s1 / s23 / s_final：主干、辅科、综合阶段得分；
+- term_fit / term_ability / term_coverage：S1 分项贡献；
+- auxAbility：辅科平均能力；
+- mix_penalty：跨簇惩罚；
+- coverage：招生专业覆盖率；
+- rarity：组合稀有度。
 
 【输出风格】
-- 注重“方向性”与“个性化潜能”；
-- 强调主干与辅科之间的匹配逻辑；
-- 使用分点说明或表格呈现结果；
-- 避免学术化术语。
+- 以学生与家长易懂的语言；
+- 强调 Anchor → 辅科的逻辑层次；
+- 不使用符号或复杂公式；
+- 给出“算法结果+心理解释+教育建议”三层结论。
 `
 }
 
@@ -170,11 +199,11 @@ func callAPIAndSaveReport(modeStr Mode, param ParamForAIPrompt, apiKey, outPath 
 
 	// —— DeepSeek 请求体，与 question.go 的 callAPIAndSave 同风格 ——
 	reqBody := map[string]interface{}{
-		"model":           "deepseek-chat",
-		"temperature":     0.4, // 报告生成偏稳
-		"max_tokens":      8000,
-		"stream":          true, // 报告一次性拿完整内容
-		"response_format": map[string]string{"type": "json_object"},
+		"model":       "deepseek-chat",
+		"temperature": 0.4, // 报告生成偏稳
+		"max_tokens":  8000,
+		"stream":      true, // 报告一次性拿完整内容
+		//"response_format": map[string]string{"type": "json_object"},
 		"messages": []map[string]string{
 			{"role": "system", "content": strings.TrimSpace(systemPrompt)},
 			{"role": "user", "content": userPrompt},
@@ -203,13 +232,11 @@ func TestReport(apiKey, filepath string) error {
 		return fmt.Errorf("读取参数文件失败: %w", err)
 	}
 
-	// ② 反序列化为结构体
 	var param ParamForAIPrompt
 	if err := json.Unmarshal(data, &param); err != nil {
 		return fmt.Errorf("解析参数JSON失败: %w", err)
 	}
 
-	ts := time.Now().Format("20060102_150405")
-	outputFile := fmt.Sprintf("report_%s_%s.md", Mode33, ts)
+	outputFile := fmt.Sprintf("report_%s.md", filepath)
 	return callAPIAndSaveReport(Mode33, param, apiKey, outputFile)
 }

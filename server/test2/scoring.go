@@ -335,28 +335,25 @@ func calcComboCos(aux []SubjectScores) float64 {
 
 	return cosineSim(a, b)
 }
+
 func calculateRiskPenalty(minA, avgFit float64) float64 {
 	const (
 		MinAThreshold = 3.0
 		MaxPenalty    = 0.2
 	)
 
-	// 基础线性惩罚
 	base := math.Max(0, (MinAThreshold-minA)/(MinAThreshold-1.0))
 	risk := MaxPenalty * base
 
-	// 基于匹配度的动态调整：让负Fit惩罚更强
+	// 降低放大系数：负Fit时最多放大30%（原50%）
 	if avgFit < 0 {
-		risk *= 1 + 0.5*math.Abs(avgFit) // mismatch 时最多放大50%
+		risk *= 1 + 0.3*math.Abs(avgFit) // 温和放大
 	} else {
-		risk *= 1 - 0.3*avgFit // aligned 时最多减轻30%
+		risk *= 1 - 0.3*avgFit // 保留正向减轻
 	}
 
-	if risk > 0.3 {
-		risk = 0.3
-	}
-	if risk < 0 {
-		risk = 0
-	}
+	// 严格上限 + 最小值
+	risk = math.Min(math.Max(risk, 0), 0.25) // 原0.3 → 0.25
+
 	return risk
 }

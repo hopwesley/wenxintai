@@ -47,6 +47,7 @@ var AllCombos33 = []string{
 	ComboPHY_CHE_POL, // ← 添加
 	ComboPHY_BIO_GEO,
 	ComboPHY_BIO_POL, // ← 添加
+	ComboPHY_GEO_POL,
 	ComboCHE_BIO_GEO,
 	ComboHIS_GEO_POL,
 	ComboHIS_GEO_BIO,

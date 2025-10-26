@@ -93,12 +93,12 @@ func RarityValue(combo string) float64 {
 		return 0
 
 	// === 谨慎考虑组合（5分）===
-	case ComboPHY_BIO_GEO, ComboPHY_BIO_POL, ComboCHE_BIO_GEO, ComboHIS_GEO_BIO:
+	case ComboPHY_BIO_GEO, ComboPHY_BIO_POL, ComboCHE_BIO_GEO, ComboHIS_GEO_BIO, ComboPHY_GEO_POL:
 		return 5
 
-	// === 避免组合（12分）===
+	// === 避免组合（8分）===
 	case ComboHIS_POL_BIO, ComboHIS_CHE_BIO:
-		return 12
+		return 8
 
 	// === 其他所有组合（12分）===
 	default:

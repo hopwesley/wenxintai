@@ -252,6 +252,12 @@ func BuildScores(
 		shareA[s] = safeDiv(A[s], sumA)
 	}
 
+	// 注意：assessInterestQuality 在这个简化版中不再需要 subjectScores
+	qualityScore := assessInterestQuality(riasecAnswers)
+
+	// 动态调整权重。假设 alpha, beta, gamma 是 BuildScores 的输入参数
+	alpha, beta, gamma = adjustWeights(alpha, beta, gamma, qualityScore)
+	common.QualityScore = qualityScore
 	// ---- 7. 每科 Fit ----
 	out := make([]SubjectScores, 0, len(Subjects))
 	for _, s := range Subjects {
@@ -356,4 +362,152 @@ func calculateRiskPenalty(minA, avgFit float64) float64 {
 	risk = math.Min(math.Max(risk, 0), 0.25) // 原0.3 → 0.25
 
 	return risk
+}
+
+// 兴趣质量评估 - 最终推荐版
+
+func assessInterestQuality(riasecAnswers []RIASECAnswer) float64 {
+
+	consistency := checkRIASECConsistency(riasecAnswers) // 内部一致性
+
+	pattern := checkResponsePattern(riasecAnswers) // 答题模式
+
+	quality := 0.7*consistency + 0.3*pattern // 加权平均
+
+	return math.Max(quality, 0.4) // 保证最低质量
+
+}
+
+// 检查内部一致性：分化程度和均值合理性
+
+func checkRIASECConsistency(answers []RIASECAnswer) float64 {
+
+	scores := extractRIASECScores(answers) // 获取六维平均分
+
+	mean, std := calcStats(scores) // 计算均值和标准差
+
+	// 标准差惩罚：std<0.5时渐进惩罚
+
+	stdPenalty := math.Max(0, 1-std/0.5)
+
+	// 均值惩罚：偏离3.0时渐进惩罚
+
+	meanPenalty := math.Abs(mean-3.0) / 2.0
+
+	return math.Max(0, 1.0-0.5*stdPenalty-0.5*meanPenalty)
+
+}
+
+// 检查答题模式：极端回答比例
+
+func checkResponsePattern(answers []RIASECAnswer) float64 {
+
+	counts := make(map[int]int)
+
+	for _, a := range answers {
+		counts[a.Score]++
+	}
+
+	n := float64(len(answers))
+
+	if n == 0 {
+		return 0.5
+	} // 防除零
+
+	// 计算极端答案比例（1分或5分）
+
+	extremeRatio := float64(counts[1]+counts[5]) / n
+
+	// 极端比例>0.2时开始线性惩罚
+
+	if extremeRatio <= 0.2 {
+
+		return 1.0
+
+	}
+
+	// 线性惩罚：从0.2到1.0，质量从1.0降到0.0
+
+	return math.Max(0, 1.0-(extremeRatio-0.2)/0.8)
+
+}
+
+// 权重动态调整 - 归一化线性吸收
+
+func adjustWeights(alpha, beta, gamma, quality float64) (float64, float64, float64) {
+
+	// 兴趣权重衰减
+
+	a := alpha * quality
+
+	b := beta * quality
+
+	// 能力权重吸收（吸收50%的释放权重）
+
+	g := gamma + (alpha+beta)*(1-quality)*0.5
+
+	// 归一化
+
+	sum := a + b + g
+
+	return a / sum, b / sum, g / sum
+
+}
+
+// 计算一组float64数据的均值和样本标准差（带Bessel校正）
+// 计算均值与样本标准差（带Bessel校正）
+func calcStats(values []float64) (mean, std float64) {
+	n := float64(len(values))
+	if n == 0 {
+		return 0, 0
+	}
+
+	var sum float64
+	for _, v := range values {
+		sum += v
+	}
+	mean = sum / n
+
+	if n <= 1 {
+		return mean, 0.0
+	}
+
+	var variance float64
+	for _, v := range values {
+		diff := v - mean
+		variance += diff * diff
+	}
+
+	std = math.Sqrt(variance / (n - 1))
+	return mean, std
+}
+
+// 提取六个RIASEC维度的平均得分
+// 假设 RIASECAnswer 结构体至少包含字段：Dimension string, Score int
+func extractRIASECScores(answers []RIASECAnswer) []float64 {
+	if len(answers) == 0 {
+		return []float64{3, 3, 3, 3, 3, 3} // 返回中性分，防止除零
+	}
+
+	dimSum := make(map[string]float64)
+	dimCount := make(map[string]float64)
+
+	for _, a := range answers {
+		dim := strings.ToUpper(strings.TrimSpace(a.Dimension))
+		dimSum[dim] += float64(a.Score)
+		dimCount[dim]++
+	}
+
+	// 维度顺序固定：R, I, A, S, E, C
+	dims := []string{"R", "I", "A", "S", "E", "C"}
+	result := make([]float64, 0, 6)
+
+	for _, d := range dims {
+		if dimCount[d] > 0 {
+			result = append(result, dimSum[d]/dimCount[d])
+		} else {
+			result = append(result, 3.0) // 缺失维度用中性分补齐
+		}
+	}
+	return result
 }

@@ -233,7 +233,7 @@ func callAPIAndSave(module string, mode Mode, apiKey, gender, grade, hobby strin
 		"model":           "deepseek-chat",
 		"temperature":     temperature,
 		"max_tokens":      8000,
-		"stream":          true, // 双重调用最好不要用 stream，防止中断。
+		"stream":          true,
 		"response_format": map[string]string{"type": "json_object"},
 		"messages": []map[string]string{
 			{"role": "system", "content": strings.TrimSpace(systemPrompt)},

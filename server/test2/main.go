@@ -84,9 +84,7 @@ func main() {
 		RunDemo312(riasec, asc, 0, 0, 0, os.Args[3], "no", combo)
 
 	case "report":
-		filePath := os.Args[2]
-		apiKey := os.Args[3]
-		err := TestReport(apiKey, filePath)
+		err := TestUnifiedReport(os.Args[3], os.Args[2], Mode(os.Args[4]))
 		if err != nil {
 			panic(err)
 		}

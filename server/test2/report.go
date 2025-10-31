@@ -189,7 +189,7 @@ func systemPromptFinal(mode Mode) string {
 }
 
 【生成要求】
-- 所有文字必须 100% 基于 common_section 与 mode_section 的现有内容；
+- 所有结论必须逻辑源自 common_section 与 mode_section 的现有内容，不得引入任何未出现的新数据或外部知识。
 - 禁止编造数据、引用字段名、出现公式或原始数值；
 - 禁止在文字中直接提及任何上级 JSON key（如 common_section、mode33_section、mode312_section 等）；
 - 输出语言需自然、积极、具有行动导向，适合学生与家长阅读；
@@ -240,12 +240,17 @@ func userPromptUnified(param ParamForAIPrompt, mode Mode) string {
 	}
 	dataCommon, _ := json.MarshalIndent(commonSection, "", "  ")
 
-	var dataMode []byte
+	var modeSection map[string]interface{}
 	if mode == Mode33 {
-		dataMode, _ = json.MarshalIndent(param.Mode33, "", "  ")
+		modeSection = map[string]interface{}{
+			"mode_section": param.Mode33, // ✅ 添加mode_section包装
+		}
 	} else {
-		dataMode, _ = json.MarshalIndent(param.Mode312, "", "  ")
+		modeSection = map[string]interface{}{
+			"mode_section": param.Mode312, // ✅ 添加mode_section包装
+		}
 	}
+	dataMode, _ := json.MarshalIndent(modeSection, "", "  ")
 
 	// === 2. 字段定义 ===
 	fdCommon := fieldDefinitionCommon()
@@ -375,7 +380,7 @@ func callUnifiedReport(apiKey string, param ParamForAIPrompt, mode Mode, outPath
 	fmt.Println("========== USER PROMPT ==========")
 	fmt.Println(userPrompt)
 
-	//return nil
+	return nil
 
 	reqBody := map[string]interface{}{
 		"model":       "deepseek-chat",

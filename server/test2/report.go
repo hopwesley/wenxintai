@@ -175,9 +175,9 @@ func systemPromptFinal(mode Mode) string {
 你必须输出一个完整、单一的 JSON 对象，包含以下三个顶级部分：
 {
   "common_section": { ... },      // 阶段一：兴趣–能力分析
-  "mode_section": { ... },        // 阶段二：模式分析（3+3 或 3+1+2）
+  "mode_section": { ... },        // 阶段二：模式分析
   "final_report": {
-    "mode": "%s",                 // 当前模式："3+3" 或 "3+1+2"
+    "mode": "%s",                 // 当前模式
     "report_validity": "基于数据可信度的整体评估（约 60–80 字）",
     "core_trends": "综合兴趣–能力结构的关键特征（约 80–120 字）",
     "mode_strategy": "总结本模式下的选科格局与趋势（约 100–140 字）",
@@ -380,8 +380,6 @@ func callUnifiedReport(apiKey string, param ParamForAIPrompt, mode Mode, outPath
 	fmt.Println("========== USER PROMPT ==========")
 	fmt.Println(userPrompt)
 
-	return nil
-
 	reqBody := map[string]interface{}{
 		"model":       "deepseek-chat",
 		"temperature": 0.4,
@@ -395,6 +393,8 @@ func callUnifiedReport(apiKey string, param ParamForAIPrompt, mode Mode, outPath
 			{"role": "user", "content": strings.TrimSpace(userPrompt)},
 		},
 	}
+
+	fmt.Println("========== AI RESULT ==========")
 
 	content := callDeepSeek(apiKey, reqBody)
 	raw := strings.TrimSpace(content)

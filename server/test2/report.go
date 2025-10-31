@@ -375,6 +375,8 @@ func callUnifiedReport(apiKey string, param ParamForAIPrompt, mode Mode, outPath
 	fmt.Println("========== USER PROMPT ==========")
 	fmt.Println(userPrompt)
 
+	//return nil
+
 	reqBody := map[string]interface{}{
 		"model":       "deepseek-chat",
 		"temperature": 0.4,

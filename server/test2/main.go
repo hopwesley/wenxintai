@@ -74,7 +74,7 @@ func runGenerateQuestions(mode core.Mode, apiKey, gender, grade, hobby string) e
 
 	ts := time.Now().Format("20060102_150405")
 	for module, payload := range res.Modules {
-		filename := fmt.Sprintf("questions_%s_%s_%s.json", mode.String(), module, ts)
+		filename := fmt.Sprintf("questions_%s_%s_%s_%s.json", mode.String(), module, ts, hobby)
 		if err := os.WriteFile(filename, payload, 0o644); err != nil {
 			return err
 		}

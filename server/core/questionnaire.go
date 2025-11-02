@@ -280,7 +280,7 @@ func getTemperature(module string) float64 {
 
 // GenerateQuestions 为三个模块生成问卷并返回结构化结果。
 func GenerateQuestions(mode Mode, apiKey, gender, grade, hobby string) (*QuestionsResult, error) {
-	modules := []string{"OCEAN", "RIASEC", "ASC"}
+	modules := []string{"RIASEC", "ASC"} //"OCEAN",
 	res := &QuestionsResult{
 		Mode:    mode,
 		Gender:  gender,

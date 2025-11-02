@@ -1,10 +1,7 @@
-package main
+package core
 
 import (
-	"encoding/json"
-	"fmt"
 	"math"
-	"os"
 	"sort"
 	"strings"
 )
@@ -210,21 +207,6 @@ func buildAnchor312(anchor string, m map[string]SubjectScores) AnchorCoreData {
 // =============================
 
 func RunDemo312(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64, idx, yesno, combo string) *ParamForAIPrompt {
-	if alpha == 0 && beta == 0 && gamma == 0 {
-		alpha, beta, gamma = 0.4, 0.4, 0.2
-	}
-
-	scores, result := BuildScores(riasecAnswers, ascAnswers, Wfinal, DimCalib, alpha, beta, gamma)
-
-	var paramForPrompt ParamForAIPrompt
-	paramForPrompt.Common = result.Common
-	paramForPrompt.Mode312 = ScoreCombos312(scores)
-
-	content, _ := json.MarshalIndent(&paramForPrompt, "", "  ")
-	filename := fmt.Sprintf("%s_rp_%s_%s_%s.json", idx, combo, "3+1+2", yesno)
-	_ = os.WriteFile(filename, content, 0644)
-
-	fmt.Printf("Radar Visualization:\n%+v\n", result.Radar)
-
-	return &paramForPrompt
+	param, _, _ := BuildFullParam(riasecAnswers, ascAnswers, alpha, beta, gamma)
+	return param
 }

@@ -295,7 +295,21 @@ func (s *pipelineServer) handleAnswers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	param, result, scores := assessment.BuildFullParam(req.RIASECAnswers, req.ASCAnswers, req.Alpha, req.Beta, req.Gamma)
+	out, err := assessment.Run(assessment.Input{
+		RIASECAnswers: req.RIASECAnswers,
+		ASCAnswers:    req.ASCAnswers,
+		Alpha:         req.Alpha,
+		Beta:          req.Beta,
+		Gamma:         req.Gamma,
+	}, mode)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, "评分失败")
+		return
+	}
+
+	param := out.Param
+	result := out.Result
+	scores := out.Scores
 
 	s.mu.Lock()
 	sess.Mode = mode

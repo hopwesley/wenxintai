@@ -1,7 +1,10 @@
 package core
 
 import (
+	"encoding/json"
+	"fmt"
 	"math"
+	"os"
 	"sort"
 	"strings"
 )
@@ -208,5 +211,8 @@ func buildAnchor312(anchor string, m map[string]SubjectScores) AnchorCoreData {
 
 func RunDemo312(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64, idx, yesno, combo string) *ParamForAIPrompt {
 	param, _, _ := BuildFullParam(riasecAnswers, ascAnswers, alpha, beta, gamma)
+	payload, _ := json.MarshalIndent(&param, "", "  ")
+	filename := fmt.Sprintf("param_%s_%s_%s_%s.json", combo, "3+1+2", yesno, idx)
+	_ = os.WriteFile(filename, payload, 0o644)
 	return param
 }

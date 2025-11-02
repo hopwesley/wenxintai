@@ -96,6 +96,7 @@ func printSampleAnswers() {
 
 func runDemo(combo, apiKey string) {
 	riasec := core.AllRIASECCombos[combo]
+
 	ascAligned := core.AllASCCombos[combo]["aligned"]
 	core.RunDemo33(riasec, ascAligned, 0, 0, 0, uuidLike(), "yes", combo)
 	core.RunDemo312(riasec, ascAligned, 0, 0, 0, uuidLike(), "yes", combo)
@@ -104,7 +105,7 @@ func runDemo(combo, apiKey string) {
 	core.RunDemo33(riasec, ascMismatch, 0, 0, 0, uuidLike(), "no", combo)
 	core.RunDemo312(riasec, ascMismatch, 0, 0, 0, uuidLike(), "no", combo)
 
-	fmt.Println("demo completed for", combo, "using api key", apiKey)
+	fmt.Println("demo completed for", combo)
 }
 
 func runReport(apiKey, path string, mode core.Mode) error {

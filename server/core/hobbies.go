@@ -1,4 +1,4 @@
-package assessment
+package core
 
 // StudentHobbies 提供前端可选的兴趣标签列表。
 var StudentHobbies = []string{

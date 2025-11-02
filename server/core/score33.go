@@ -1,10 +1,7 @@
-package main
+package core
 
 import (
-	"encoding/json"
-	"fmt"
 	"math"
-	"os"
 	"sort"
 	"strings"
 )
@@ -106,37 +103,37 @@ func RarityValue(combo string) float64 {
 	}
 }
 
+// BuildFullParam 结合兴趣与能力答案，生成报告输入所需的完整参数。
+func BuildFullParam(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64) (*ParamForAIPrompt, *FullScoreResult, []SubjectScores) {
+	if alpha == 0 && beta == 0 && gamma == 0 {
+		alpha, beta, gamma = 0.4, 0.4, 0.2
+	}
+
+	scores, result := BuildScores(riasecAnswers, ascAnswers, Wfinal, DimCalib, alpha, beta, gamma)
+
+	ws := Weights{
+		W1: 0.45,
+		W2: 0.10,
+		W3: 0.25,
+		W4: 0.20,
+		W5: 0.25,
+	}
+
+	param := &ParamForAIPrompt{
+		Common:  result.Common,
+		Mode33:  ScoreCombos33(scores, ws),
+		Mode312: ScoreCombos312(scores),
+	}
+
+	return param, result, scores
+}
+
 // RunDemo33
 // ---------------------------------------
 // 演示入口
 // ---------------------------------------
 
 func RunDemo33(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta, gamma float64, idx, yesno, combo string) *ParamForAIPrompt {
-	if alpha == 0 && beta == 0 && gamma == 0 {
-		alpha, beta, gamma = 0.4, 0.4, 0.2
-	}
-
-	var paramPrompt ParamForAIPrompt
-	scores, result := BuildScores(riasecAnswers, ascAnswers, Wfinal, DimCalib, alpha, beta, gamma)
-
-	paramPrompt.Common = result.Common
-
-	// 组合余弦相似度 + 风险约束的科学权重方案
-	ws := Weights{
-		W1: 0.45, // avgFit（主导）
-		W2: 0.10, // rarity/10（轻度调节，永不主导）
-		W3: 0.25, // comboCos（方向一致性）
-		W4: 0.20, // minA/5（能力底线）
-		W5: 0.25, // risk（低能力/不匹配时的刚性刹车）
-	}
-
-	paramPrompt.Mode33 = ScoreCombos33(scores, ws)
-
-	content, _ := json.MarshalIndent(&paramPrompt, "", "  ")
-	filename := fmt.Sprintf("%s_rp_%s_%s_%s.json", idx, combo, "3+3", yesno) // 增加了模块名
-	_ = os.WriteFile(filename, content, 0644)
-
-	fmt.Printf("Radar Visualization:\n%+v\n", result.Radar)
-
-	return &paramPrompt
+	param, _, _ := BuildFullParam(riasecAnswers, ascAnswers, alpha, beta, gamma)
+	return param
 }

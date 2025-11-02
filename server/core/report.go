@@ -1,4 +1,4 @@
-package assessment
+package core
 
 import (
 	"encoding/json"
@@ -264,6 +264,7 @@ func userPromptUnified(param ParamForAIPrompt, mode Mode) string {
 	}
 
 	// === 3. 构建用户提示 ===
+	modeStr := mode.String()
 	return fmt.Sprintf(`
 【数据上下文】
 以下 JSON 数据均为系统算法计算结果（非原始测验数据）：
@@ -303,10 +304,10 @@ func userPromptUnified(param ParamForAIPrompt, mode Mode) string {
 - 禁止包含 Markdown、解释文字、代码块或任何非 JSON 内容；
 - 所有内容必须 100%% 来源于以上数据的逻辑延伸。
 `,
-		string(mode),
+		modeStr,
 		string(dataCommon),
 		fdCommon,
-		string(mode),
+		modeStr,
 		string(dataMode),
 		fdMode)
 }

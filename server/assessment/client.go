@@ -7,26 +7,9 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
+
+	"github.com/hopwesley/wenxintai/server/core"
 )
-
-type Mode string
-
-const (
-	Mode33  Mode = "3+3"
-	Mode312 Mode = "3+1+2"
-)
-
-func ParseMode(s string) (Mode, bool) {
-	switch s {
-	case string(Mode33):
-		return Mode33, true
-	case string(Mode312):
-		return Mode312, true
-	default:
-		return "", false
-	}
-}
 
 type StreamResponse struct {
 	ID      string `json:"id"`
@@ -45,6 +28,10 @@ type StreamResponse struct {
 
 // DeepSeekCaller 是默认的 DeepSeek 流式调用实现，允许在测试中替换。
 var DeepSeekCaller = callDeepSeek
+
+func init() {
+	core.DeepSeekCaller = DeepSeekCaller
+}
 
 func callDeepSeek(apiKey string, reqBody interface{}) (string, error) {
 	jsonData, err := json.Marshal(reqBody)
@@ -111,8 +98,4 @@ func callDeepSeek(apiKey string, reqBody interface{}) (string, error) {
 	}
 
 	return fullContent.String(), nil
-}
-
-func uuidLike() string {
-	return fmt.Sprintf("req_%d", time.Now().UnixNano())
 }

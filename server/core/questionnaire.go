@@ -1,4 +1,4 @@
-package assessment
+package core
 
 import (
 	"encoding/json"

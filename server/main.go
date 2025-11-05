@@ -13,6 +13,9 @@ import (
 	"github.com/hopwesley/wenxintai/server/assessment"
 )
 
+// pipelineServer and related types define the in-memory state machine used by
+// the RIASEC/ASC assessment API. These definitions mirror the original
+// implementation in the upstream repository.
 type pipelineServer struct {
 	mu            sync.RWMutex
 	sessions      map[string]*sessionState
@@ -120,6 +123,8 @@ func newPipelineServer(defaultKey string) *pipelineServer {
 	}
 }
 
+// routes sets up API endpoints on a new ServeMux. The handler returned here
+// responds only to paths beginning with /api/.
 func (s *pipelineServer) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/login", s.wrap(http.MethodPost, s.handleLogin))
@@ -171,6 +176,8 @@ func (s *pipelineServer) getSession(id string) (*sessionState, bool) {
 	return sess, ok
 }
 
+// handleLogin manages user login. It will create a new session if the given
+// WeChat ID has not been seen before, otherwise it updates the existing session.
 func (s *pipelineServer) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -225,10 +232,14 @@ func (s *pipelineServer) handleLogin(w http.ResponseWriter, r *http.Request) {
 	s.writeJSON(w, http.StatusOK, resp)
 }
 
+// handleHobbies returns a list of hobbies. These values originate from
+// assessment.StudentHobbies.
 func (s *pipelineServer) handleHobbies(w http.ResponseWriter, _ *http.Request) {
 	s.writeJSON(w, http.StatusOK, hobbiesResponse{Hobbies: assessment.StudentHobbies})
 }
 
+// handleQuestions generates a set of questions for the given session and
+// assessment mode.
 func (s *pipelineServer) handleQuestions(w http.ResponseWriter, r *http.Request) {
 	var req questionsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -274,6 +285,9 @@ func (s *pipelineServer) handleQuestions(w http.ResponseWriter, r *http.Request)
 	})
 }
 
+// handleAnswers scores the provided answers and stores the result on the
+// session state. It returns the computed parameters necessary for generating
+// the report.
 func (s *pipelineServer) handleAnswers(w http.ResponseWriter, r *http.Request) {
 	var req answersRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -338,6 +352,8 @@ func (s *pipelineServer) handleAnswers(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleReport generates a unified AI report for the session using the stored
+// parameters. It persists the report on the session.
 func (s *pipelineServer) handleReport(w http.ResponseWriter, r *http.Request) {
 	var req reportRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -382,13 +398,53 @@ func (s *pipelineServer) handleReport(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// main configures and starts the HTTP server. It mounts both the API handlers
+// (under /api/) and a static file server for the compiled Vue SPA. When the
+// frontend is built using `npm run build` the output should be placed in
+// frontend/dist. Requests that do not begin with /api/ will be served by
+// the static file server.
 func main() {
 	defaultKey := os.Getenv("DEEPSEEK_API_KEY")
 	srv := newPipelineServer(defaultKey)
-	handler := srv.routes()
 
-	log.Println("🚀 Server running on http://localhost:80")
-	if err := http.ListenAndServe(":80", handler); err != nil {
+	mux := http.NewServeMux()
+	// API 还是 /api/* 前缀
+	mux.Handle("/api/", srv.routes())
+
+	// ---- 新增：静态目录与 SPA fallback ----
+	// 运行时可通过 STATIC_DIR 指定静态目录，默认 ./static
+	staticDir := os.Getenv("STATIC_DIR")
+	if staticDir == "" {
+		staticDir = "./static"
+	}
+
+	// 简单的静态文件+SPA回退：
+	// 1) 如果请求的物理文件存在且不是目录，直接返回该文件
+	// 2) 否则返回 index.html，让前端路由（vue-router）处理
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.NotFound(w, r)
+			return
+		}
+		// 尝试物理文件
+		tryPath := staticDir + r.URL.Path
+		if fi, err := os.Stat(tryPath); err == nil && !fi.IsDir() {
+			http.ServeFile(w, r, tryPath)
+			return
+		}
+		// 回退到 index.html
+		http.ServeFile(w, r, staticDir+"/index.html")
+	})
+
+	// 端口支持环境变量 PORT，默认 8080（开发友好；线上由 Nginx 反代 80/443）
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Println("🚀 Server running on http://localhost:" + port)
+	log.Println("    static from:", staticDir)
+	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatal(err)
 	}
 }

@@ -90,3 +90,79 @@ body{margin:0;color:var(--text-primary);font-family: ui-sans-serif,system-ui,-ap
 @media (max-width: 560px){
     .summary-inner{grid-template-columns: 1fr}
 }
+
+
+
+/* ========== 顶部 Header：左 logo 圆点 + 右 登录 ========== */
+.site-header{
+    height:56px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:12px;
+}
+
+.logo-dot{
+    width:40px;height:40px;border-radius:50%;
+    background:#e5e7eb url("/img/logo.png") center/70% no-repeat;
+    box-shadow:0 6px 20px rgba(0,0,0,.18);
+}
+
+/* 透明描边的“登录”按钮 */
+.btn-ghost{
+    background:transparent;
+    color:#fff;
+    border:1px solid rgba(255,255,255,.28);
+}
+.btn-ghost:hover{ background:rgba(255,255,255,.08) }
+.login-btn{ height:36px; padding:0 14px; border-radius:10px }
+
+/* ========== 计划卡片的选中态/禁用态高亮 ========== */
+.plan-card{
+    cursor:pointer;
+    transition: box-shadow .2s ease, transform .15s ease, border-color .2s ease;
+    border:1px solid #eef2ff;
+}
+.plan-card:hover{ transform: translateY(-2px); }
+
+.plan-card.is-active{
+    border-color: #bfd5ff;
+    box-shadow: 0 10px 30px rgba(91,124,255,.18);
+    position: relative;
+}
+.plan-card.is-active::after{
+    /* 顶部细条高亮 */
+    content:'';
+    position:absolute; left:0; right:0; top:0; height:4px;
+    border-top-left-radius:var(--radius);
+    border-top-right-radius:var(--radius);
+    background: linear-gradient(90deg, #7aa2ff, #5b7cff);
+}
+
+.plan-card.disabled{ opacity:.7; cursor:default; }
+
+/* 调整三列区域与整体留白，使之更接近设计图 */
+.plans{ margin:44px auto 22px; }
+.summary{ margin:26px auto 70px; }
+.summary-inner{
+    background:var(--bg-muted);
+    border:1px solid #e8edff;
+    box-shadow: 0 10px 34px rgba(15,23,42,.06) inset;
+}
+
+/* Summary 的卡片更柔和的阴影与圆角 */
+.summary-item{
+    border:1px solid #eef2ff;
+    border-radius:16px;
+}
+
+/* Hero 顶部的圆点效果稍加强（与设计风格更近） */
+.hero::before{
+    content:'';
+    position:absolute; right:-120px; top:-120px;
+    width:460px; height:460px; border-radius:50%;
+    background: radial-gradient(circle at 30% 30%, rgba(91,124,255,.40), transparent 60%);
+    filter: blur(8px);
+}
+.hero { position: relative; }
+.hero::before { pointer-events: none; }   /* 关键：让点击穿透装饰层 */

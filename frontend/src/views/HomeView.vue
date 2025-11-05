@@ -105,5 +105,5 @@
 </template>
 
 <script setup lang="ts">
-/* 纯展示页，无额外逻辑 */
+import '@/styles/home.css'
 </script>

@@ -9,6 +9,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { getReport } from '../api'
+import '@/styles/report.css'
 
 const reportText = ref('')
 const loading = ref(true)

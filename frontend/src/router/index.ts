@@ -1,18 +1,12 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
-import LoginView from '../views/LoginView.vue'
-import HobbiesView from '../views/HobbiesView.vue'
-import QuestionsView from '../views/QuestionsView.vue'
-import SummaryView from '../views/SummaryView.vue'
-import ReportView from '../views/ReportView.vue'
 
 const routes: RouteRecordRaw[] = [
-    { path: '/', component: HomeView },
-    { path: '/login', component: LoginView },
-    { path: '/hobbies', component: HobbiesView },
-    { path: '/questions', component: QuestionsView },
-    { path: '/summary', component: SummaryView },
-    { path: '/report', component: ReportView },
+    { path: '/', component: () => import('@/views/HomeView.vue') },
+    { path: '/login', component: () => import('@/views/LoginView.vue') },
+    { path: '/hobbies', component: () => import('@/views/HobbiesView.vue') },
+    { path: '/questions', component: () => import('@/views/QuestionsView.vue') },
+    { path: '/summary', component: () => import('@/views/SummaryView.vue') },
+    { path: '/report', component: () => import('@/views/ReportView.vue') },
 ]
 
 export const router = createRouter({

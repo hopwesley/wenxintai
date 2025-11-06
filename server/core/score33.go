@@ -140,7 +140,7 @@ func RunDemo33(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha, beta
 	param, _, _ := BuildFullParam(riasecAnswers, ascAnswers, alpha, beta, gamma)
 
 	payload, _ := json.MarshalIndent(&param, "", "  ")
-	filename := fmt.Sprintf("param_%s_%s_%s_%s.json", combo, "3+3", yesno, idx)
+	filename := fmt.Sprintf("param_%s_%s_%s_%s.json", idx, combo, "3+3", yesno)
 	_ = os.WriteFile(filename, payload, 0o644)
 
 	return param

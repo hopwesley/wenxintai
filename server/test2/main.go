@@ -10,10 +10,6 @@ import (
 	"github.com/hopwesley/wenxintai/server/core"
 )
 
-func uuidLike() string {
-	return fmt.Sprintf("req_%d", time.Now().UnixNano())
-}
-
 func main() {
 	if len(os.Args) < 2 {
 		panic("missing stage parameter")
@@ -31,11 +27,13 @@ func main() {
 		}
 		apiKey := os.Args[3]
 		hobby := core.StudentHobbies[rand.Intn(len(core.StudentHobbies))]
+		fmt.Println("------>>>hobby:", hobby)
 		if err := runGenerateQuestions(mode, apiKey, "男", "初三", hobby); err != nil {
 			fmt.Println("generate questions error:", err)
 		}
 
 		hobby2 := core.StudentHobbies[rand.Intn(len(core.StudentHobbies))]
+		fmt.Println("------>>>hobby:", hobby2)
 		if err := runGenerateQuestions(mode, apiKey, "女", "高一", hobby2); err != nil {
 			fmt.Println("generate questions error:", err)
 		}
@@ -46,8 +44,8 @@ func main() {
 			panic("usage: demo <combo> <apiKey>")
 		}
 		combo := os.Args[2]
-		apiKey := os.Args[3]
-		runDemo(combo, apiKey)
+		idx := os.Args[3]
+		runDemo(combo, idx)
 	case "report":
 		if len(os.Args) < 5 {
 			panic("usage: report <session> <apiKey> <mode>")
@@ -94,16 +92,16 @@ func printSampleAnswers() {
 	fmt.Println(string(dataAsc))
 }
 
-func runDemo(combo, apiKey string) {
+func runDemo(combo, idx string) {
 	riasec := core.AllRIASECCombos[combo]
 
 	ascAligned := core.AllASCCombos[combo]["aligned"]
-	core.RunDemo33(riasec, ascAligned, 0, 0, 0, uuidLike(), "yes", combo)
-	core.RunDemo312(riasec, ascAligned, 0, 0, 0, uuidLike(), "yes", combo)
+	core.RunDemo33(riasec, ascAligned, 0, 0, 0, idx, "yes", combo)
+	core.RunDemo312(riasec, ascAligned, 0, 0, 0, idx, "yes", combo)
 
 	ascMismatch := core.AllASCCombos[combo]["mismatch"]
-	core.RunDemo33(riasec, ascMismatch, 0, 0, 0, uuidLike(), "no", combo)
-	core.RunDemo312(riasec, ascMismatch, 0, 0, 0, uuidLike(), "no", combo)
+	core.RunDemo33(riasec, ascMismatch, 0, 0, 0, idx, "no", combo)
+	core.RunDemo312(riasec, ascMismatch, 0, 0, 0, idx, "no", combo)
 
 	fmt.Println("demo completed for", combo)
 }

@@ -90,3 +90,28 @@ export async function getReport(payload: ReportRequest) {
   }
   return resp.json()
 }
+
+export interface VerifyInviteRequest {
+  code: string
+}
+
+export type InviteFailureReason = 'used' | 'expired' | 'not_found'
+
+export interface VerifyInviteResponse {
+  ok: boolean
+  reason?: InviteFailureReason
+}
+
+export async function verifyInviteCode(payload: VerifyInviteRequest): Promise<VerifyInviteResponse> {
+  const resp = await fetch('/api/invites/verify-and-redeem', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+
+  if (!resp.ok) {
+    throw new Error('邀请码校验失败')
+  }
+
+  return resp.json()
+}

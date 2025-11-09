@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -21,6 +24,7 @@ type pipelineServer struct {
 	sessions      map[string]*sessionState
 	wechatIndex   map[string]string
 	defaultAPIKey string
+	db            *sql.DB
 }
 
 type sessionState struct {
@@ -115,11 +119,21 @@ type errorResponse struct {
 	Error string `json:"error"`
 }
 
-func newPipelineServer(defaultKey string) *pipelineServer {
+type inviteVerifyRequest struct {
+	Code string `json:"code"`
+}
+
+type inviteVerifyResponse struct {
+	OK     bool   `json:"ok"`
+	Reason string `json:"reason,omitempty"`
+}
+
+func newPipelineServer(defaultKey string, db *sql.DB) *pipelineServer {
 	return &pipelineServer{
 		sessions:      make(map[string]*sessionState),
 		wechatIndex:   make(map[string]string),
 		defaultAPIKey: defaultKey,
+		db:            db,
 	}
 }
 
@@ -132,6 +146,7 @@ func (s *pipelineServer) routes() http.Handler {
 	mux.HandleFunc("/api/questions", s.wrap(http.MethodPost, s.handleQuestions))
 	mux.HandleFunc("/api/answers", s.wrap(http.MethodPost, s.handleAnswers))
 	mux.HandleFunc("/api/report", s.wrap(http.MethodPost, s.handleReport))
+	mux.HandleFunc("/api/invites/verify-and-redeem", s.wrap(http.MethodPost, s.handleInviteVerify))
 	return mux
 }
 
@@ -188,7 +203,7 @@ func (s *pipelineServer) handleLogin(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, http.StatusBadRequest, "缺少微信标识")
 		return
 	}
-	now := time.Now()
+	now := time.Now().UTC()
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -236,6 +251,45 @@ func (s *pipelineServer) handleLogin(w http.ResponseWriter, r *http.Request) {
 // assessment.StudentHobbies.
 func (s *pipelineServer) handleHobbies(w http.ResponseWriter, _ *http.Request) {
 	s.writeJSON(w, http.StatusOK, hobbiesResponse{Hobbies: assessment.StudentHobbies})
+}
+
+func (s *pipelineServer) handleInviteVerify(w http.ResponseWriter, r *http.Request) {
+	if s.db == nil {
+		log.Println("[INVITE] 数据库未初始化")
+		s.writeJSON(w, http.StatusInternalServerError, inviteVerifyResponse{OK: false})
+		return
+	}
+
+	var req inviteVerifyRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.writeError(w, http.StatusBadRequest, "无效的请求体")
+		return
+	}
+
+	code := strings.TrimSpace(req.Code)
+	if code == "" {
+		s.writeJSON(w, http.StatusOK, inviteVerifyResponse{OK: false, Reason: "not_found"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	reason, err := s.redeemInvite(ctx, code)
+	if err != nil {
+		log.Printf("[INVITE] code=%s error=%v", maskInviteCode(code), err)
+		s.writeJSON(w, http.StatusInternalServerError, inviteVerifyResponse{OK: false})
+		return
+	}
+
+	if reason != "" {
+		log.Printf("[INVITE] code=%s result=%s", maskInviteCode(code), reason)
+		s.writeJSON(w, http.StatusOK, inviteVerifyResponse{OK: false, Reason: reason})
+		return
+	}
+
+	log.Printf("[INVITE] code=%s result=ok", maskInviteCode(code))
+	s.writeJSON(w, http.StatusOK, inviteVerifyResponse{OK: true})
 }
 
 // handleQuestions generates a set of questions for the given session and
@@ -398,14 +452,81 @@ func (s *pipelineServer) handleReport(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (s *pipelineServer) redeemInvite(ctx context.Context, code string) (string, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	if err != nil {
+		return "", err
+	}
+
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
+
+	var status string
+	var expiresAt sql.NullTime
+	err = tx.QueryRowContext(ctx, `SELECT status, expires_at FROM app.invites WHERE code = $1 FOR UPDATE`, code).Scan(&status, &expiresAt)
+	if err == sql.ErrNoRows {
+		return "not_found", nil
+	}
+	if err != nil {
+		return "", err
+	}
+
+	now := time.Now()
+	if status != "unused" {
+		return "used", nil
+	}
+	if expiresAt.Valid && !expiresAt.Time.After(now) {
+		return "expired", nil
+	}
+
+	if _, err := tx.ExecContext(ctx, `UPDATE app.invites SET status = 'used', used_by = $2, used_at = NOW() WHERE code = $1 AND status = 'unused'`, code, "public_portal"); err != nil {
+		return "", err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return "", err
+	}
+	committed = true
+	return "", nil
+}
+
+func maskInviteCode(code string) string {
+	trimmed := strings.TrimSpace(code)
+	length := len(trimmed)
+	if length == 0 {
+		return "(empty)"
+	}
+	if length <= 4 {
+		return strings.Repeat("*", length)
+	}
+	return strings.Repeat("*", length-4) + trimmed[length-4:]
+}
+
 // main configures and starts the HTTP server. It mounts both the API handlers
 // (under /api/) and a static file server for the compiled Vue SPA. When the
 // frontend is built using `npm run build` the output should be placed in
 // frontend/dist. Requests that do not begin with /api/ will be served by
 // the static file server.
 func main() {
+	cfg, err := loadDatabaseConfig()
+	if err != nil {
+		log.Printf("数据库配置错误: %v", err)
+		os.Exit(1)
+	}
+
+	db, err := connectDatabase(cfg)
+	if err != nil {
+		log.Printf("数据库连接失败: %v", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+
 	defaultKey := os.Getenv("DEEPSEEK_API_KEY")
-	srv := newPipelineServer(defaultKey)
+	srv := newPipelineServer(defaultKey, db)
 
 	mux := http.NewServeMux()
 	// API 还是 /api/* 前缀

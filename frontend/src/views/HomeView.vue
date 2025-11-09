@@ -104,11 +104,13 @@
       </div>
 
       <div class="summary-cta">
-        <button class="btn btn-primary" @click="startTest">开始测试</button>
+        <button class="btn btn-primary" type="button" @click="startTest">开始测试</button>
+        <p class="summary-hint">{{ t('invite.freeHint') }}</p>
       </div>
     </section>
     <!-- 登录弹窗：双向绑定 -->
     <WeChatLoginDialog v-model:open="showLogin" />
+    <InviteCodeModal v-model:open="inviteModalOpen" @success="handleInviteSuccess" />
   </div>
 </template>
 
@@ -116,22 +118,27 @@
 import { ref, computed } from 'vue'
 import '@/styles/home.css'
 import WeChatLoginDialog from '@/components/WeChatLoginDialog.vue'
-import { getHobbies } from '@/api'
+import InviteCodeModal from '@/components/InviteCodeModal.vue'
+import { useRouter } from 'vue-router'
+import { useI18n } from '@/i18n'
 
 const showLogin = ref(false)
 
-async function startTest() {
-  try {
-    const list = await getHobbies()
-    console.log('Hobbies from /api/hobbies:', list)
-  } catch (e) {
-    console.error('getHobbies failed:', e)
-  }
+const inviteModalOpen = ref(false)
+const router = useRouter()
+const { t } = useI18n()
+
+function startTest() {
+  inviteModalOpen.value = true
 }
 
 function openLogin() {
   showLogin.value = true
   console.log('[HomeView] dialogOpen ->', showLogin.value)
+}
+
+function handleInviteSuccess() {
+  router.push('/questions')
 }
 
 type PlanKey = 'public' | 'pro' | 'school'

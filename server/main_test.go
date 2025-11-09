@@ -35,7 +35,7 @@ func TestPipelineFlow(t *testing.T) {
 		}
 	}
 
-	srv := newPipelineServer("test-default-key")
+	srv := newPipelineServer("test-default-key", nil)
 	ts := httptest.NewServer(srv.routes())
 	defer ts.Close()
 

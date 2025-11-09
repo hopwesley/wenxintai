@@ -79,7 +79,15 @@ body{margin:0;color:var(--text-primary);font-family: ui-sans-serif,system-ui,-ap
 }
 .summary-item h4{margin:0 0 8px; font-size:16px}
 .summary-item p{margin:0; color:var(--text-secondary); font-size:14px; line-height:1.6}
-.summary-cta{display:flex; justify-content:center; margin-top:20px}
+.summary-cta{
+    display:flex;
+    justify-content:center;
+    margin-top:20px;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+}
+.summary-hint{margin:0;color:#94a3b8;font-size:13px}
 
 /* Responsive */
 @media (max-width: 980px){

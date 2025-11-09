@@ -11,15 +11,17 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
 type databaseConfig struct {
-	Host     string
-	Port     int
-	Database string
-	User     string
-	Password string
-	SSLMode  string
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	Database string `json:"database"`
+	User     string `json:"user"`
+	Password string `json:"password"`
+	SSLMode  string `json:"sslmode"`
 }
 
 func loadDatabaseConfig() (databaseConfig, error) {

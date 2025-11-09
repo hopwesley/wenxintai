@@ -38,7 +38,7 @@
           type="button"
       >
         <div class="plan-head">
-          <h3>公益版</h3>
+          <h3>基础版</h3>
           <div class="price"><span class="currency">¥</span>19.9</div>
         </div>
         <ul class="plan-features">
@@ -143,7 +143,7 @@ function handleInviteSuccess() {
 
 type PlanKey = 'public' | 'pro' | 'school'
 
-/** 默认选中“公益版” */
+/** 默认选中“基础版” */
 const activePlan = ref<PlanKey>('public')
 
 /** 三个版本对应的说明文案（你可以随时改成自己的最终文案） */

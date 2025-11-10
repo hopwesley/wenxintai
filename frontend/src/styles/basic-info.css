@@ -1,0 +1,22 @@
+/* src/features/basic-info/style/basic-info.css */
+.basic-form { display: flex; flex-direction: column; gap: 24px; }
+.basic-form__title { margin: 0; font-size: 24px; font-weight: 700; }
+.basic-form__field { display: flex; flex-direction: column; gap: 8px; }
+.basic-form__field > input, .basic-form__field > select {
+    height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid #e5e7eb; background: #fff;
+}
+.basic-form__error { color: #ef4444; font-size: 12px; margin: 0; }
+.basic-form__submit { align-self: flex-start; margin-top: 8px; padding: 10px 18px; border-radius: 999px;
+    background: #6366f1; color: #fff; border: none; cursor: pointer; font-weight: 600; }
+.basic-form__submit:disabled { opacity: .5; cursor: not-allowed; }
+
+/* 过渡遮罩 */
+.overlay { position: fixed; inset: 0; background: rgba(15,23,42,.45); backdrop-filter: blur(2px); z-index: 999;
+    display: flex; align-items: center; justify-content: center; }
+.overlay__card { background: #fff; color: #111827; border-radius: 12px; padding: 18px 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.1); font-size: 16px; }
+
+@media (max-width: 768px) {
+    .basic-form__title { font-size: 20px; }
+    .basic-form__submit { width: 100%; }
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -452,6 +453,13 @@ func (s *pipelineServer) handleReport(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+const (
+	inviteStatusUnused  = 0
+	inviteStatusUsed    = 1
+	inviteStatusExpired = 2 // 一般作为“reason”，不直接入库
+	inviteStatusRevoked = 3
+)
+
 func (s *pipelineServer) redeemInvite(ctx context.Context, code string) (string, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
@@ -465,10 +473,13 @@ func (s *pipelineServer) redeemInvite(ctx context.Context, code string) (string,
 		}
 	}()
 
-	var status string
+	var status int
 	var expiresAt sql.NullTime
-	err = tx.QueryRowContext(ctx, `SELECT status, expires_at FROM app.invites WHERE code = $1 FOR UPDATE`, code).Scan(&status, &expiresAt)
-	if err == sql.ErrNoRows {
+	err = tx.QueryRowContext(ctx,
+		`SELECT status, expires_at FROM app.invites WHERE code = $1 FOR UPDATE`,
+		code,
+	).Scan(&status, &expiresAt)
+	if errors.Is(err, sql.ErrNoRows) {
 		return "not_found", nil
 	}
 	if err != nil {
@@ -476,14 +487,24 @@ func (s *pipelineServer) redeemInvite(ctx context.Context, code string) (string,
 	}
 
 	now := time.Now()
-	if status != "unused" {
+	// 数字状态判断
+	if status == inviteStatusUsed {
 		return "used", nil
+	}
+	if status == inviteStatusRevoked {
+		return "revoked", nil
 	}
 	if expiresAt.Valid && !expiresAt.Time.After(now) {
 		return "expired", nil
 	}
 
-	if _, err := tx.ExecContext(ctx, `UPDATE app.invites SET status = 'used', used_by = $2, used_at = NOW() WHERE code = $1 AND status = 'unused'`, code, "public_portal"); err != nil {
+	// 把未使用 -> 已使用；用数字状态且在 WHERE 中限制原状态
+	if _, err := tx.ExecContext(ctx,
+		`UPDATE app.invites
+		   SET status = $2, used_by = $3, used_at = NOW()
+		 WHERE code = $1 AND status = $4`,
+		code, inviteStatusUsed, "public_portal", inviteStatusUnused,
+	); err != nil {
 		return "", err
 	}
 

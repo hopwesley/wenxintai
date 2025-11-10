@@ -1,4 +1,3 @@
-/* src/features/questions-stage/style/questions-stage.css */
 .questions { display: flex; flex-direction: column; gap: 16px; }
 .questions__header { display: flex; align-items: center; justify-content: space-between; }
 .questions__progress { font-size: 14px; color: #64748b; }

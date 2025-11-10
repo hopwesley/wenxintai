@@ -5,15 +5,15 @@
         <button class="close-btn" type="button" @click="handleCancel" aria-label="close">
           ×
         </button>
-        <h3 class="title">{{ t('invite.title') }}</h3>
-        <p class="description">{{ t('invite.description') }}</p>
+        <h3 class="title">请输入邀请码</h3>
+        <p class="description">每个邀请码仅可使用一次，请确认后提交。</p>
         <form class="form" @submit.prevent="handleConfirm">
           <input
               ref="inputRef"
               v-model="code"
               class="code-input"
               type="text"
-              :placeholder="t('invite.placeholder')"
+              placeholder='邀请码'
               :disabled="loading"
               autocomplete="one-time-code"
           />
@@ -25,15 +25,15 @@
                 @click="handleCancel"
                 :disabled="loading"
             >
-              {{ t('invite.cancel') }}
+              取消
             </button>
             <button
                 type="submit"
                 class="btn btn-primary"
                 :disabled="loading || trimmedCode.length === 0"
             >
-              <span v-if="loading">{{ t('invite.loading') }}</span>
-              <span v-else>{{ t('invite.confirm') }}</span>
+              <span v-if="loading">验证中…</span>
+              <span v-else>确认开始</span>
             </button>
           </div>
         </form>
@@ -45,7 +45,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { verifyInviteCode } from '@/api'
-import { useI18n } from '@/i18n'
 
 type InviteErrorReason = 'used' | 'expired' | 'not_found'
 
@@ -56,7 +55,6 @@ const code = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
 const inputRef = ref<HTMLInputElement | null>(null)
-const { t } = useI18n()
 
 const trimmedCode = computed(() => code.value.trim())
 
@@ -89,7 +87,7 @@ async function handleConfirm() {
     return
   }
   if (trimmedCode.value.length === 0) {
-    errorMessage.value = t('invite.errors.empty')
+    errorMessage.value = '请输入邀请码'
     return
   }
 
@@ -106,10 +104,10 @@ async function handleConfirm() {
 
     const reason: InviteErrorReason | undefined = response.reason
     const reasonKey = reason ? `invite.errors.${reason}` : 'invite.errors.unknown'
-    errorMessage.value = t(reasonKey)
+    errorMessage.value = reasonKey
   } catch (error) {
     console.error('[InviteCodeModal] verify failed', error)
-    errorMessage.value = t('invite.errors.network')
+    errorMessage.value = '网络异常，请重试'
   } finally {
     loading.value = false
   }

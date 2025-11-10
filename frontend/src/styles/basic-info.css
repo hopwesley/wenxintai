@@ -1,4 +1,3 @@
-/* src/features/basic-info/style/basic-info.css */
 .basic-form { display: flex; flex-direction: column; gap: 24px; }
 .basic-form__title { margin: 0; font-size: 24px; font-weight: 700; }
 .basic-form__field { display: flex; flex-direction: column; gap: 8px; }

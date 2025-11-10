@@ -16,7 +16,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getHobbies } from '../api'
+import { getHobbies } from '@/api'
 
 const router = useRouter()
 const hobbies = ref<string[]>([])

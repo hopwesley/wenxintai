@@ -7,12 +7,10 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useI18n } from '@/i18n'
 
 const router = useRouter()
-const { t } = useI18n()
 
-const message = computed(() => t('loading.default'))
+const message = computed(() =>  '加载中…')
 
 onMounted(() => {
   router.replace('/test/basic/step/2')

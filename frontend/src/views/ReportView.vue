@@ -6,17 +6,17 @@
 
     <section class="report">
       <h1>{{ currentStepTitle }}</h1>
-      <div v-if="isPlaceholderStep" class="report__placeholder">{{ t('placeholder.description') }}</div>
+      <div v-if="isPlaceholderStep" class="report__placeholder">report__placeholder</div>
       <template v-else>
-        <div v-if="loading" class="report__loading">{{ t('report.loading') }}</div>
+        <div v-if="loading" class="report__loading">正在生成报告…</div>
         <div v-else-if="errorMessage" class="report__error">{{ errorMessage }}</div>
         <pre v-else-if="reportText" class="report__content">{{ reportText }}</pre>
-        <p v-else class="report__empty">{{ t('report.empty') }}</p>
+        <p v-else class="report__empty">暂无报告内容</p>
       </template>
     </section>
 
     <template #footer>
-      <p>{{ t('disclaimer') }}</p>
+      <p>免责声明 基于AI生成，仅供参考</p>
     </template>
   </TestLayout>
 </template>
@@ -26,14 +26,12 @@ import { computed, onMounted, ref, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TestLayout from '@/layouts/TestLayout.vue'
 import StepIndicator from '@/components/StepIndicator.vue'
-import { useI18n } from '@/i18n'
 import { getReport } from '@/api'
 import { useTestSession } from '@/store/testSession'
 import { STEPS, isVariant, type Variant } from '@/config/testSteps'
 
 const route = useRoute()
 const router = useRouter()
-const { t } = useI18n()
 const { state, setVariant, setCurrentStep, ensureSessionId } = useTestSession()
 const variant = ref<Variant>('basic')
 
@@ -62,14 +60,14 @@ watchEffect(() => {
 })
 
 const stepItems = computed(() =>
-  STEPS[variant.value].map((item) => ({ key: item.key, title: t(item.titleKey) }))
+  STEPS[variant.value].map((item) => ({ key: item.key, title: (item.titleKey) }))
 )
 
 const currentStepTitle = computed(() => {
   const index = state.currentStep - 1
   const item = STEPS[variant.value][index]
-  if (!item) return t('report.title')
-  return t(item.titleKey)
+  if (!item) return ('report.title')
+  return (item.titleKey)
 })
 
 onMounted(async () => {
@@ -101,7 +99,7 @@ onMounted(async () => {
     reportText.value = JSON.stringify(response.report, null, 2)
   } catch (error) {
     console.error('[ReportView] failed to load report', error)
-    errorMessage.value = t('error.network')
+    errorMessage.value = ('error.network')
   } finally {
     loading.value = false
   }

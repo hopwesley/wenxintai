@@ -246,7 +246,7 @@
         </div>
         <div class="summary-cta">
           <button class="btn btn-primary" type="button" @click="startTest">开始测试</button>
-          <p class="summary-hint">{{ t('invite.freeHint') }}</p>
+          <p class="summary-hint">使用邀请码免费体验</p>
         </div>
       </div>
     </section>
@@ -262,13 +262,11 @@ import '@/styles/home.css'
 import WeChatLoginDialog from '@/components/WeChatLoginDialog.vue'
 import InviteCodeModal from '@/components/InviteCodeModal.vue'
 import { useRouter } from 'vue-router'
-import { useI18n } from '@/i18n'
 
 const showLogin = ref(false)
 
 const inviteModalOpen = ref(false)
 const router = useRouter()
-const { t } = useI18n()
 
 function startTest() {
   inviteModalOpen.value = true

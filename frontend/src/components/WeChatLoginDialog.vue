@@ -1,12 +1,8 @@
 <template>
   <teleport to="body">
-    <!-- 蒙层，点击空白区域可关闭 -->
     <div v-if="open" class="wechat-login-mask" @click.self="close">
       <div class="wechat-login-dialog">
-        <!-- 右上角关闭按钮 -->
         <button class="close-btn" @click="close">×</button>
-
-        <!-- 主体内容 -->
         <div class="wechat-login-content">
           <img
               class="wechat-logo"
@@ -16,7 +12,6 @@
           <h3>微信扫码登录</h3>
           <p class="desc">请使用微信扫描二维码登录系统</p>
 
-          <!-- 模拟二维码区域 -->
           <div class="qrcode-box">
             <img
                 src="/img/logo.png"
@@ -30,17 +25,12 @@
 </template>
 
 <script setup lang="ts">
-/**
- * 外部用法：
- * <WeChatLoginDialog v-model:open="showLogin" />
- */
-const props = defineProps({
+defineProps({
   open: {
     type: Boolean,
     required: true
   }
-})
-
+});
 const emit = defineEmits(['update:open'])
 
 function close() {

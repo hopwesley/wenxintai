@@ -46,8 +46,8 @@
 <script setup lang="ts">
 import TestLayout from '@/layouts/TestLayout.vue'
 import StepIndicator from '@/components/StepIndicator.vue'
-import '@/features/questions-stage/style/questions-stage.css'
-import { useQuestionsStage } from '@/features/questions-stage/logic/useQuestionsStage'
+import '@/styles/questions-stage.css'
+import { useQuestionsStage } from '@/logic/useQuestionsStage'
 
 const {
   // 状态

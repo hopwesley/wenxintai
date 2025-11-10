@@ -61,8 +61,8 @@
 <script setup lang="ts">
 import TestLayout from '@/layouts/TestLayout.vue'
 import StepIndicator from '@/components/StepIndicator.vue'
-import '@/features/basic-info/style/basic-info.css'
-import { useBasicInfo } from '@/features/basic-info/logic/useBasicInfo'
+import '@/styles/basic-info.css'
+import { useBasicInfo } from '@/logic/useBasicInfo'
 const {
   form, touched, ids, hobbies,
   ageError, modeError, hobbyError, isFormValid,

@@ -527,55 +527,37 @@ func maskInviteCode(code string) string {
 	return strings.Repeat("*", length-4) + trimmed[length-4:]
 }
 
-// main configures and starts the HTTP server. It mounts both the API handlers
-// (under /api/) and a static file server for the compiled Vue SPA. When the
-// frontend is built using `npm run build` the output should be placed in
-// frontend/dist. Requests that do not begin with /api/ will be served by
-// the static file server.
 func main() {
-	cfg, err := loadDatabaseConfig()
+	cfg, err := loadAppConfig()
 	if err != nil {
 		log.Printf("数据库配置错误: %v", err)
 		os.Exit(1)
 	}
 
-	db, err := connectDatabase(cfg)
+	db, err := connectDatabase(cfg.Database)
 	if err != nil {
 		log.Printf("数据库连接失败: %v", err)
 		os.Exit(1)
 	}
 	defer db.Close()
 
-	defaultKey := os.Getenv("DEEPSEEK_API_KEY")
-	srv := newPipelineServer(defaultKey, db)
+	srv := newPipelineServer(cfg.Server.DefaultAPIKey, db)
 
 	mux := http.NewServeMux()
-	// API 还是 /api/* 前缀
 	mux.Handle("/api/", srv.routes())
-
-	// ---- 新增：静态目录与 SPA fallback ----
-	// 运行时可通过 STATIC_DIR 指定静态目录，默认 ./static
-	staticDir := os.Getenv("STATIC_DIR")
-	if staticDir == "" {
-		staticDir = "./static"
-	}
-
-	// 简单的静态文件+SPA回退：
-	// 1) 如果请求的物理文件存在且不是目录，直接返回该文件
-	// 2) 否则返回 index.html，让前端路由（vue-router）处理
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.NotFound(w, r)
 			return
 		}
 		// 尝试物理文件
-		tryPath := staticDir + r.URL.Path
+		tryPath := cfg.Server.StaticDir + r.URL.Path
 		if fi, err := os.Stat(tryPath); err == nil && !fi.IsDir() {
 			http.ServeFile(w, r, tryPath)
 			return
 		}
 		// 回退到 index.html
-		http.ServeFile(w, r, staticDir+"/index.html")
+		http.ServeFile(w, r, cfg.Server.StaticDir+"/index.html")
 	})
 
 	// 端口支持环境变量 PORT，默认 8080（开发友好；线上由 Nginx 反代 80/443）
@@ -585,7 +567,6 @@ func main() {
 	}
 
 	log.Println("🚀 Server running on http://localhost:" + port)
-	log.Println("    static from:", staticDir)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatal(err)
 	}

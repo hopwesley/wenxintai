@@ -1,0 +1,15 @@
+{
+  "server": {
+    "port": "8080",
+    "static_dir": "./static",
+    "default_api_key": ""
+  },
+  "database": {
+    "host": "127.0.0.1",
+    "port": 5432,
+    "database": "wenxintai",
+    "user": "wenxintai",
+    "password": "你的密码",
+    "sslmode": "disable"
+  }
+}

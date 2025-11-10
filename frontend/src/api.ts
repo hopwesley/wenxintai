@@ -73,6 +73,28 @@ export async function sendAnswers(payload: AnswersRequest) {
   return resp.json()
 }
 
+export interface SubmitTestSessionRequest {
+  sessionId: string
+  variant: 'basic' | 'pro' | 'campus'
+  age: number
+  mode: string
+  hobby: string
+  riasec_answers: Record<string, number>
+  asc_answers: Record<string, number>
+}
+
+export async function submitTestSession(payload: SubmitTestSessionRequest) {
+  const resp = await fetch('/api/test/submit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  if (!resp.ok) {
+    throw new Error('提交失败')
+  }
+  return resp.json()
+}
+
 export interface ReportRequest {
   session_id: string
   mode: string

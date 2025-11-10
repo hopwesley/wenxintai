@@ -138,7 +138,7 @@ function openLogin() {
 }
 
 function handleInviteSuccess() {
-  router.push('/questions')
+  router.push('/test/basic/step/1')
 }
 
 type PlanKey = 'public' | 'pro' | 'school'

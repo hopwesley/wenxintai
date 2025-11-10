@@ -133,9 +133,7 @@ func (cfg databaseConfig) validate() error {
 	if len(missing) > 0 {
 		return fmt.Errorf("数据库配置缺少字段: %s", strings.Join(missing, ", "))
 	}
-	if cfg.User != "wenxintai" {
-		return fmt.Errorf("数据库配置 user 必须为 wenxintai (当前: %s)", cfg.User)
-	}
+
 	return nil
 }
 

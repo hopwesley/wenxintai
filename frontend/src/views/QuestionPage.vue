@@ -37,7 +37,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getProgress, submitAnswers, type ProgressResponse, type SubmitAnswersResponse } from '@/api/assessment'
+import { getProgress, submitAnswers, type ProgressResponse, type SubmitAnswersResponse, type SubmitAnswersResponseStage2 } from '@/api/assessment'
 import {
   getAssessmentFlowState,
   getQuestionSet,
@@ -152,9 +152,12 @@ async function handleSubmitResult(result: SubmitAnswersResponse) {
     return
   }
 
-  recordReport(result.report_id)
+  const stage2 = result as SubmitAnswersResponseStage2
+  if (stage2.report_id) {
+    recordReport(stage2.report_id)
+  }
   state.value = getAssessmentFlowState()
-  router.push({ name: 'assessment-report', params: { assessmentId: result.assessment_id } })
+  router.push({ name: 'assessment-report', params: { assessmentId: stage2.assessment_id } })
 }
 
 function goHome() {

@@ -69,7 +69,8 @@ export interface SubmitAnswersResponseStage1 {
 
 export interface SubmitAnswersResponseStage2 {
   assessment_id: string
-  report_id: string
+  report_id?: string
+  status: 'ready' | 'generating'
 }
 
 export type SubmitAnswersResponse = SubmitAnswersResponseStage1 | SubmitAnswersResponseStage2

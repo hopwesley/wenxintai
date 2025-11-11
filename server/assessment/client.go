@@ -2,6 +2,8 @@ package assessment
 
 import (
 	"bufio"
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -34,18 +36,29 @@ func init() {
 }
 
 func callDeepSeek(apiKey string, reqBody interface{}) (string, error) {
+	ctx := context.Background()
+	return StreamChatCompletion(ctx, "https://api.deepseek.com", apiKey, reqBody, nil)
+}
+
+func StreamChatCompletion(ctx context.Context, apiBase, apiKey string, reqBody interface{}, onToken func(string) error) (string, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
 		return "", fmt.Errorf("marshal request: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", "https://api.deepseek.com/v1/chat/completions", strings.NewReader(string(jsonData)))
+	endpoint := strings.TrimRight(apiBase, "/") + "/v1/chat/completions"
+	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewReader(jsonData))
 	if err != nil {
 		return "", fmt.Errorf("build request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+apiKey)
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -55,7 +68,8 @@ func callDeepSeek(apiKey string, reqBody interface{}) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("deepseek status %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("deepseek status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 
 	reader := bufio.NewReader(resp.Body)
@@ -93,6 +107,11 @@ func callDeepSeek(apiKey string, reqBody interface{}) (string, error) {
 			content := streamResp.Choices[0].Delta.Content
 			if content != "" {
 				fullContent.WriteString(content)
+				if onToken != nil {
+					if err := onToken(content); err != nil {
+						return "", err
+					}
+				}
 			}
 		}
 	}

@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -35,6 +37,8 @@ type sessionState struct {
 	AvatarURL     string                       `json:"avatar_url"`
 	CreatedAt     time.Time                    `json:"created_at"`
 	UpdatedAt     time.Time                    `json:"updated_at"`
+	Status        sessionStatus                `json:"status,omitempty"`
+	InviteCode    string                       `json:"invite_code,omitempty"`
 	Mode          assessment.Mode              `json:"mode,omitempty"`
 	Gender        string                       `json:"gender,omitempty"`
 	Grade         string                       `json:"grade,omitempty"`
@@ -116,18 +120,29 @@ type hobbiesResponse struct {
 	Hobbies []string `json:"hobbies"`
 }
 
-type errorResponse struct {
-	Error string `json:"error"`
-}
-
 type inviteVerifyRequest struct {
-	Code string `json:"code"`
+	Code      string `json:"code"`
+	SessionID string `json:"session_id,omitempty"`
 }
 
 type inviteVerifyResponse struct {
-	OK     bool   `json:"ok"`
-	Reason string `json:"reason,omitempty"`
+	SessionID     string    `json:"session_id"`
+	Status        string    `json:"status"`
+	ReservedUntil time.Time `json:"reserved_until"`
 }
+
+type inviteRedeemRequest struct {
+	SessionID string `json:"session_id,omitempty"`
+}
+
+type sessionStatus string
+
+const (
+	sessionStatusAnonymous       sessionStatus = "anonymous"
+	sessionStatusInvitedVerified sessionStatus = "invited_verified"
+	sessionStatusActive          sessionStatus = "active"
+	sessionStatusUser            sessionStatus = "user"
+)
 
 func newPipelineServer(defaultKey string, db *sql.DB) *pipelineServer {
 	return &pipelineServer{
@@ -147,7 +162,8 @@ func (s *pipelineServer) routes() http.Handler {
 	mux.HandleFunc("/api/questions", s.wrap(http.MethodPost, s.handleQuestions))
 	mux.HandleFunc("/api/answers", s.wrap(http.MethodPost, s.handleAnswers))
 	mux.HandleFunc("/api/report", s.wrap(http.MethodPost, s.handleReport))
-	mux.HandleFunc("/api/invites/verify-and-redeem", s.wrap(http.MethodPost, s.handleInviteVerify))
+	mux.HandleFunc("/api/invites/verify", s.wrap(http.MethodPost, s.handleInviteVerify))
+	mux.HandleFunc("/api/invites/redeem", s.wrap(http.MethodPost, s.handleInviteRedeem))
 	return mux
 }
 
@@ -156,7 +172,7 @@ func (s *pipelineServer) wrap(method string, handler func(http.ResponseWriter, *
 		start := time.Now()
 		w.Header().Set("Content-Type", "application/json")
 		if method != "" && r.Method != method {
-			s.writeError(w, http.StatusMethodNotAllowed, "只支持 "+method+" 请求")
+			writeErrorJSON(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "只支持 "+method+" 请求")
 			return
 		}
 		handler(w, r)
@@ -165,14 +181,64 @@ func (s *pipelineServer) wrap(method string, handler func(http.ResponseWriter, *
 }
 
 func (s *pipelineServer) writeJSON(w http.ResponseWriter, status int, payload interface{}) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 	if payload != nil {
 		_ = json.NewEncoder(w).Encode(payload)
 	}
 }
 
-func (s *pipelineServer) writeError(w http.ResponseWriter, status int, msg string) {
-	s.writeJSON(w, status, errorResponse{Error: msg})
+func writeErrorJSON(w http.ResponseWriter, status int, code, msg string) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(status)
+	_, _ = io.WriteString(w, fmt.Sprintf(`{"error":%q,"code":%q}`, msg, code))
+}
+
+type sessionIDContextKey struct{}
+
+func (s *pipelineServer) getSessionFromRequest(r *http.Request) (string, *sessionState, bool) {
+	// Cookie first
+	if cookie, err := r.Cookie("sid"); err == nil {
+		if v := strings.TrimSpace(cookie.Value); v != "" {
+			if sess, ok := s.getSession(v); ok {
+				return v, sess, true
+			}
+		}
+	}
+
+	// Authorization header: Bearer token
+	authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+	if strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+		candidate := strings.TrimSpace(authHeader[7:])
+		if candidate != "" {
+			if sess, ok := s.getSession(candidate); ok {
+				return candidate, sess, true
+			}
+		}
+	}
+
+	if v := strings.TrimSpace(r.Header.Get("X-Session-ID")); v != "" {
+		if sess, ok := s.getSession(v); ok {
+			return v, sess, true
+		}
+	}
+
+	if v := strings.TrimSpace(r.URL.Query().Get("session_id")); v != "" {
+		if sess, ok := s.getSession(v); ok {
+			return v, sess, true
+		}
+	}
+
+	if ctxVal := r.Context().Value(sessionIDContextKey{}); ctxVal != nil {
+		if v, ok := ctxVal.(string); ok && strings.TrimSpace(v) != "" {
+			candidate := strings.TrimSpace(v)
+			if sess, ok := s.getSession(candidate); ok {
+				return candidate, sess, true
+			}
+		}
+	}
+
+	return "", nil, false
 }
 
 func (s *pipelineServer) resolveAPIKey(candidate string) (string, bool) {
@@ -197,11 +263,11 @@ func (s *pipelineServer) getSession(id string) (*sessionState, bool) {
 func (s *pipelineServer) handleLogin(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.writeError(w, http.StatusBadRequest, "无效的请求体")
+		writeErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "无效的请求体")
 		return
 	}
 	if req.WeChatID == "" {
-		s.writeError(w, http.StatusBadRequest, "缺少微信标识")
+		writeErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "缺少微信标识")
 		return
 	}
 	now := time.Now().UTC()
@@ -213,6 +279,7 @@ func (s *pipelineServer) handleLogin(w http.ResponseWriter, r *http.Request) {
 		sess.Nickname = req.Nickname
 		sess.AvatarURL = req.AvatarURL
 		sess.UpdatedAt = now
+		sess.Status = sessionStatusUser
 		resp := loginResponse{
 			SessionID: sess.ID,
 			WeChatID:  sess.WeChatID,
@@ -233,9 +300,12 @@ func (s *pipelineServer) handleLogin(w http.ResponseWriter, r *http.Request) {
 		AvatarURL: req.AvatarURL,
 		CreatedAt: now,
 		UpdatedAt: now,
+		Status:    sessionStatusUser,
 	}
 	s.sessions[sessionID] = sess
 	s.wechatIndex[req.WeChatID] = sessionID
+
+	setSessionCookie(w, sessionID)
 
 	resp := loginResponse{
 		SessionID: sessionID,
@@ -257,40 +327,119 @@ func (s *pipelineServer) handleHobbies(w http.ResponseWriter, _ *http.Request) {
 func (s *pipelineServer) handleInviteVerify(w http.ResponseWriter, r *http.Request) {
 	if s.db == nil {
 		log.Println("[INVITE] 数据库未初始化")
-		s.writeJSON(w, http.StatusInternalServerError, inviteVerifyResponse{OK: false})
+		writeErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "邀请码功能不可用")
 		return
 	}
 
 	var req inviteVerifyRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.writeError(w, http.StatusBadRequest, "无效的请求体")
+		writeErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "无效的请求体")
 		return
 	}
 
 	code := strings.TrimSpace(req.Code)
 	if code == "" {
-		s.writeJSON(w, http.StatusOK, inviteVerifyResponse{OK: false, Reason: "not_found"})
+		writeErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "请输入邀请码")
+		return
+	}
+
+	requestWithSession := r
+	if strings.TrimSpace(req.SessionID) != "" {
+		requestWithSession = r.WithContext(context.WithValue(r.Context(), sessionIDContextKey{}, strings.TrimSpace(req.SessionID)))
+	}
+
+	sid, sess, hasSession := s.getSessionFromRequest(requestWithSession)
+	sessionID := sid
+	if !hasSession {
+		sessionID = strings.TrimSpace(req.SessionID)
+		if sessionID == "" {
+			sessionID = uuid.NewString()
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	reservedUntil, apiErr, err := s.reserveInvite(ctx, code, sessionID)
+	if err != nil {
+		log.Printf("[INVITE] code=%s error=%v", maskInviteCode(code), err)
+		writeErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "邀请码处理失败")
+		return
+	}
+	if apiErr != nil {
+		log.Printf("[INVITE] code=%s result=%s", maskInviteCode(code), apiErr.Code)
+		writeErrorJSON(w, apiErr.Status, apiErr.Code, apiErr.Message)
+		return
+	}
+
+	now := time.Now().UTC()
+	s.mu.Lock()
+	if hasSession {
+		sess.InviteCode = code
+		sess.Status = sessionStatusInvitedVerified
+		if sess.CreatedAt.IsZero() {
+			sess.CreatedAt = now
+		}
+		sess.UpdatedAt = now
+	} else {
+		s.sessions[sessionID] = &sessionState{
+			ID:         sessionID,
+			CreatedAt:  now,
+			UpdatedAt:  now,
+			Status:     sessionStatusInvitedVerified,
+			InviteCode: code,
+		}
+	}
+	s.mu.Unlock()
+
+	setSessionCookie(w, sessionID)
+	s.writeJSON(w, http.StatusOK, inviteVerifyResponse{
+		SessionID:     sessionID,
+		Status:        "reserved",
+		ReservedUntil: reservedUntil,
+	})
+}
+
+func (s *pipelineServer) handleInviteRedeem(w http.ResponseWriter, r *http.Request) {
+	if s.db == nil {
+		log.Println("[INVITE] 数据库未初始化")
+		writeErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "邀请码功能不可用")
+		return
+	}
+
+	var req inviteRedeemRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err == nil && strings.TrimSpace(req.SessionID) != "" {
+		r = r.WithContext(context.WithValue(r.Context(), sessionIDContextKey{}, strings.TrimSpace(req.SessionID)))
+	}
+
+	sid, sess, ok := s.getSessionFromRequest(r)
+	if !ok {
+		writeErrorJSON(w, http.StatusUnauthorized, "NO_SESSION", "请先验证邀请码或登录")
+		return
+	}
+
+	if sess.Status == sessionStatusActive || sess.Status == sessionStatusUser {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	if sess.InviteCode == "" {
+		writeErrorJSON(w, http.StatusForbidden, "INVITE_REQUIRED", "需要邀请码或登录后访问")
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
-	reason, err := s.redeemInvite(ctx, code)
-	if err != nil {
-		log.Printf("[INVITE] code=%s error=%v", maskInviteCode(code), err)
-		s.writeJSON(w, http.StatusInternalServerError, inviteVerifyResponse{OK: false})
+	if apiErr, err := s.consumeInvite(ctx, sess); err != nil {
+		log.Printf("[INVITE] redeem session=%s error=%v", sid, err)
+		writeErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "邀请码处理失败")
+		return
+	} else if apiErr != nil {
+		writeErrorJSON(w, apiErr.Status, apiErr.Code, apiErr.Message)
 		return
 	}
 
-	if reason != "" {
-		log.Printf("[INVITE] code=%s result=%s", maskInviteCode(code), reason)
-		s.writeJSON(w, http.StatusOK, inviteVerifyResponse{OK: false, Reason: reason})
-		return
-	}
-
-	log.Printf("[INVITE] code=%s result=ok", maskInviteCode(code))
-	s.writeJSON(w, http.StatusOK, inviteVerifyResponse{OK: true})
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // handleQuestions generates a set of questions for the given session and
@@ -298,30 +447,60 @@ func (s *pipelineServer) handleInviteVerify(w http.ResponseWriter, r *http.Reque
 func (s *pipelineServer) handleQuestions(w http.ResponseWriter, r *http.Request) {
 	var req questionsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.writeError(w, http.StatusBadRequest, "无效的请求体")
+		writeErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "无效的请求体")
 		return
 	}
-	sess, ok := s.getSession(req.SessionID)
+	if strings.TrimSpace(req.SessionID) != "" {
+		r = r.WithContext(context.WithValue(r.Context(), sessionIDContextKey{}, strings.TrimSpace(req.SessionID)))
+	}
+
+	sid, sess, ok := s.getSessionFromRequest(r)
 	if !ok {
-		s.writeError(w, http.StatusNotFound, "未找到会话")
+		writeErrorJSON(w, http.StatusUnauthorized, "NO_SESSION", "请先验证邀请码或登录")
+		return
+	}
+
+	status := sess.Status
+	if status != sessionStatusInvitedVerified && status != sessionStatusActive && status != sessionStatusUser {
+		writeErrorJSON(w, http.StatusForbidden, "INVITE_REQUIRED", "需要邀请码或登录后访问")
+		return
+	}
+
+	if status == sessionStatusInvitedVerified && sess.InviteCode != "" {
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		defer cancel()
+		if apiErr, err := s.consumeInvite(ctx, sess); err != nil {
+			log.Printf("[INVITE] auto redeem session=%s error=%v", sid, err)
+			writeErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "邀请码处理失败")
+			return
+		} else if apiErr != nil {
+			writeErrorJSON(w, apiErr.Status, apiErr.Code, apiErr.Message)
+			return
+		}
+	}
+
+	// refresh session pointer after potential mutation
+	sid, sess, _ = s.getSessionFromRequest(r)
+	if sess == nil {
+		writeErrorJSON(w, http.StatusUnauthorized, "NO_SESSION", "会话已失效")
 		return
 	}
 
 	mode, valid := assessment.ParseMode(req.Mode)
 	if !valid {
-		s.writeError(w, http.StatusBadRequest, "无效的模式")
+		writeErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "无效的模式")
 		return
 	}
 
 	apiKey, ok := s.resolveAPIKey(req.APIKey)
 	if !ok {
-		s.writeError(w, http.StatusBadRequest, "缺少 API 密钥")
+		writeErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "缺少 API 密钥")
 		return
 	}
 
 	questions, err := assessment.GenerateQuestions(mode, apiKey, req.Gender, req.Grade, req.Hobby)
 	if err != nil {
-		s.writeError(w, http.StatusBadGateway, err.Error())
+		writeErrorJSON(w, http.StatusBadGateway, "UPSTREAM_ERROR", err.Error())
 		return
 	}
 
@@ -331,11 +510,14 @@ func (s *pipelineServer) handleQuestions(w http.ResponseWriter, r *http.Request)
 	sess.Grade = req.Grade
 	sess.Hobby = req.Hobby
 	sess.Questions = questions
-	sess.UpdatedAt = time.Now()
+	if sess.Status == sessionStatusInvitedVerified {
+		sess.Status = sessionStatusActive
+	}
+	sess.UpdatedAt = time.Now().UTC()
 	s.mu.Unlock()
 
 	s.writeJSON(w, http.StatusOK, questionsResponse{
-		SessionID: sess.ID,
+		SessionID: sid,
 		Questions: questions,
 	})
 }
@@ -346,21 +528,24 @@ func (s *pipelineServer) handleQuestions(w http.ResponseWriter, r *http.Request)
 func (s *pipelineServer) handleAnswers(w http.ResponseWriter, r *http.Request) {
 	var req answersRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.writeError(w, http.StatusBadRequest, "无效的请求体")
+		writeErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "无效的请求体")
 		return
 	}
-	sess, ok := s.getSession(req.SessionID)
+	if strings.TrimSpace(req.SessionID) != "" {
+		r = r.WithContext(context.WithValue(r.Context(), sessionIDContextKey{}, strings.TrimSpace(req.SessionID)))
+	}
+	sessID, sess, ok := s.getSessionFromRequest(r)
 	if !ok {
-		s.writeError(w, http.StatusNotFound, "未找到会话")
+		writeErrorJSON(w, http.StatusNotFound, "SESSION_NOT_FOUND", "未找到会话")
 		return
 	}
 	mode, valid := assessment.ParseMode(req.Mode)
 	if !valid {
-		s.writeError(w, http.StatusBadRequest, "无效的模式")
+		writeErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "无效的模式")
 		return
 	}
 	if len(req.RIASECAnswers) == 0 || len(req.ASCAnswers) == 0 {
-		s.writeError(w, http.StatusBadRequest, "答案不能为空")
+		writeErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "答案不能为空")
 		return
 	}
 
@@ -372,7 +557,7 @@ func (s *pipelineServer) handleAnswers(w http.ResponseWriter, r *http.Request) {
 		Gamma:         req.Gamma,
 	}, mode)
 	if err != nil {
-		s.writeError(w, http.StatusInternalServerError, "评分失败")
+		writeErrorJSON(w, http.StatusInternalServerError, "INTERNAL_ERROR", "评分失败")
 		return
 	}
 
@@ -396,11 +581,11 @@ func (s *pipelineServer) handleAnswers(w http.ResponseWriter, r *http.Request) {
 		sess.Radar = nil
 	}
 	sess.SubjectScores = scores
-	sess.UpdatedAt = time.Now()
+	sess.UpdatedAt = time.Now().UTC()
 	s.mu.Unlock()
 
 	s.writeJSON(w, http.StatusOK, answersResponse{
-		SessionID:     sess.ID,
+		SessionID:     sessID,
 		Param:         param,
 		Radar:         sess.Radar,
 		SubjectScores: scores,
@@ -412,58 +597,74 @@ func (s *pipelineServer) handleAnswers(w http.ResponseWriter, r *http.Request) {
 func (s *pipelineServer) handleReport(w http.ResponseWriter, r *http.Request) {
 	var req reportRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.writeError(w, http.StatusBadRequest, "无效的请求体")
+		writeErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "无效的请求体")
 		return
 	}
-	sess, ok := s.getSession(req.SessionID)
+	if strings.TrimSpace(req.SessionID) != "" {
+		r = r.WithContext(context.WithValue(r.Context(), sessionIDContextKey{}, strings.TrimSpace(req.SessionID)))
+	}
+	sessID, sess, ok := s.getSessionFromRequest(r)
 	if !ok {
-		s.writeError(w, http.StatusNotFound, "未找到会话")
+		writeErrorJSON(w, http.StatusNotFound, "SESSION_NOT_FOUND", "未找到会话")
 		return
 	}
 	mode, valid := assessment.ParseMode(req.Mode)
 	if !valid {
-		s.writeError(w, http.StatusBadRequest, "无效的模式")
+		writeErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "无效的模式")
 		return
 	}
 	if sess.Param == nil {
-		s.writeError(w, http.StatusBadRequest, "尚未提交答案")
+		writeErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "尚未提交答案")
 		return
 	}
 
 	apiKey, ok := s.resolveAPIKey(req.APIKey)
 	if !ok {
-		s.writeError(w, http.StatusBadRequest, "缺少 API 密钥")
+		writeErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "缺少 API 密钥")
 		return
 	}
 
 	report, err := assessment.GenerateUnifiedReport(apiKey, *sess.Param, mode)
 	if err != nil {
-		s.writeError(w, http.StatusBadGateway, err.Error())
+		writeErrorJSON(w, http.StatusBadGateway, "UPSTREAM_ERROR", err.Error())
 		return
 	}
 
 	s.mu.Lock()
 	sess.Report = report
-	sess.UpdatedAt = time.Now()
+	sess.UpdatedAt = time.Now().UTC()
 	s.mu.Unlock()
 
 	s.writeJSON(w, http.StatusOK, reportResponse{
-		SessionID: sess.ID,
+		SessionID: sessID,
 		Report:    report,
 	})
 }
 
 const (
-	inviteStatusUnused  = 0
-	inviteStatusUsed    = 1
-	inviteStatusExpired = 2 // 一般作为“reason”，不直接入库
-	inviteStatusRevoked = 3
+	inviteStatusUnused   = 0
+	inviteStatusReserved = 1
+	inviteStatusUsed     = 2
+	inviteStatusExpired  = 3
+	inviteStatusRevoked  = 4
 )
 
-func (s *pipelineServer) redeemInvite(ctx context.Context, code string) (string, error) {
+type apiError struct {
+	Status  int
+	Code    string
+	Message string
+}
+
+func (e *apiError) Error() string { return e.Message }
+
+func newAPIError(status int, code, msg string) *apiError {
+	return &apiError{Status: status, Code: code, Message: msg}
+}
+
+func (s *pipelineServer) reserveInvite(ctx context.Context, code, sessionID string) (time.Time, *apiError, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
-		return "", err
+		return time.Time{}, nil, err
 	}
 
 	committed := false
@@ -475,44 +676,171 @@ func (s *pipelineServer) redeemInvite(ctx context.Context, code string) (string,
 
 	var status int
 	var expiresAt sql.NullTime
+	var reservedBy sql.NullString
+	var reservedUntil sql.NullTime
 	err = tx.QueryRowContext(ctx,
-		`SELECT status, expires_at FROM app.invites WHERE code = $1 FOR UPDATE`,
+		`SELECT status, expires_at, reserved_by_session_id, reserved_until
+                   FROM app.invites
+                  WHERE code = $1 FOR UPDATE`,
 		code,
-	).Scan(&status, &expiresAt)
+	).Scan(&status, &expiresAt, &reservedBy, &reservedUntil)
 	if errors.Is(err, sql.ErrNoRows) {
-		return "not_found", nil
+		return time.Time{}, newAPIError(http.StatusNotFound, "INVITE_NOT_FOUND", "邀请码不存在"), nil
 	}
 	if err != nil {
-		return "", err
+		return time.Time{}, nil, err
 	}
 
-	now := time.Now()
-	// 数字状态判断
-	if status == inviteStatusUsed {
-		return "used", nil
-	}
-	if status == inviteStatusRevoked {
-		return "revoked", nil
-	}
+	now := time.Now().UTC()
 	if expiresAt.Valid && !expiresAt.Time.After(now) {
-		return "expired", nil
+		return time.Time{}, newAPIError(http.StatusForbidden, "INVITE_EXPIRED", "邀请码已过期"), nil
 	}
 
-	// 把未使用 -> 已使用；用数字状态且在 WHERE 中限制原状态
+	switch status {
+	case inviteStatusUsed:
+		return time.Time{}, newAPIError(http.StatusConflict, "INVITE_ALREADY_USED", "邀请码已被使用"), nil
+	case inviteStatusExpired:
+		return time.Time{}, newAPIError(http.StatusForbidden, "INVITE_EXPIRED", "邀请码已过期"), nil
+	case inviteStatusRevoked:
+		return time.Time{}, newAPIError(http.StatusForbidden, "INVITE_REVOKED", "邀请码已失效"), nil
+	case inviteStatusReserved:
+		if reservedUntil.Valid && !reservedUntil.Time.After(now) {
+			if _, err := tx.ExecContext(ctx,
+				`UPDATE app.invites
+                                    SET status = $2, reserved_by_session_id = NULL, reserved_until = NULL
+                                  WHERE code = $1`,
+				code, inviteStatusUnused,
+			); err != nil {
+				return time.Time{}, nil, err
+			}
+			status = inviteStatusUnused
+		} else if reservedBy.Valid && reservedBy.String != "" && reservedBy.String != sessionID {
+			return time.Time{}, newAPIError(http.StatusConflict, "INVITE_RESERVED", "邀请码已被占用"), nil
+		}
+	}
+
+	expires := now.Add(15 * time.Minute)
 	if _, err := tx.ExecContext(ctx,
 		`UPDATE app.invites
-		   SET status = $2, used_by = $3, used_at = NOW()
-		 WHERE code = $1 AND status = $4`,
-		code, inviteStatusUsed, "public_portal", inviteStatusUnused,
+                    SET status = $2,
+                        reserved_by_session_id = $3,
+                        reserved_until = $4
+                  WHERE code = $1`,
+		code, inviteStatusReserved, sessionID, expires,
 	); err != nil {
-		return "", err
+		return time.Time{}, nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return "", err
+		return time.Time{}, nil, err
 	}
 	committed = true
-	return "", nil
+	return expires, nil, nil
+}
+
+func (s *pipelineServer) consumeInvite(ctx context.Context, sess *sessionState) (*apiError, error) {
+	if sess.InviteCode == "" {
+		return newAPIError(http.StatusForbidden, "INVITE_REQUIRED", "需要邀请码或登录后访问"), nil
+	}
+
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	if err != nil {
+		return nil, err
+	}
+
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
+
+	var status int
+	var reservedBy sql.NullString
+	var reservedUntil sql.NullTime
+	var expiresAt sql.NullTime
+	var usedBy sql.NullString
+	err = tx.QueryRowContext(ctx,
+		`SELECT status, reserved_by_session_id, reserved_until, expires_at, used_by_session_id
+                   FROM app.invites
+                  WHERE code = $1 FOR UPDATE`,
+		sess.InviteCode,
+	).Scan(&status, &reservedBy, &reservedUntil, &expiresAt, &usedBy)
+	if errors.Is(err, sql.ErrNoRows) {
+		return newAPIError(http.StatusNotFound, "INVITE_NOT_FOUND", "邀请码不存在"), nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now().UTC()
+	if expiresAt.Valid && !expiresAt.Time.After(now) {
+		return newAPIError(http.StatusForbidden, "INVITE_EXPIRED", "邀请码已过期"), nil
+	}
+
+	switch status {
+	case inviteStatusUsed:
+		if usedBy.Valid && usedBy.String == sess.ID {
+			committed = true
+			_ = tx.Commit()
+			s.mu.Lock()
+			sess.Status = sessionStatusActive
+			sess.UpdatedAt = now
+			s.mu.Unlock()
+			return nil, nil
+		}
+		return newAPIError(http.StatusConflict, "INVITE_ALREADY_USED", "邀请码已被使用"), nil
+	case inviteStatusReserved:
+		if reservedBy.Valid && reservedBy.String != sess.ID {
+			return newAPIError(http.StatusForbidden, "INVITE_REQUIRED", "邀请码已被其他访客占用"), nil
+		}
+		if reservedUntil.Valid && !reservedUntil.Time.After(now) {
+			return newAPIError(http.StatusForbidden, "INVITE_EXPIRED", "邀请码已过期"), nil
+		}
+	case inviteStatusUnused:
+		// 未预留直接核销允许（例如直接请求题目）
+	default:
+		return newAPIError(http.StatusForbidden, "INVITE_REQUIRED", "邀请码状态异常"), nil
+	}
+
+	if _, err := tx.ExecContext(ctx,
+		`UPDATE app.invites
+                    SET status = $2,
+                        used_by_session_id = $3,
+                        used_at = NOW(),
+                        reserved_by_session_id = NULL,
+                        reserved_until = NULL
+                  WHERE code = $1`,
+		sess.InviteCode, inviteStatusUsed, sess.ID,
+	); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	committed = true
+
+	s.mu.Lock()
+	sess.Status = sessionStatusActive
+	sess.UpdatedAt = now
+	s.mu.Unlock()
+
+	return nil, nil
+}
+
+func setSessionCookie(w http.ResponseWriter, sid string) {
+	if sid == "" {
+		return
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "sid",
+		Value:    sid,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Expires:  time.Now().Add(30 * 24 * time.Hour),
+	})
 }
 
 func maskInviteCode(code string) string {

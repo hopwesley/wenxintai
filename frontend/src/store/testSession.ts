@@ -2,6 +2,7 @@ import { reactive, watch } from 'vue'
 import type { Variant } from '@/config/testSteps'
 
 const STORAGE_KEY = 'wenxintai:test-session'
+const SESSION_ID_KEY = 'session_id'
 
 type AnswerValue = 1 | 2 | 3 | 4 | 5
 
@@ -18,8 +19,16 @@ export interface TestSession {
   answersStage2: Record<string, AnswerValue>
 }
 
+function readPersistedSessionId(): string | undefined {
+  if (typeof window === 'undefined') {
+    return undefined
+  }
+  const stored = window.localStorage.getItem(SESSION_ID_KEY)
+  return stored ?? undefined
+}
+
 const defaultSession: TestSession = {
-  sessionId: undefined,
+  sessionId: readPersistedSessionId(),
   variant: 'basic',
   currentStep: 1,
   age: undefined,
@@ -49,6 +58,7 @@ function loadFromStorage(): TestSession {
     return {
       ...defaultSession,
       ...parsed,
+      sessionId: readPersistedSessionId() ?? parsed?.sessionId,
       answersStage1: parsed?.answersStage1 ?? {},
       answersStage2: parsed?.answersStage2 ?? {},
     }
@@ -78,19 +88,45 @@ watch(
   { deep: true }
 )
 
-function generateSessionId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
+watch(
+  () => state.sessionId,
+  (value) => {
+    if (typeof window === 'undefined') return
+    if (typeof value === 'string' && value.trim()) {
+      window.localStorage.setItem(SESSION_ID_KEY, value)
+    } else {
+      window.localStorage.removeItem(SESSION_ID_KEY)
+    }
   }
-  return `session-${Date.now()}-${Math.random().toString(16).slice(2)}`
-}
+)
 
 export function useTestSession() {
   function ensureSessionId() {
-    if (!state.sessionId) {
-      state.sessionId = generateSessionId()
+    if (state.sessionId) {
+      return state.sessionId
     }
-    return state.sessionId
+    const persisted = readPersistedSessionId()
+    if (persisted) {
+      state.sessionId = persisted
+      return persisted
+    }
+    throw new Error('NO_SESSION')
+  }
+
+  function getSessionId() {
+    return state.sessionId ?? null
+  }
+
+  function setSessionId(id: string | null | undefined) {
+    state.sessionId = id ?? undefined
+    if (typeof window === 'undefined') {
+      return
+    }
+    if (id && id.trim()) {
+      window.localStorage.setItem(SESSION_ID_KEY, id)
+    } else {
+      window.localStorage.removeItem(SESSION_ID_KEY)
+    }
   }
 
   function setVariant(variant: Variant) {
@@ -114,7 +150,6 @@ export function useTestSession() {
   }
 
   function setBasicInfo(payload: { age: number; mode: ModeOption; hobby: string }) {
-    ensureSessionId()
     state.age = payload.age
     state.mode = payload.mode
     state.hobby = payload.hobby
@@ -168,6 +203,8 @@ export function useTestSession() {
   return {
     state,
     ensureSessionId,
+    getSessionId,
+    setSessionId,
     setVariant,
     setCurrentStep,
     setBasicInfo,

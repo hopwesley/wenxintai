@@ -32,7 +32,7 @@ import { STEPS, isVariant, type Variant } from '@/config/testSteps'
 
 const route = useRoute()
 const router = useRouter()
-const { state, setVariant, setCurrentStep, ensureSessionId } = useTestSession()
+const { state, setVariant, setCurrentStep, getSessionId } = useTestSession()
 const variant = ref<Variant>('basic')
 
 const loading = ref(true)
@@ -71,7 +71,7 @@ const currentStepTitle = computed(() => {
 })
 
 onMounted(async () => {
-  if (!state.sessionId || !state.mode || !state.hobby) {
+  if (!state.mode || !state.hobby) {
     router.replace({ path: `/test/${variant.value}/step/1` })
     return
   }
@@ -91,7 +91,14 @@ onMounted(async () => {
   reportText.value = ''
 
   try {
-    const sessionId = ensureSessionId()
+    const sessionId = getSessionId()
+    if (!sessionId) {
+      if (typeof window !== 'undefined') {
+        window.alert('需要邀请码或登录后访问')
+      }
+      router.replace({ path: '/' })
+      return
+    }
     const response = await getReport({
       session_id: sessionId,
       mode: state.mode ?? '',
@@ -99,7 +106,17 @@ onMounted(async () => {
     reportText.value = JSON.stringify(response.report, null, 2)
   } catch (error) {
     console.error('[ReportView] failed to load report', error)
-    errorMessage.value = ('error.network')
+    if (error instanceof Error) {
+      errorMessage.value = error.message
+      if (error.name === 'NO_SESSION' || error.name === 'INVITE_REQUIRED') {
+        if (typeof window !== 'undefined') {
+          window.alert(error.message)
+        }
+        router.replace({ path: '/' })
+      }
+    } else {
+      errorMessage.value = '生成报告失败，请稍后再试'
+    }
   } finally {
     loading.value = false
   }

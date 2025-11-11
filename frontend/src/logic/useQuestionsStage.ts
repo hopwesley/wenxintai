@@ -20,7 +20,7 @@ export function useQuestionsStage(opts: UseQuestionsStageOptions) {
     const router = useRouter()
 
     const {
-        state, ensureSessionId, setVariant, setCurrentStep,
+        state, getSessionId, setVariant, setCurrentStep,
         setAnswer, isPageComplete, nextStep, prevStep,
     } = useTestSession()
 
@@ -82,7 +82,14 @@ export function useQuestionsStage(opts: UseQuestionsStageOptions) {
         errorMessage.value = ''
         try {
             if (!cached.value) {
-                const sessionId = ensureSessionId()
+                const sessionId = getSessionId()
+                if (!sessionId) {
+                    if (typeof window !== 'undefined') {
+                        window.alert('需要邀请码或登录后访问')
+                    }
+                    await router.replace({ path: '/' })
+                    return
+                }
                 const resp = await getQuestions({
                     session_id: sessionId,
                     mode: (state.mode as ModeOption) ?? '3+3',
@@ -98,7 +105,18 @@ export function useQuestionsStage(opts: UseQuestionsStageOptions) {
             if (currentPage.value > totalPages.value) currentPage.value = totalPages.value
         } catch (e) {
             console.error('[useQuestionsStage] loadQuestions error', e)
-            errorMessage.value = '网络错误，请稍后再试'
+            if (e instanceof Error) {
+                errorMessage.value = e.message
+                if (e.name === 'NO_SESSION' || e.name === 'INVITE_REQUIRED') {
+                    if (typeof window !== 'undefined') {
+                        window.alert(e.message)
+                    }
+                    await router.replace({ path: '/' })
+                    return
+                }
+            } else {
+                errorMessage.value = '加载题目失败，请稍后再试'
+            }
         } finally {
             loading.value = false
         }
@@ -179,7 +197,11 @@ export function useQuestionsStage(opts: UseQuestionsStageOptions) {
             await router.push({ path: `/test/${variant.value}/step/${n}` })
         } catch (e) {
             console.error('[useQuestionsStage] submit error', e)
-            errorMessage.value = '提交失败，请重试'
+            if (e instanceof Error) {
+                errorMessage.value = e.message
+            } else {
+                errorMessage.value = '提交失败，请稍后再试'
+            }
         } finally {
             submitting.value = false
         }
@@ -205,7 +227,10 @@ export function useQuestionsStage(opts: UseQuestionsStageOptions) {
 
     /** 构建提交载荷：将 stage1/2 的答案映射到后端需要的字段（riasec / asc） */
     function buildSubmitPayload() {
-        const session_id = ensureSessionId()
+        const session_id = getSessionId()
+        if (!session_id) {
+            throw new Error('会话已失效，请重新开始测试')
+        }
         const variantValue: Variant = variant.value
         const modeValue: ModeOption = (state.mode as ModeOption) ?? '3+3'
 

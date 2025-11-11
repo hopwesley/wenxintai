@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import { isVariant } from '@/config/testSteps'
+import { useTestSession } from '@/store/testSession'
 
 const routes: RouteRecordRaw[] = [
     { path: '/', component: () => import('@/views/HomeView.vue') },
@@ -84,4 +85,26 @@ const routes: RouteRecordRaw[] = [
 export const router = createRouter({
     history: createWebHistory(),
     routes,
+})
+
+const protectedPatterns = [/^\/test\//, /^\/questions$/, /^\/summary$/, /^\/report$/]
+
+router.beforeEach((to, from, next) => {
+    const requiresGuard = protectedPatterns.some(pattern => pattern.test(to.path))
+    if (!requiresGuard) {
+        next()
+        return
+    }
+
+    const { getSessionId } = useTestSession()
+    const sessionId = getSessionId()
+    if (sessionId) {
+        next()
+        return
+    }
+
+    if (typeof window !== 'undefined') {
+        window.alert('需要邀请码或登录后访问')
+    }
+    next('/')
 })

@@ -55,6 +55,143 @@
 
 ---
 
+## 两阶段评测系统开发说明
+
+本仓库新增了一个支持“创建评测 → S1 作答 → S2 作答 → 参数计算 → 报告生成/查询”的完整链路，实现全部数据在 PostgreSQL `app` schema 下落库，并通过事务与唯一约束保证幂等。
+
+### 运行依赖
+
+* PostgreSQL（需包含 `app.assessments`、`app.question_sets`、`app.answers`、`app.computed_params`、`app.reports` 等表结构）；
+* Go 1.25+
+* Node.js 18+
+
+### 后端启动
+
+```bash
+cd server
+# 根据实际数据库信息修改 config/conf.json
+go run ./...
+```
+
+服务默认监听 `:8080`，根据 `config/conf.json` 连接数据库，并在内存中串联题集生成、本地算法与报告解读逻辑。
+
+### 前端启动
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+访问 `http://localhost:5173` 可进入新的两阶段评测界面，前端会自动缓存 `assessment_id` 与题集信息，刷新页面后可继续作答。
+
+### API 契约
+
+所有接口均返回 `application/json`；错误格式统一为：
+
+```json
+{
+  "code": "BAD_REQUEST|NOT_FOUND|CONFLICT|INTERNAL",
+  "message": "说明"
+}
+```
+
+#### `POST /api/assessments`
+
+请求：
+
+```json
+{
+  "mode": "standard",
+  "invite_code": "ABC123",
+  "wechat_openid": null
+}
+```
+
+响应：
+
+```json
+{
+  "assessment_id": "...",
+  "question_set_id": "...",
+  "stage": "S1",
+  "questions": [...]
+}
+```
+
+#### `POST /api/question_sets/{question_set_id}/answers`
+
+请求：
+
+```json
+{
+  "answers": [
+    {"question_id": "q1", "answer": "..."}
+  ]
+}
+```
+
+响应（S1 提交）：
+
+```json
+{
+  "next_question_set_id": "...",
+  "stage": "S2",
+  "questions": [...]
+}
+```
+
+响应（S2 提交）：
+
+```json
+{
+  "assessment_id": "...",
+  "report_id": "..."
+}
+```
+
+#### `GET /api/assessments/{assessment_id}/progress`
+
+```json
+{
+  "status": 90,
+  "label": "REPORT_READY"
+}
+```
+
+#### `GET /api/assessments/{assessment_id}/report`
+
+```json
+{
+  "report_id": "...",
+  "summary": "...",
+  "full": {...}
+}
+```
+
+### 测试
+
+```bash
+# 后端单元测试
+cd server
+go test ./...
+
+# 前端构建检查
+cd ../frontend
+npm run build
+```
+
+后端通过内置的 `memoryRepo` 单元测试验证了创建评测、S1/S2 幂等推进及报告生成逻辑。前端 `npm run build` 可快速验证 TypeScript/模板是否通过编译。
+
+### 关键实现说明
+
+* 使用 `database/sql` + PostgreSQL 保证所有写入均在事务内完成，依赖唯一约束避免重复生成 S2 题集及报告；
+* AI 题集与报告解读提供了默认占位实现，便于后续替换为真实模型；
+* 前端通过 `localStorage` 缓存评测 ID、题集与最新报告 ID，刷新后自动恢复；
+* 评测进度与报告均从后端实时查询，界面上展示后端返回的整型状态码与枚举标签。
+
+---
+
 ## 2. 战略选科报告通用框架提示词
 
 **报告核心定位**：一份基于科学评估与前瞻视野的个性化教育发展规划。

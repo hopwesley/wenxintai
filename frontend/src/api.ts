@@ -1,8 +1,73 @@
-/*
- * Simple wrapper around the Wenxintai HTTP API. Each function performs
- * a fetch call to the corresponding endpoint. The server expects and
- * returns JSON. Adjust error handling as needed.
- */
+interface RequestOptions {
+  method?: string
+  body?: unknown
+  headers?: Record<string, string>
+}
+
+async function parseResponseBody(resp: Response) {
+  if (resp.status === 204) {
+    return null
+  }
+  const contentType = resp.headers.get('Content-Type') ?? ''
+  if (contentType.includes('application/json')) {
+    try {
+      return await resp.json()
+    } catch (error) {
+      console.warn('[api] failed to parse JSON response', error)
+      return null
+    }
+  }
+  try {
+    return await resp.text()
+  } catch (error) {
+    console.warn('[api] failed to read text response', error)
+    return null
+  }
+}
+
+async function request<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
+  const init: RequestInit = {
+    method: options.method ?? 'GET',
+    headers: { ...options.headers },
+    credentials: 'include'
+  }
+
+  if (options.body !== undefined) {
+    init.body = JSON.stringify(options.body)
+    init.headers = {
+      'Content-Type': 'application/json',
+      ...init.headers
+    }
+  }
+
+  const resp = await fetch(path, init)
+
+  if (!resp.ok) {
+    const data = await parseResponseBody(resp)
+    let message = `请求失败 (${resp.status})`
+    let code = ''
+    if (data && typeof data === 'object') {
+      const maybeObj = data as Record<string, unknown>
+      if (typeof maybeObj.error === 'string' && maybeObj.error.trim()) {
+        message = maybeObj.error
+      }
+      if (typeof maybeObj.code === 'string' && maybeObj.code.trim()) {
+        code = maybeObj.code
+      }
+    } else if (typeof data === 'string' && data.trim()) {
+      message = data
+    }
+    const error = new Error(message)
+    if (code) {
+      error.name = code
+    }
+    ;(error as Error & { status?: number }).status = resp.status
+    throw error
+  }
+
+  return (await parseResponseBody(resp)) as T
+}
+
 export interface LoginPayload {
   wechat_id: string
   nickname: string
@@ -10,28 +75,16 @@ export interface LoginPayload {
 }
 
 export async function login(payload: LoginPayload) {
-  const resp = await fetch('/api/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
-  if (!resp.ok) {
-    throw new Error('登录失败')
-  }
-  return resp.json()
+  return request('/api/login', { method: 'POST', body: payload })
 }
 
 export async function getHobbies(): Promise<string[]> {
-  const resp = await fetch('/api/hobbies')
-  if (!resp.ok) {
-    throw new Error('无法获取爱好列表')
-  }
-  const data = await resp.json()
-  return data.hobbies
+  const data = await request<{ hobbies: string[] }>('/api/hobbies')
+  return data?.hobbies ?? []
 }
 
 export interface QuestionsRequest {
-  session_id: string
+  session_id?: string
   mode: string
   gender: string
   grade: string
@@ -40,19 +93,11 @@ export interface QuestionsRequest {
 }
 
 export async function getQuestions(payload: QuestionsRequest) {
-  const resp = await fetch('/api/questions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
-  if (!resp.ok) {
-    throw new Error('无法获取题目')
-  }
-  return resp.json()
+  return request('/api/questions', { method: 'POST', body: payload })
 }
 
 export interface AnswersRequest {
-  session_id: string
+  session_id?: string
   mode: string
   riasec_answers: any[]
   asc_answers: any[]
@@ -62,15 +107,7 @@ export interface AnswersRequest {
 }
 
 export async function sendAnswers(payload: AnswersRequest) {
-  const resp = await fetch('/api/answers', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
-  if (!resp.ok) {
-    throw new Error('评分失败')
-  }
-  return resp.json()
+  return request('/api/answers', { method: 'POST', body: payload })
 }
 
 export interface SubmitTestSessionRequest {
@@ -84,56 +121,35 @@ export interface SubmitTestSessionRequest {
 }
 
 export async function submitTestSession(payload: SubmitTestSessionRequest) {
-  const resp = await fetch('/api/test/submit', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
-  if (!resp.ok) {
-    throw new Error('提交失败')
-  }
-  return resp.json()
+  return request('/api/test/submit', { method: 'POST', body: payload })
 }
 
 export interface ReportRequest {
-  session_id: string
+  session_id?: string
   mode: string
   api_key?: string
 }
 
 export async function getReport(payload: ReportRequest) {
-  const resp = await fetch('/api/report', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
-  if (!resp.ok) {
-    throw new Error('生成报告失败')
-  }
-  return resp.json()
+  return request('/api/report', { method: 'POST', body: payload })
 }
-
-export interface VerifyInviteRequest {
-  code: string
-}
-
-export type InviteFailureReason = 'used' | 'expired' | 'not_found'
 
 export interface VerifyInviteResponse {
-  ok: boolean
-  reason?: InviteFailureReason
+  session_id: string
+  status: string
+  reserved_until?: string
 }
 
-export async function verifyInviteCode(payload: VerifyInviteRequest): Promise<VerifyInviteResponse> {
-  const resp = await fetch('/api/invites/verify-and-redeem', {
+export async function verifyInvite(code: string, sessionId?: string): Promise<VerifyInviteResponse> {
+  return request<VerifyInviteResponse>('/api/invites/verify', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: { code, session_id: sessionId }
   })
+}
 
-  if (!resp.ok) {
-    throw new Error('邀请码校验失败')
-  }
-
-  return resp.json()
+export async function redeemInvite(sessionId?: string) {
+  return request('/api/invites/redeem', {
+    method: 'POST',
+    body: sessionId ? { session_id: sessionId } : {}
+  })
 }

@@ -44,9 +44,8 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { verifyInviteCode } from '@/api'
-
-type InviteErrorReason = 'used' | 'expired' | 'not_found'
+import { verifyInvite } from '@/api'
+import { useTestSession } from '@/store/testSession'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ (e: 'update:open', value: boolean): void; (e: 'success'): void }>()
@@ -57,6 +56,8 @@ const errorMessage = ref('')
 const inputRef = ref<HTMLInputElement | null>(null)
 
 const trimmedCode = computed(() => code.value.trim())
+
+const { getSessionId, setSessionId } = useTestSession()
 
 watch(
   () => props.open,
@@ -95,19 +96,20 @@ async function handleConfirm() {
   errorMessage.value = ''
 
   try {
-    const response = await verifyInviteCode({ code: trimmedCode.value })
-    if (response.ok) {
-      emit('update:open', false)
-      emit('success')
-      return
+    const sessionId = getSessionId() ?? undefined
+    const response = await verifyInvite(trimmedCode.value, sessionId)
+    if (response && typeof response.session_id === 'string') {
+      setSessionId(response.session_id)
     }
-
-    const reason: InviteErrorReason | undefined = response.reason
-    const reasonKey = reason ? `invite.errors.${reason}` : 'invite.errors.unknown'
-    errorMessage.value = reasonKey
+    emit('update:open', false)
+    emit('success')
   } catch (error) {
     console.error('[InviteCodeModal] verify failed', error)
-    errorMessage.value = '网络异常，请重试'
+    if (error instanceof Error) {
+      errorMessage.value = error.message
+    } else {
+      errorMessage.value = '验证失败，请稍后再试'
+    }
   } finally {
     loading.value = false
   }

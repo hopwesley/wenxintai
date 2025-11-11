@@ -80,7 +80,6 @@ type questionsRequest struct {
 	Gender    string `json:"gender"`
 	Grade     string `json:"grade"`
 	Hobby     string `json:"hobby"`
-	APIKey    string `json:"api_key,omitempty"`
 }
 
 type questionsResponse struct {
@@ -108,7 +107,6 @@ type answersResponse struct {
 type reportRequest struct {
 	SessionID string `json:"session_id"`
 	Mode      string `json:"mode"`
-	APIKey    string `json:"api_key,omitempty"`
 }
 
 type reportResponse struct {
@@ -241,14 +239,11 @@ func (s *pipelineServer) getSessionFromRequest(r *http.Request) (string, *sessio
 	return "", nil, false
 }
 
-func (s *pipelineServer) resolveAPIKey(candidate string) (string, bool) {
-	if candidate != "" {
-		return candidate, true
+func (s *pipelineServer) mustAPIKey() (string, *apiError) {
+	if strings.TrimSpace(s.defaultAPIKey) == "" {
+		return "", newAPIError(http.StatusInternalServerError, "SERVER_MISCONFIG", "服务未配置上游 API 密钥")
 	}
-	if s.defaultAPIKey != "" {
-		return s.defaultAPIKey, true
-	}
-	return "", false
+	return s.defaultAPIKey, nil
 }
 
 func (s *pipelineServer) getSession(id string) (*sessionState, bool) {
@@ -492,9 +487,9 @@ func (s *pipelineServer) handleQuestions(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	apiKey, ok := s.resolveAPIKey(req.APIKey)
-	if !ok {
-		writeErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "缺少 API 密钥")
+	apiKey, apiErr := s.mustAPIKey()
+	if apiErr != nil {
+		writeErrorJSON(w, apiErr.Status, apiErr.Code, apiErr.Message)
 		return
 	}
 
@@ -618,9 +613,9 @@ func (s *pipelineServer) handleReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiKey, ok := s.resolveAPIKey(req.APIKey)
-	if !ok {
-		writeErrorJSON(w, http.StatusBadRequest, "BAD_REQUEST", "缺少 API 密钥")
+	apiKey, apiErr := s.mustAPIKey()
+	if apiErr != nil {
+		writeErrorJSON(w, apiErr.Status, apiErr.Code, apiErr.Message)
 		return
 	}
 

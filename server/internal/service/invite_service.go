@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"strings"
 	"time"
 
@@ -31,6 +32,13 @@ func NewInviteService(repo store.Repo) *InviteService {
 	}
 }
 
+const (
+	inviteUnused   int16 = 0
+	inviteReserved int16 = 1
+	inviteRedeemed int16 = 2
+	inviteDisabled int16 = 3
+)
+
 func (s *InviteService) Verify(ctx context.Context, code string, sessionID *string) (*VerifyInviteResult, error) {
 	code = strings.TrimSpace(code)
 	if code == "" {
@@ -40,53 +48,77 @@ func (s *InviteService) Verify(ctx context.Context, code string, sessionID *stri
 	var result *VerifyInviteResult
 	err := s.repo.WithTx(ctx, func(tx *sql.Tx) error {
 		txCtx := store.ContextWithTx(ctx, tx)
-		invite, err := s.repo.GetInviteForUpdate(txCtx, code)
+		inv, err := s.repo.GetInviteForUpdate(txCtx, code)
 		if err != nil {
-			if err == store.ErrNotFound {
+			if errors.Is(err, store.ErrNotFound) {
 				return newError(ErrorCodeNotFound, "invite not found", err)
 			}
 			return err
 		}
 
-		switch invite.Status {
-		case "unused":
-			// continue
-		case "disabled":
+		now := s.now()
+
+		// 自然过期（如果你希望 unused 也能自然过期，这里可判断 inv.ExpiresAt != nil && inv.ExpiresAt.Before(now)）
+		if inv.Status == inviteDisabled {
 			return newError(ErrorCodeInviteDisabled, "invite disabled", nil)
-		default:
+		}
+		if inv.Status == inviteRedeemed {
 			return newError(ErrorCodeInviteRedeemed, "invite already redeemed", nil)
 		}
 
-		now := s.now()
-		var targetSession string
-		var expiresAt time.Time
+		// 选择/生成 sessionID
+		var sess string
+		if sessionID != nil && strings.TrimSpace(*sessionID) != "" {
+			sess = strings.TrimSpace(*sessionID)
+		} else {
+			sess = uuid.NewString()
+		}
+		until := now.Add(s.ttl)
 
-		if invite.ReservedBy != nil && invite.ReservedUntil != nil && invite.ReservedUntil.After(now) {
-			if sessionID != nil && *sessionID == *invite.ReservedBy {
-				targetSession = *sessionID
-				expiresAt = now.Add(s.ttl)
-				if err := s.repo.UpdateInviteReservation(txCtx, invite.Code, &targetSession, &expiresAt); err != nil {
+		switch inv.Status {
+		case inviteUnused:
+			// 直接占用
+			if err := s.repo.UpdateInviteReservation(txCtx, inv.Code, sess, until); err != nil {
+				if err == store.ErrConflict {
+					return newError(ErrorCodeInviteReserved, "invite is reserved", nil)
+				}
+				return err
+			}
+
+		case inviteReserved:
+			// 仍被占用但是否可续期/抢占？
+			// 1) 自己占用且未过期 -> 续期
+			if inv.UsedBy != nil && *inv.UsedBy == sess && inv.ExpiresAt != nil && inv.ExpiresAt.After(now) {
+				if err := s.repo.UpdateInviteReservation(txCtx, inv.Code, sess, until); err != nil {
+					if err == store.ErrConflict {
+						return newError(ErrorCodeInviteReserved, "invite is reserved", nil)
+					}
 					return err
 				}
 			} else {
-				return newError(ErrorCodeInviteReserved, "invite is reserved", nil)
+				// 2) 他人占用已过期 -> 抢占
+				if inv.ExpiresAt != nil && inv.ExpiresAt.Before(now) {
+					if err := s.repo.UpdateInviteReservation(txCtx, inv.Code, sess, until); err != nil {
+						if err == store.ErrConflict {
+							return newError(ErrorCodeInviteReserved, "invite is reserved", nil)
+						}
+						return err
+					}
+				} else {
+					// 3) 他人占用未过期 -> 返回占用中
+					return newError(ErrorCodeInviteReserved, "invite is reserved", nil)
+				}
 			}
-		} else {
-			if sessionID != nil && strings.TrimSpace(*sessionID) != "" {
-				targetSession = strings.TrimSpace(*sessionID)
-			} else {
-				targetSession = uuid.NewString()
-			}
-			expiresAt = now.Add(s.ttl)
-			if err := s.repo.UpdateInviteReservation(txCtx, invite.Code, &targetSession, &expiresAt); err != nil {
-				return err
-			}
+
+		default:
+			// 其他非法状态
+			return newError(ErrorCodeBadRequest, "invalid invite status", nil)
 		}
 
 		result = &VerifyInviteResult{
-			SessionID:     targetSession,
+			SessionID:     sess,
 			Status:        "reserved",
-			ReservedUntil: expiresAt,
+			ReservedUntil: until,
 		}
 		return nil
 	})

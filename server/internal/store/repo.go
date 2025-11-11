@@ -24,7 +24,7 @@ type Repo interface {
 	GetLatestReportByAssessment(ctx context.Context, assessmentID string) (*Report, error)
 	GetAnswersByAssessment(ctx context.Context, assessmentID string) (s1, s2 json.RawMessage, err error)
 	GetInviteForUpdate(ctx context.Context, code string) (*Invite, error)
-	UpdateInviteReservation(ctx context.Context, code string, reservedBy *string, reservedUntil *time.Time) error
+	UpdateInviteReservation(ctx context.Context, code string, sessionID string, until time.Time) error
 	RedeemInviteBySession(ctx context.Context, sessionID, redeemedBy string) (bool, error)
 }
 

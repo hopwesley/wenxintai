@@ -52,11 +52,10 @@ type Report struct {
 }
 
 type Invite struct {
-	Code          string
-	Status        string
-	ReservedBy    *string
-	ReservedUntil *time.Time
-	RedeemedBy    *string
-	RedeemedAt    *time.Time
-	CreatedAt     time.Time
+	Code      string
+	Status    int16      // 0:unused 1:reserved 2:redeemed 3:disabled
+	ExpiresAt *time.Time // 预留过期时间 或 自然过期时间
+	UsedBy    *string    // 预留者 session_id 或 核销者 id
+	UsedAt    *time.Time // 核销时间
+	CreatedAt time.Time
 }

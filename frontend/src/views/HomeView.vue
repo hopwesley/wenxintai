@@ -250,6 +250,9 @@
         </div>
       </div>
     </section>
+    <section>
+      <div style="margin: 0 auto;color: #CDCED1; text-align: center;padding: 16px;border-top: 1px solid #ECECEE">京ICP备2025150532号</div>
+    </section>
     <!-- 登录弹窗：双向绑定 -->
     <WeChatLoginDialog v-model:open="showLogin" />
     <InviteCodeModal v-model:open="inviteModalOpen" @success="handleInviteSuccess" />

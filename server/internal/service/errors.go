@@ -9,6 +9,9 @@ const (
         ErrorCodeNotFound   ErrorCode = "NOT_FOUND"
         ErrorCodeConflict   ErrorCode = "CONFLICT"
         ErrorCodeInternal   ErrorCode = "INTERNAL"
+        ErrorCodeInviteReserved ErrorCode = "RESERVED"
+        ErrorCodeInviteDisabled ErrorCode = "DISABLED"
+        ErrorCodeInviteRedeemed ErrorCode = "REDEEMED"
 )
 
 type Error struct {

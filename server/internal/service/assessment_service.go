@@ -6,7 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
+	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 
@@ -14,10 +17,11 @@ import (
 	"github.com/hopwesley/wenxintai/server/internal/appconsts"
 	"github.com/hopwesley/wenxintai/server/internal/logic"
 	"github.com/hopwesley/wenxintai/server/internal/store"
+	"github.com/hopwesley/wenxintai/server/internal/stream"
 )
 
 type GenerateQuestionsFunc func(ctx context.Context, stage int16, mode string, userCtx map[string]string) (json.RawMessage, string, json.RawMessage, error)
-type InterpretReportFunc func(ctx context.Context, params json.RawMessage) (json.RawMessage, *string, error)
+type InterpretReportFunc func(ctx context.Context, params json.RawMessage, onToken ai.StreamCallback) (json.RawMessage, *string, error)
 type ComputeParamsFunc func(answersS1, answersS2 json.RawMessage) (json.RawMessage, error)
 
 type Svc struct {
@@ -25,14 +29,20 @@ type Svc struct {
 	generateQuestions GenerateQuestionsFunc
 	interpretReport   InterpretReportFunc
 	computeParams     ComputeParamsFunc
+	broker            *stream.Broker
+	logger            *log.Logger
+	aiTimeout         time.Duration
 }
 
-func NewSvc(repo store.Repo) *Svc {
+func NewSvc(repo store.Repo, broker *stream.Broker) *Svc {
 	return &Svc{
 		repo:              repo,
 		generateQuestions: ai.GenerateQuestions,
 		interpretReport:   ai.InterpretReport,
 		computeParams:     logic.ComputeParams,
+		broker:            broker,
+		logger:            log.Default(),
+		aiTimeout:         120 * time.Second,
 	}
 }
 
@@ -90,6 +100,15 @@ func (s *Svc) CreateAssessment(ctx context.Context, mode string, inviteCode, wec
 	}
 
 	err = s.withTx(ctx, func(txCtx context.Context, tx *sql.Tx) error {
+		if inviteCode != nil {
+			ok, err := s.repo.RedeemInviteByCode(txCtx, *inviteCode, "by_assessment")
+			if err != nil {
+				return err
+			}
+			if !ok {
+				return newError(ErrorCodeConflict, "invite cannot be redeemed", nil)
+			}
+		}
 		if err := s.repo.CreateAssessment(txCtx, assessment); err != nil {
 			return err
 		}
@@ -110,9 +129,10 @@ type NextStage struct {
 	Questions     json.RawMessage
 }
 
-func (s *Svc) SubmitAnswersAndAdvance(ctx context.Context, questionSetID string, answers json.RawMessage) (next *NextStage, reportID *string, err error) {
+func (s *Svc) SubmitAnswersAndAdvance(ctx context.Context, questionSetID string, answers json.RawMessage) (next *NextStage, result *SubmitS2Result, err error) {
 	var nextStage *NextStage
-	var finalReportID *string
+	var submitResult *SubmitS2Result
+	var paramsForReport json.RawMessage
 
 	err = s.withTx(ctx, func(txCtx context.Context, tx *sql.Tx) error {
 		qs, err := s.repo.GetQuestionSetByID(txCtx, questionSetID)
@@ -202,7 +222,7 @@ func (s *Svc) SubmitAnswersAndAdvance(ctx context.Context, questionSetID string,
 
 			existingReport, reportErr := s.repo.GetLatestReportByAssessment(txCtx, assessment.ID)
 			if reportErr == nil {
-				finalReportID = &existingReport.ID
+				submitResult = &SubmitS2Result{AssessmentID: assessment.ID, ReportID: &existingReport.ID}
 				if assessment.Status < appconsts.AReportReady {
 					if err := s.repo.UpdateAssessmentStatus(txCtx, assessment.ID, appconsts.AReportReady); err != nil {
 						return err
@@ -233,24 +253,8 @@ func (s *Svc) SubmitAnswersAndAdvance(ctx context.Context, questionSetID string,
 			if err := s.repo.CreateComputedParams(txCtx, computed); err != nil {
 				return err
 			}
-			full, summary, err := s.interpretReport(ctx, params)
-			if err != nil {
-				return err
-			}
-			report := &store.Report{
-				AssessmentID: assessment.ID,
-				ReportType:   appconsts.ReportAIInterpretation,
-				Summary:      summary,
-				FullJSON:     full,
-			}
-			if err := s.repo.CreateReport(txCtx, report); err != nil {
-				return err
-			}
-			if err := s.repo.UpdateAssessmentStatus(txCtx, assessment.ID, appconsts.AReportReady); err != nil {
-				return err
-			}
-			rid := report.ID
-			finalReportID = &rid
+			submitResult = &SubmitS2Result{AssessmentID: assessment.ID, GenerationStarted: true}
+			paramsForReport = params
 
 		default:
 			return newError(ErrorCodeInternal, fmt.Sprintf("unknown question set stage %d", qs.Stage), nil)
@@ -262,7 +266,105 @@ func (s *Svc) SubmitAnswersAndAdvance(ctx context.Context, questionSetID string,
 	if err != nil {
 		return nil, nil, err
 	}
-	return nextStage, finalReportID, nil
+	if submitResult != nil && submitResult.GenerationStarted && paramsForReport != nil {
+		s.startReportGeneration(submitResult.AssessmentID, paramsForReport)
+	}
+	return nextStage, submitResult, nil
+}
+
+type SubmitS2Result struct {
+	AssessmentID      string  `json:"assessment_id"`
+	ReportID          *string `json:"report_id,omitempty"`
+	GenerationStarted bool    `json:"generation_started"`
+}
+
+func (s *Svc) startReportGeneration(assessmentID string, params json.RawMessage) {
+	if s.broker == nil {
+		return
+	}
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), s.aiTimeout)
+		defer cancel()
+		requestID := uuid.NewString()
+		start := time.Now()
+		s.publishEvent(assessmentID, stream.NewStatusEvent("preparing"))
+
+		tokens := 0
+		lastProgress := time.Now()
+		phaseStreamingSent := false
+
+		onToken := func(chunk string) error {
+			if strings.TrimSpace(chunk) == "" {
+				return nil
+			}
+			if !phaseStreamingSent {
+				s.publishEvent(assessmentID, stream.NewStatusEvent("streaming"))
+				phaseStreamingSent = true
+			}
+			tokens += utf8.RuneCountInString(chunk)
+			s.publishEvent(assessmentID, stream.NewTokenEvent(chunk))
+			now := time.Now()
+			if now.Sub(lastProgress) >= 500*time.Millisecond {
+				s.publishEvent(assessmentID, stream.NewProgressEvent(tokens))
+				lastProgress = now
+			}
+			return nil
+		}
+
+		full, summary, err := s.interpretReport(ctx, params, onToken)
+		if err != nil {
+			if s.logger != nil {
+				s.logger.Printf("report generation failed (request_id=%s assessment_id=%s): %v", requestID, assessmentID, err)
+			}
+			s.publishEvent(assessmentID, stream.NewErrorEvent("AI_UPSTREAM", "报告生成失败，请稍后再试"))
+			return
+		}
+
+		s.publishEvent(assessmentID, stream.NewProgressEvent(tokens))
+		s.publishEvent(assessmentID, stream.NewStatusEvent("finalizing"))
+
+		var reportID string
+		persistErr := s.withTx(context.Background(), func(txCtx context.Context, tx *sql.Tx) error {
+			report := &store.Report{
+				AssessmentID: assessmentID,
+				ReportType:   appconsts.ReportAIInterpretation,
+				Summary:      summary,
+				FullJSON:     full,
+			}
+			if err := s.repo.CreateReport(txCtx, report); err != nil {
+				return err
+			}
+			if err := s.repo.UpdateAssessmentStatus(txCtx, assessmentID, appconsts.AReportReady); err != nil {
+				return err
+			}
+			reportID = report.ID
+			return nil
+		})
+		if persistErr != nil {
+			if s.logger != nil {
+				s.logger.Printf("report persistence failed (request_id=%s assessment_id=%s): %v", requestID, assessmentID, persistErr)
+			}
+			s.publishEvent(assessmentID, stream.NewErrorEvent("PERSIST_ERROR", "报告写入失败，请稍后重试"))
+			return
+		}
+
+		s.publishEvent(assessmentID, stream.NewStatusEvent("completed"))
+		s.publishEvent(assessmentID, stream.NewFinalEvent(reportID))
+		if s.logger != nil {
+			s.logger.Printf("report generation succeeded (request_id=%s assessment_id=%s tokens=%d duration=%s)", requestID, assessmentID, tokens, time.Since(start))
+		}
+	}()
+}
+
+func (s *Svc) publishEvent(assessmentID string, payload stream.Payload) {
+	if s.broker == nil {
+		return
+	}
+	if _, err := s.broker.Publish(assessmentID, payload); err != nil {
+		if s.logger != nil {
+			s.logger.Printf("stream publish failed (assessment_id=%s type=%s): %v", assessmentID, payload.Type, err)
+		}
+	}
 }
 
 func (s *Svc) GetReport(ctx context.Context, assessmentID string) (*store.Report, error) {

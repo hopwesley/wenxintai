@@ -14,6 +14,7 @@ import (
 
 	"github.com/hopwesley/wenxintai/server/internal/service"
 	"github.com/hopwesley/wenxintai/server/internal/store"
+	"github.com/hopwesley/wenxintai/server/internal/stream"
 )
 
 func main() {
@@ -29,13 +30,21 @@ func main() {
 	defer db.Close()
 
 	repo := store.NewSQLRepo(db)
-	svc := service.NewSvc(repo)
-	api := newAPIHandler(svc)
+	broker := stream.NewBroker(100, 2*time.Minute)
+	defer broker.Stop()
+	svc := service.NewSvc(repo, broker)
+	inviteSvc := service.NewInviteService(repo)
+	sseHandler := stream.NewSSEHandler(repo, broker)
+	wsHandler := stream.NewWSHandler(repo, broker)
+	api := newAPIHandler(svc, inviteSvc, sseHandler)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/assessments", api.handleAssessments)
 	mux.HandleFunc("/api/assessments/", api.handleAssessmentDetail)
 	mux.HandleFunc("/api/question_sets/", api.handleQuestionSetAnswers)
+	mux.HandleFunc("/api/invites/verify", api.handleInviteVerify)
+	mux.HandleFunc("/api/invites/redeem", api.handleInviteRedeem)
+	mux.HandleFunc("/ws/assessments/", wsHandler)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
@@ -73,11 +82,13 @@ func main() {
 }
 
 type apiHandler struct {
-	svc *service.Svc
+	svc        *service.Svc
+	invites    *service.InviteService
+	sseHandler http.Handler
 }
 
-func newAPIHandler(svc *service.Svc) *apiHandler {
-	return &apiHandler{svc: svc}
+func newAPIHandler(svc *service.Svc, invites *service.InviteService, sse http.Handler) *apiHandler {
+	return &apiHandler{svc: svc, invites: invites, sseHandler: sse}
 }
 
 type createAssessmentRequest struct {
@@ -131,8 +142,9 @@ type submitS1Response struct {
 }
 
 type submitS2Response struct {
-	AssessmentID string `json:"assessment_id"`
-	ReportID     string `json:"report_id"`
+	AssessmentID string  `json:"assessment_id"`
+	ReportID     *string `json:"report_id,omitempty"`
+	Status       string  `json:"status"`
 }
 
 type reportResponse struct {
@@ -169,7 +181,7 @@ func (h *apiHandler) handleQuestionSetAnswers(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	nextStage, reportID, err := h.svc.SubmitAnswersAndAdvance(r.Context(), questionSetID, req.Answers)
+	nextStage, submitResult, err := h.svc.SubmitAnswersAndAdvance(r.Context(), questionSetID, req.Answers)
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -185,18 +197,86 @@ func (h *apiHandler) handleQuestionSetAnswers(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if reportID != nil {
+	if submitResult != nil {
 		qs, err := h.svc.GetQuestionSet(r.Context(), questionSetID)
 		if err != nil {
 			writeServiceError(w, err)
 			return
 		}
-		resp := submitS2Response{AssessmentID: qs.AssessmentID, ReportID: *reportID}
+		status := "generating"
+		if submitResult.ReportID != nil {
+			status = "ready"
+		}
+		resp := submitS2Response{AssessmentID: qs.AssessmentID, ReportID: submitResult.ReportID, Status: status}
 		writeJSON(w, http.StatusOK, resp)
 		return
 	}
 
 	writeServiceError(w, newError(service.ErrorCodeInternal, "unknown workflow state", nil))
+}
+
+type inviteVerifyRequest struct {
+	Code      string  `json:"code"`
+	SessionID *string `json:"session_id,omitempty"`
+}
+
+type inviteVerifyResponse struct {
+	SessionID     string `json:"session_id"`
+	Status        string `json:"status"`
+	ReservedUntil string `json:"reserved_until"`
+}
+
+func (h *apiHandler) handleInviteVerify(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "method not allowed")
+		return
+	}
+	if h.invites == nil {
+		writeServiceError(w, newError(service.ErrorCodeInternal, "invite service unavailable", nil))
+		return
+	}
+	var req inviteVerifyRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeServiceError(w, newError(service.ErrorCodeBadRequest, "invalid request body", err))
+		return
+	}
+	result, err := h.invites.Verify(r.Context(), req.Code, req.SessionID)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	resp := inviteVerifyResponse{
+		SessionID:     result.SessionID,
+		Status:        result.Status,
+		ReservedUntil: result.ReservedUntil.UTC().Format(time.RFC3339),
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+type inviteRedeemRequest struct {
+	SessionID string `json:"session_id"`
+}
+
+func (h *apiHandler) handleInviteRedeem(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "method not allowed")
+		return
+	}
+	if h.invites == nil {
+		writeServiceError(w, newError(service.ErrorCodeInternal, "invite service unavailable", nil))
+		return
+	}
+	var req inviteRedeemRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeServiceError(w, newError(service.ErrorCodeBadRequest, "invalid request body", err))
+		return
+	}
+	result, err := h.invites.Redeem(r.Context(), req.SessionID)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "status": result.Status})
 }
 
 func (h *apiHandler) handleAssessmentDetail(w http.ResponseWriter, r *http.Request) {
@@ -208,6 +288,12 @@ func (h *apiHandler) handleAssessmentDetail(w http.ResponseWriter, r *http.Reque
 	}
 	assessmentID := parts[0]
 	switch parts[1] {
+	case "events":
+		if r.Method != http.MethodGet {
+			writeError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "method not allowed")
+			return
+		}
+		h.sseHandler.ServeHTTP(w, r)
 	case "report":
 		if r.Method != http.MethodGet {
 			writeError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "method not allowed")
@@ -270,6 +356,10 @@ func writeServiceError(w http.ResponseWriter, err error) {
 			status = http.StatusNotFound
 		case service.ErrorCodeConflict:
 			status = http.StatusConflict
+		case service.ErrorCodeInviteReserved:
+			status = http.StatusConflict
+		case service.ErrorCodeInviteDisabled, service.ErrorCodeInviteRedeemed:
+			status = http.StatusGone
 		default:
 			status = http.StatusInternalServerError
 		}

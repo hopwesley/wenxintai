@@ -281,13 +281,8 @@ function openLogin() {
   console.log('[HomeView] dialogOpen ->', showLogin.value)
 }
 
-async function handleInviteSuccess(payload: { code: string; sessionId?: string }) {
-  const resp = await createAssessment({
-    invite_code: payload.code,
-    mode: 'basic'
-  })
-
-  router.push(`/basic-info/${resp.assessment_id}`)
+function handleInviteSuccess() {
+  router.push('/test/basic/step/1')
 }
 
 type PlanKey = 'public' | 'pro' | 'school'

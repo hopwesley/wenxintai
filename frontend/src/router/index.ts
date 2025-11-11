@@ -31,11 +31,11 @@ const routes: RouteRecordRaw[] = [
         path: '/:pathMatch(.*)*',
         redirect: '/'
     },
-    {
-        path: '/basic-info/:assessmentId',
-        name: 'basic-info',
-        component: () => import('@/views/BasicInfo.vue'),
-    }
+    // {
+    //     path: '/basic-info/:assessmentId',
+    //     name: 'basic-info',
+    //     component: () => import('@/views/BasicInfo.vue'),
+    // }
 
 ]
 

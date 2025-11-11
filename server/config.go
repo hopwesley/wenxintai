@@ -16,13 +16,13 @@ type databaseConfig struct {
 	Password string `json:"password"`
 	SSLMode  string `json:"sslmode"`
 }
-type server struct {
+type serverConfig struct {
 	Port          string `json:"port"`
 	StaticDir     string `json:"static_dir"`
 	DefaultAPIKey string `json:"default_api_key"`
 }
 type appConfig struct {
-	Server   server         `json:"server"`
+	Server   serverConfig   `json:"server"`
 	Database databaseConfig `json:"database"`
 }
 

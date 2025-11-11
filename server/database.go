@@ -1,20 +1,19 @@
 package main
 
 import (
-        "context"
-        "database/sql"
-        "fmt"
-        "net/url"
-        "strings"
-        "time"
+	"context"
+	"database/sql"
+	"fmt"
+	"strings"
+	"time"
 
 	_ "github.com/lib/pq"
 )
 
 func connectDatabase(cfg databaseConfig) (*sql.DB, error) {
-        if err := cfg.validate(); err != nil {
-                return nil, err
-        }
+	if err := cfg.validate(); err != nil {
+		return nil, err
+	}
 	dsn := buildDSN(cfg)
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
@@ -34,41 +33,40 @@ func connectDatabase(cfg databaseConfig) (*sql.DB, error) {
 }
 
 func buildDSN(cfg databaseConfig) string {
-        password := url.QueryEscape(cfg.Password)
-        parts := []string{
-                fmt.Sprintf("host=%s", cfg.Host),
-                fmt.Sprintf("port=%d", cfg.Port),
-                fmt.Sprintf("user=%s", cfg.User),
-                fmt.Sprintf("password=%s", password),
-                fmt.Sprintf("dbname=%s", cfg.Database),
-                fmt.Sprintf("sslmode=%s", cfg.SSLMode),
-                "search_path=app,public",
-        }
-        return strings.Join(parts, " ")
+	parts := []string{
+		fmt.Sprintf("host=%s", cfg.Host),
+		fmt.Sprintf("port=%d", cfg.Port),
+		fmt.Sprintf("user=%s", cfg.User),
+		fmt.Sprintf("password=%s", cfg.Password),
+		fmt.Sprintf("dbname=%s", cfg.Database),
+		fmt.Sprintf("sslmode=%s", cfg.SSLMode),
+		"search_path=app,public",
+	}
+	return strings.Join(parts, " ")
 }
 
 func (cfg databaseConfig) validate() error {
-        var missing []string
-        if strings.TrimSpace(cfg.Host) == "" {
-                missing = append(missing, "host")
-        }
-        if cfg.Port <= 0 {
-                missing = append(missing, "port")
-        }
-        if strings.TrimSpace(cfg.Database) == "" {
-                missing = append(missing, "database")
-        }
-        if strings.TrimSpace(cfg.User) == "" {
-                missing = append(missing, "user")
-        }
-        if strings.TrimSpace(cfg.Password) == "" {
-                missing = append(missing, "password")
-        }
-        if strings.TrimSpace(cfg.SSLMode) == "" {
-                missing = append(missing, "sslmode")
-        }
-        if len(missing) > 0 {
-                return fmt.Errorf("数据库配置缺少字段: %s", strings.Join(missing, ", "))
-        }
-        return nil
+	var missing []string
+	if strings.TrimSpace(cfg.Host) == "" {
+		missing = append(missing, "host")
+	}
+	if cfg.Port <= 0 {
+		missing = append(missing, "port")
+	}
+	if strings.TrimSpace(cfg.Database) == "" {
+		missing = append(missing, "database")
+	}
+	if strings.TrimSpace(cfg.User) == "" {
+		missing = append(missing, "user")
+	}
+	if strings.TrimSpace(cfg.Password) == "" {
+		missing = append(missing, "password")
+	}
+	if strings.TrimSpace(cfg.SSLMode) == "" {
+		missing = append(missing, "sslmode")
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("数据库配置缺少字段: %s", strings.Join(missing, ", "))
+	}
+	return nil
 }

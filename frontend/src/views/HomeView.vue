@@ -251,7 +251,7 @@
       </div>
     </section>
     <section>
-      <div style="margin: 0 auto;color: #CDCED1; text-align: center;padding: 16px;border-top: 1px solid #ECECEE">京ICP备2025150532号</div>
+      <div style="margin: 0 auto;color: #b0b1b3; text-align: center;padding: 16px;border-top: 1px solid #ECECEE; font-size: 14px">域世安（北京）科技有限公司 | 京ICP备2025150532号-1</div>
     </section>
     <!-- 登录弹窗：双向绑定 -->
     <WeChatLoginDialog v-model:open="showLogin" />

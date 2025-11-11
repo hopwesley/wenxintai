@@ -265,6 +265,7 @@ import '@/styles/home.css'
 import WeChatLoginDialog from '@/components/WeChatLoginDialog.vue'
 import InviteCodeModal from '@/components/InviteCodeModal.vue'
 import { useRouter } from 'vue-router'
+import {createAssessment} from "@/api/assessment";
 
 const showLogin = ref(false)
 
@@ -280,8 +281,13 @@ function openLogin() {
   console.log('[HomeView] dialogOpen ->', showLogin.value)
 }
 
-function handleInviteSuccess() {
-  router.push('/test/basic/step/1')
+async function handleInviteSuccess(payload: { code: string; sessionId?: string }) {
+  const resp = await createAssessment({
+    invite_code: payload.code,
+    mode: 'basic'
+  })
+
+  router.push(`/basic-info/${resp.assessment_id}`)
 }
 
 type PlanKey = 'public' | 'pro' | 'school'

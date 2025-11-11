@@ -7,13 +7,11 @@ const routes: RouteRecordRaw[] = [
         name: 'home',
         component: () => import('@/views/HomeView.vue'),
     },
-    // 2) 将 AssessmentStart 改到 /start（保持 name 不变以兼容守卫里的回退）
     {
         path: '/start',
         name: 'assessment-start',
         component: () => import('@/views/AssessmentStart.vue'),
     },
-    // 3) 补上测试流程的动态路由，承接 HomeView 验证后的跳转
     {
         path: '/test/:variant/step/:step',
         name: 'test-step',
@@ -32,7 +30,13 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/:pathMatch(.*)*',
         redirect: '/'
+    },
+    {
+        path: '/basic-info/:assessmentId',
+        name: 'basic-info',
+        component: () => import('@/views/BasicInfo.vue'),
     }
+
 ]
 
 export const router = createRouter({

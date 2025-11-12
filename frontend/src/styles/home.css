@@ -194,11 +194,16 @@ h3,p{
 
 /* ========== 顶部 Header：左 logo 圆点 + 右 登录 ========== */
 .site-header{
-    height:56px;
+    background-color: rgba(255, 255, 255, 0.4);
+    padding: 12px;
+}
+.header-container{
     display:flex;
     align-items:center;
     justify-content:space-between;
-    margin:12px auto;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 20px;
 }
 
 .logo-dot{

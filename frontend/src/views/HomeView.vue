@@ -3,11 +3,13 @@
     <!-- 顶部横幅 / Hero -->
     <section class="hero">
       <!-- 顶部导航条：左 logo 右 登录 -->
-      <div class="site-header container">
-        <div class="logo-dot" aria-label="问心台">
-          <!-- 用图片当背景，或把这个 div 换成 <img src="/img/logo.png"> -->
+      <div class="site-header">
+        <div class="header-container">
+          <div class="logo-dot" aria-label="问心台">
+            <!-- 用图片当背景，或把这个 div 换成 <img src="/img/logo.png"> -->
+          </div>
+          <button class="btn btn-ghost login-btn" @click="openLogin">登录</button>
         </div>
-        <button class="btn btn-ghost login-btn" @click="openLogin">登录</button>
       </div>
 
       <div class="hero-inner container">

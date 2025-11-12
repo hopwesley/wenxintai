@@ -145,7 +145,8 @@ async function handleSubmit() {
 
     const questionSetId = response.active_question_set_id ?? response.question_set_id
     if (!questionSetId) {
-      throw new Error('未获取到题集信息')
+      errorMessage.value = '未获取到题集信息'
+      return
     }
 
     setTestConfig({grade, mode: selectedMode.value, hobby: interest || undefined})
@@ -241,23 +242,6 @@ async function handleSubmit() {
   outline: none;
   border-color: #5b7cff;
   box-shadow: 0 0 0 3px rgba(91, 124, 255, 0.2);
-}
-
-.mode-options {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.mode-option {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  cursor: pointer;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .mode-option input {

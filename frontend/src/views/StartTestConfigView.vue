@@ -36,7 +36,7 @@
           <!-- 兴趣：下拉（可选，来自后端） -->
           <label class="config-field">
             <span>兴趣偏好（可选）</span>
-            <select v-model="form.interest" :disabled="submitting">
+            <select v-model="form.hobby" :disabled="submitting">
               <option value="">请选择爱好</option>
               <option v-for="h in hobbies" :key="h" :value="h">{{ h }}</option>
             </select>
@@ -69,7 +69,7 @@ import {getHobbies} from "@/api";
 interface TestConfigForm {
   grade: string
   mode: ModeOption | ''
-  interest: string
+  hobby: string
 }
 
 const router = useRouter()
@@ -84,7 +84,7 @@ const stepItems = computed(() => {
 const form = reactive<TestConfigForm>({
   grade: state.grade ?? '',
   mode: state.mode ?? '',         // 默认空，强制用户选择
-  interest: state.interest ?? ''
+  hobby: state.hobby ?? ''
 })
 
 const hobbies = ref<string[]>([]) // ← 仅保留这一处定义
@@ -136,7 +136,7 @@ async function handleSubmit() {
 
   try {
     const grade = form.grade.trim()
-    const interest = form.interest.trim()
+    const interest = form.hobby.trim()
     const response = await createAssessment({
       invite_code: inviteCode.value,
       mode: selectedMode.value,
@@ -148,7 +148,7 @@ async function handleSubmit() {
       throw new Error('未获取到题集信息')
     }
 
-    setTestConfig({grade, mode: selectedMode.value, interest: interest || undefined})
+    setTestConfig({grade, mode: selectedMode.value, hobby: interest || undefined})
     setInviteCode(inviteCode.value)
 
     setAssessmentId(response.assessment_id)

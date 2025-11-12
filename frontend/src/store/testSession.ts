@@ -90,16 +90,17 @@ watch(
   { deep: true }
 )
 
-watch(
-  () => state.sessionId,
-  (value) => {
-    if (typeof window === 'undefined') return
-    if (typeof value === 'string' && value.trim()) {
-      window.localStorage.setItem(SESSION_ID_KEY, value)
-    } else {
-      window.localStorage.removeItem(SESSION_ID_KEY)
+watch<string | undefined>(
+    () => state.sessionId,
+    (value) => {
+        if (typeof window === 'undefined') return
+        const v = (value ?? '').trim()
+        if (v) {
+            window.localStorage.setItem(SESSION_ID_KEY, v)
+        } else {
+            window.localStorage.removeItem(SESSION_ID_KEY)
+        }
     }
-  }
 )
 
 export function useTestSession() {

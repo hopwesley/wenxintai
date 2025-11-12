@@ -42,15 +42,17 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 }
 
 export interface CreateAssessmentRequest {
+  invite_code: string
   mode: string
-  invite_code?: string
+  grade?: string
   wechat_openid?: string
 }
 
 export interface CreateAssessmentResponse {
   assessment_id: string
-  question_set_id: string
-  stage: 'S1'
+  question_set_id?: string
+  active_question_set_id?: string
+  stage: 'S1' | 'S2' | string
   questions: any
 }
 

@@ -8,14 +8,9 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/HomeView.vue'),
     },
     {
-        path: '/start',
-        name: 'assessment-start',
-        component: () => import('@/views/AssessmentStart.vue'),
-    },
-    {
-        path: '/test/:variant/step/:step',
-        name: 'test-step',
-        component: () => import('@/views/TestPlaceholderView.vue'),
+        path: '/test/basic/step/1',
+        name: 'test-config',
+        component: () => import('@/views/StartTestConfigView.vue'),
     },
     {
         path: '/questions/:questionSetId?',
@@ -56,7 +51,7 @@ router.beforeEach((to, _from, next) => {
             next({name: 'assessment-questions', params: {questionSetId: state.activeQuestionSetId}})
             return
         }
-        next({name: 'assessment-start'})
+        next({name: 'home'})
         return
     }
     if (to.name === 'assessment-report') {
@@ -65,7 +60,7 @@ router.beforeEach((to, _from, next) => {
             return
         }
         if (!to.params.assessmentId) {
-            next({name: 'assessment-start'})
+            next({name: 'home'})
             return
         }
     }

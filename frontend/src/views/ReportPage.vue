@@ -158,13 +158,13 @@ function setupStream(assessmentId: string) {
 }
 
 function goHome() {
-  router.push({ name: 'assessment-start' })
+  router.push({ name: 'home' })
 }
 
 function resetFlow() {
   clearQuestionSets()
   clearAll()
-  router.push({ name: 'assessment-start' })
+  router.push({ name: 'home' })
 }
 
 function stopStream() {

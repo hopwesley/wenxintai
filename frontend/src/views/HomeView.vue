@@ -265,12 +265,13 @@ import '@/styles/home.css'
 import WeChatLoginDialog from '@/components/WeChatLoginDialog.vue'
 import InviteCodeModal from '@/components/InviteCodeModal.vue'
 import { useRouter } from 'vue-router'
-import {createAssessment} from "@/api/assessment";
+import { useTestSession } from '@/store/testSession'
 
 const showLogin = ref(false)
 
 const inviteModalOpen = ref(false)
 const router = useRouter()
+const { setInviteCode } = useTestSession()
 
 function startTest() {
   inviteModalOpen.value = true
@@ -281,7 +282,8 @@ function openLogin() {
   console.log('[HomeView] dialogOpen ->', showLogin.value)
 }
 
-function handleInviteSuccess() {
+function handleInviteSuccess(payload: { code: string; sessionId?: string }) {
+  setInviteCode(payload.code)
   router.push('/test/basic/step/1')
 }
 

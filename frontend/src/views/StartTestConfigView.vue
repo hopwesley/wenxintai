@@ -154,7 +154,10 @@ async function handleSubmit() {
     setAssessmentId(response.assessment_id)
     setQuestionSet(questionSetId, response.stage as StageKey, response.questions)
 
-    await router.push(`/test/${state.variant}/step/2`)
+    await router.push({
+      name: 'test-stage',
+      params: { variant: state.variant || 'basic', step: 2 }
+    })
   } catch (error) {
     console.error('[StartTestConfig] failed to create assessment', error)
     errorMessage.value = error instanceof Error ? error.message : '创建评测失败，请稍后重试'

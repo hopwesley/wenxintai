@@ -2,6 +2,7 @@ package stream
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -21,7 +22,7 @@ func NewSSEHandler(repo store.Repo, broker *Broker) http.HandlerFunc {
 			return
 		}
 		if _, err := repo.GetAssessmentByID(r.Context(), assessmentID); err != nil {
-			if err == store.ErrNotFound {
+			if errors.Is(err, store.ErrNotFound) {
 				http.NotFound(w, r)
 				return
 			}

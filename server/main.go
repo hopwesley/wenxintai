@@ -44,6 +44,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/assessments", api.handleAssessments)
 	mux.HandleFunc("/api/assessments/", api.handleAssessmentDetail)
+	mux.HandleFunc("/api/questions", api.creatingQuestionFromAI)
 	mux.HandleFunc("/api/question_sets/", api.handleQuestionSetAnswers)
 	mux.HandleFunc("/api/invites/verify", api.handleInviteVerify)
 	mux.HandleFunc("/api/invites/redeem", api.handleInviteRedeem)
@@ -349,6 +350,10 @@ func (h *apiHandler) handleAssessmentDetail(w http.ResponseWriter, r *http.Reque
 	default:
 		writeServiceError(w, newError(service.ErrorCodeNotFound, "resource not found", nil))
 	}
+}
+
+func (h *apiHandler) creatingQuestionFromAI(w http.ResponseWriter, r *http.Request) {
+
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload interface{}) {

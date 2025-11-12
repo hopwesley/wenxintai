@@ -108,7 +108,7 @@
         <div class="planA-head">专业版</div>
         <div class="plan-card-content">
           <div class="plan-head">
-            <div class="price"><span class="currency">¥</span>79.9</div>
+            <div class="price price-gray"><span class="currency">¥</span>79.9</div>
           </div>
           <ul class="plan-features">
             <li class="plan-lists">
@@ -176,7 +176,7 @@
         <div class="planA-head">学校版</div>
         <div class="plan-card-content">
           <div class="plan-head">
-            <div class="price"><span class="currency">¥</span>19.9</div>
+            <div class="price price-gray"><span class="currency">¥</span>19.9</div>
           </div>
           <ul class="plan-features">
             <li class="plan-lists">

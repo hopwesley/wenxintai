@@ -161,7 +161,7 @@ async function handleSubmitResult(result: SubmitAnswersResponse) {
 }
 
 function goHome() {
-  router.push({ name: 'assessment-start' })
+  router.push({ name: 'home' })
 }
 </script>
 

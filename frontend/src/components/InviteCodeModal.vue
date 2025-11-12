@@ -50,7 +50,7 @@ import { useTestSession } from '@/store/testSession'
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
-  (e: 'success'): void
+  (e: 'success', payload: { code: string; sessionId?: string }): void
 }>()
 
 const code = ref('')
@@ -101,11 +101,18 @@ async function handleConfirm() {
   try {
     const sessionId = getSessionId() ?? undefined
     const response = await verifyInvite(trimmedCode.value, sessionId)
+    let resolvedSessionId = sessionId
     if (response) {
+      resolvedSessionId = response.session_id
       setSessionId(response.session_id)
+    } else if (sessionId) {
+      setSessionId(sessionId)
     }
     emit('update:open', false)
-    emit('success')
+    emit('success', {
+      code: trimmedCode.value,
+      sessionId: resolvedSessionId ?? undefined
+    })
   } catch (error) {
     console.error('[InviteCodeModal] verify failed', error)
     if (error instanceof Error) {

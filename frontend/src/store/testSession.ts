@@ -15,6 +15,9 @@ export interface TestSession {
   age?: number
   mode?: ModeOption
   hobby?: string
+  grade?: string
+  interest?: string
+  inviteCode?: string
   answersStage1: Record<string, AnswerValue>
   answersStage2: Record<string, AnswerValue>
 }
@@ -34,6 +37,9 @@ const defaultSession: TestSession = {
   age: undefined,
   mode: undefined,
   hobby: undefined,
+  grade: undefined,
+  interest: undefined,
+  inviteCode: undefined,
   answersStage1: {},
   answersStage2: {},
 }
@@ -143,6 +149,8 @@ export function useTestSession() {
     state.age = undefined
     state.mode = undefined
     state.hobby = undefined
+    state.grade = undefined
+    state.interest = undefined
   }
 
   function setCurrentStep(step: number) {
@@ -153,6 +161,21 @@ export function useTestSession() {
     state.age = payload.age
     state.mode = payload.mode
     state.hobby = payload.hobby
+  }
+
+  function setTestConfig(payload: { grade: string; mode: ModeOption; interest?: string }) {
+    state.grade = payload.grade
+    state.mode = payload.mode
+    state.interest = payload.interest
+  }
+
+  function setInviteCode(code: string | null | undefined) {
+    const normalized = typeof code === 'string' ? code.trim() : ''
+    state.inviteCode = normalized ? normalized : undefined
+  }
+
+  function getInviteCode() {
+    return state.inviteCode ?? null
   }
 
   function setAnswer(stage: 1 | 2, questionId: string, value: AnswerValue) {
@@ -195,6 +218,9 @@ export function useTestSession() {
       age: state.age,
       mode: state.mode,
       hobby: state.hobby,
+      grade: state.grade,
+      interest: state.interest,
+      inviteCode: state.inviteCode,
       answersStage1: { ...state.answersStage1 },
       answersStage2: { ...state.answersStage2 },
     }
@@ -208,6 +234,9 @@ export function useTestSession() {
     setVariant,
     setCurrentStep,
     setBasicInfo,
+    setTestConfig,
+    setInviteCode,
+    getInviteCode,
     setAnswer,
     getAnswer,
     clearAnswers,

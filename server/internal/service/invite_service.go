@@ -27,7 +27,7 @@ type VerifyInviteResult struct {
 func NewInviteService(repo store.Repo) *InviteService {
 	return &InviteService{
 		repo: repo,
-		ttl:  15 * time.Minute,
+		ttl:  24 * time.Hour,
 		now:  time.Now,
 	}
 }
@@ -79,7 +79,7 @@ func (s *InviteService) Verify(ctx context.Context, code string, sessionID *stri
 		case inviteUnused:
 			// 直接占用
 			if err := s.repo.UpdateInviteReservation(txCtx, inv.Code, sess, until); err != nil {
-				if err == store.ErrConflict {
+				if errors.Is(err, store.ErrConflict) {
 					return newError(ErrorCodeInviteReserved, "invite is reserved", nil)
 				}
 				return err
@@ -90,7 +90,7 @@ func (s *InviteService) Verify(ctx context.Context, code string, sessionID *stri
 			// 1) 自己占用且未过期 -> 续期
 			if inv.UsedBy != nil && *inv.UsedBy == sess && inv.ExpiresAt != nil && inv.ExpiresAt.After(now) {
 				if err := s.repo.UpdateInviteReservation(txCtx, inv.Code, sess, until); err != nil {
-					if err == store.ErrConflict {
+					if errors.Is(err, store.ErrConflict) {
 						return newError(ErrorCodeInviteReserved, "invite is reserved", nil)
 					}
 					return err
@@ -99,7 +99,7 @@ func (s *InviteService) Verify(ctx context.Context, code string, sessionID *stri
 				// 2) 他人占用已过期 -> 抢占
 				if inv.ExpiresAt != nil && inv.ExpiresAt.Before(now) {
 					if err := s.repo.UpdateInviteReservation(txCtx, inv.Code, sess, until); err != nil {
-						if err == store.ErrConflict {
+						if errors.Is(err, store.ErrConflict) {
 							return newError(ErrorCodeInviteReserved, "invite is reserved", nil)
 						}
 						return err

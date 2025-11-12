@@ -26,6 +26,7 @@ type Repo interface {
 	GetInviteForUpdate(ctx context.Context, code string) (*Invite, error)
 	UpdateInviteReservation(ctx context.Context, code string, sessionID string, until time.Time) error
 	RedeemInviteBySession(ctx context.Context, sessionID, redeemedBy string) (bool, error)
+	ListHobbies(ctx context.Context) ([]string, error)
 }
 
 type txKey struct{}

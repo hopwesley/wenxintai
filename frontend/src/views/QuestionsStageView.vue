@@ -1,6 +1,6 @@
 <!-- src/features/questions-stage/view/QuestionsStageView.vue -->
 <template>
-  <TestLayout>
+  <TestLayout :key="route.fullPath">
     <template #header>
       <StepIndicator :steps="stepItems" :current="currentStep" />
     </template>
@@ -49,6 +49,33 @@ import StepIndicator from '@/components/StepIndicator.vue'
 import '@/styles/questions-stage.css'
 import { useQuestionsStage } from '@/logic/useQuestionsStage'
 
+/**
+ * 关键：从路由里拿到 variant 和 step，用它们来决定当前是第几阶段
+ * 路由需要是：/test/:variant/step/:step   例如 /test/basic/step/2
+ */
+import { useRoute } from 'vue-router'
+import { isVariant } from '@/config/testSteps'
+
+const route = useRoute()
+
+// 1) 当前显示的是第几“步”（导航条上的 Step 数字）
+const stepNum = Number(route.params.step ?? '2') // params 是字符串，转成数字
+
+// 2) 变体（基础版/专业版），默认 basic；做个校验防止非法值
+const variantParam = String(route.params.variant ?? 'basic')
+const variant = isVariant(variantParam) ? variantParam : 'basic'
+
+/**
+ * 3) 步骤 → 阶段 映射规则（只决定给后端取哪一阶段的题）：
+ * - basic: Step2 => Stage1, Step3 => Stage2
+ * - pro:   Step2/3 => Stage1, Step4/5 => Stage2
+ * 如果超出预期步数，按上述规则自然落到 Stage2。
+ */
+const stageNum = (variant === 'basic')
+    ? (stepNum === 2 ? 1 : 2)
+    : ((stepNum === 2 || stepNum === 3) ? 1 : 2)
+
+// 4) 把动态算出来的阶段传给组合式逻辑（原来写死了 { stage: 1 }）
 const {
   // 状态
   loading, submitting, errorMessage,
@@ -59,5 +86,5 @@ const {
   scaleOptions, getAnswer, onSelect, handlePrev, handleNext,
   // 高亮
   highlightedId, setRef,
-} = useQuestionsStage({ stage: 1, pageSize: 5 }) // 这是“第二步（第一阶段）”；第三步传 { stage: 2 }
+} = useQuestionsStage({ stage: stageNum as 1 | 2, pageSize: 5 })
 </script>

@@ -2,7 +2,7 @@ import { computed, onMounted, ref, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTestSession } from '@/store/testSession'
 import { STEPS, type Variant, isVariant } from '@/config/testSteps'
-import { getQuestions, submitTestSession } from '@/api'
+import {getQuestions, redeemInvite, submitTestSession} from '@/api'
 
 // 与后端/Store 的真实定义保持一致：仅本文件内使用，避免编译冲突
 type ModeOption = '3+3' | '3+1+2'
@@ -68,7 +68,7 @@ export function useQuestionsStage(opts: UseQuestionsStageOptions) {
 
     async function loadQuestions() {
         // 基础资料缺失 → 回到 Step1
-        if (!state.mode || !state.hobby || state.age == null) {
+        if (!state.mode || !state.hobby || !state.grade) {
             await router.replace({ path: `/test/${variant.value}/step/1` })
             return
         }
@@ -94,7 +94,7 @@ export function useQuestionsStage(opts: UseQuestionsStageOptions) {
                     session_id: sessionId,
                     mode: (state.mode as ModeOption) ?? '3+3',
                     gender: '',
-                    grade: String(state.age ?? ''),
+                    grade: String(state.grade ?? ''),
                     hobby: state.hobby ?? '',
                 })
                 cached.value = normalize(resp)
@@ -192,7 +192,11 @@ export function useQuestionsStage(opts: UseQuestionsStageOptions) {
         submitting.value = true
         try {
             const payload = buildSubmitPayload()
-            await submitTestSession(payload as unknown as any) // 强制收口为后端需要的类型
+            await submitTestSession(payload as unknown as any)
+
+            const sid = getSessionId()
+            if (sid) await redeemInvite(sid)
+
             const n = nextStep(((STEPS as Record<Variant, readonly StepLite[]>)[variant.value] ?? []).length)
             await router.push({ path: `/test/${variant.value}/step/${n}` })
         } catch (e) {

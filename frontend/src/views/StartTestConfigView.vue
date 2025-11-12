@@ -1,72 +1,70 @@
 <template>
-  <main class="config-page">
-    <section class="config-card">
-      <header class="config-header">
-        <p class="config-badge">邀请码：{{ inviteCode }}</p>
-        <h1>完善测试设置</h1>
-        <p class="config-desc">请选择年级与测试模式，我们会基于您的选择生成专属题目。</p>
-      </header>
+  <TestLayout>
+    <template #header>
+      <StepIndicator :steps="stepItems" :current="1"/>
+    </template>
+    <main class="config-page">
+      <section class="config-card">
+        <header class="config-header">
+          <p class="config-badge">邀请码：{{ inviteCode }}</p>
+          <h1>完善测试设置</h1>
+          <p class="config-desc">请选择年级与测试模式，我们会基于您的选择生成专属题目。</p>
+        </header>
 
-      <form class="config-form" @submit.prevent="handleSubmit">
-        <label class="config-field">
-          <span>年级</span>
-          <input
-            v-model.trim="form.grade"
-            type="text"
-            placeholder="例如：高一"
-            :disabled="submitting"
-            required
-          />
-        </label>
+        <form class="config-form" @submit.prevent="handleSubmit">
+          <!-- 年级：下拉 -->
+          <label class="config-field">
+            <span>年级</span>
+            <select v-model="form.grade" :disabled="submitting" required>
+              <option value="">请选择年级</option>
+              <option value="初二">初二</option>
+              <option value="初三">初三</option>
+              <option value="高一">高一</option>
+            </select>
+          </label>
 
-        <fieldset class="config-field">
-          <legend>测试模式</legend>
-          <div class="mode-options">
-            <label v-for="option in modeOptions" :key="option.value" class="mode-option">
-              <input
-                type="radio"
-                name="mode"
-                :value="option.value"
-                v-model="form.mode"
-                :disabled="submitting"
-              />
-              <span>{{ option.label }}</span>
-            </label>
-          </div>
-        </fieldset>
+          <!-- 模式：下拉（必选） -->
+          <label class="config-field">
+            <span>测试模式</span>
+            <select v-model="form.mode" :disabled="submitting" required>
+              <option value="">请选择模式</option>
+              <option value="3+3">3+3 模式</option>
+              <option value="3+1+2">3+1+2 模式</option>
+            </select>
+          </label>
 
-        <label class="config-field">
-          <span>兴趣偏好（可选）</span>
-          <input
-            v-model.trim="form.interest"
-            type="text"
-            :list="hobbyListId"
-            placeholder="如：艺术、物理"
-            :disabled="submitting"
-          />
-          <datalist v-if="hobbies.length" :id="hobbyListId">
-            <option v-for="item in hobbies" :key="item" :value="item" />
-          </datalist>
-        </label>
+          <!-- 兴趣：下拉（可选，来自后端） -->
+          <label class="config-field">
+            <span>兴趣偏好（可选）</span>
+            <select v-model="form.interest" :disabled="submitting">
+              <option value="">请选择爱好</option>
+              <option v-for="h in hobbies" :key="h" :value="h">{{ h }}</option>
+            </select>
+          </label>
 
-        <p v-if="errorMessage" class="config-error">{{ errorMessage }}</p>
+          <p v-if="errorMessage" class="config-error">{{ errorMessage }}</p>
 
-        <button class="config-submit" type="submit" :disabled="!canSubmit || submitting">
-          <span v-if="submitting">创建中…</span>
-          <span v-else>下一步</span>
-        </button>
-      </form>
-    </section>
-  </main>
+          <button class="config-submit" type="submit" :disabled="!canSubmit || submitting">
+            <span v-if="submitting">创建中…</span>
+            <span v-else>下一步</span>
+          </button>
+        </form>
+      </section>
+    </main>
+  </TestLayout>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { createAssessment } from '@/api/assessment'
-import { getHobbies } from '@/api'
-import { useTestSession, type ModeOption } from '@/store/testSession'
-import { setAssessmentId, setQuestionSet, type StageKey } from '@/store/assessmentFlow'
+import TestLayout from '@/layouts/TestLayout.vue'
+import StepIndicator from '@/components/StepIndicator.vue'
+import { STEPS, type Variant } from '@/config/testSteps'
+import {useRouter} from 'vue-router'
+import {createAssessment} from '@/api/assessment'   // ← 修正导入路径
+import {useTestSession, type ModeOption} from '@/store/testSession'
+import {setAssessmentId, setQuestionSet, type StageKey} from '@/store/assessmentFlow'
+import {getHobbies} from "@/api";
+
 
 interface TestConfigForm {
   grade: string
@@ -75,16 +73,21 @@ interface TestConfigForm {
 }
 
 const router = useRouter()
-const { state, setTestConfig, setInviteCode } = useTestSession()
+const {state, setTestConfig, setInviteCode} = useTestSession()
+
+const stepItems = computed(() => {
+  const arr = (STEPS as Record<Variant, readonly { key: string; titleKey?: string }[]>)[state.variant] ?? []
+  return arr.map(it => ({ key: it.key, title: it.titleKey ?? it.key }))
+})
+
 
 const form = reactive<TestConfigForm>({
   grade: state.grade ?? '',
-  mode: state.mode ?? '',
+  mode: state.mode ?? '',         // 默认空，强制用户选择
   interest: state.interest ?? ''
 })
 
-const hobbies = ref<string[]>([])
-const hobbyListId = 'hobby-options'
+const hobbies = ref<string[]>([]) // ← 仅保留这一处定义
 const errorMessage = ref('')
 const submitting = ref(false)
 
@@ -98,23 +101,15 @@ const canSubmit = computed(() => {
   return Boolean(inviteCode.value && form.grade.trim() && selectedMode.value)
 })
 
-const modeOptions = [
-  { label: '3+3', value: '3+3' as ModeOption },
-  { label: '3+1+2', value: '3+1+2' as ModeOption }
-]
-
 onMounted(async () => {
   if (!inviteCode.value) {
     router.replace('/')
     return
   }
 
-  if (!form.mode) {
-    form.mode = '3+3'
-  }
-
+  // 不要给默认模式，保持必选
   try {
-    const list = await getHobbies()
+    const list = await getHobbies()      // 约定返回 string[]
     hobbies.value = Array.isArray(list) ? list.map(String) : []
   } catch (error) {
     console.warn('[StartTestConfig] failed to load hobbies', error)
@@ -127,14 +122,12 @@ async function handleSubmit() {
     router.replace('/')
     return
   }
-
   if (!selectedMode.value) {
     errorMessage.value = '请选择测试模式'
     return
   }
-
   if (!form.grade.trim()) {
-    errorMessage.value = '请输入年级'
+    errorMessage.value = '请选择年级'
     return
   }
 
@@ -155,24 +148,16 @@ async function handleSubmit() {
       throw new Error('未获取到题集信息')
     }
 
-    setTestConfig({
-      grade,
-      mode: selectedMode.value,
-      interest: interest || undefined
-    })
+    setTestConfig({grade, mode: selectedMode.value, interest: interest || undefined})
     setInviteCode(inviteCode.value)
 
     setAssessmentId(response.assessment_id)
     setQuestionSet(questionSetId, response.stage as StageKey, response.questions)
 
-    await router.push(`/questions/${encodeURIComponent(questionSetId)}`)
+    await router.push(`/test/${state.variant}/step/2`)
   } catch (error) {
     console.error('[StartTestConfig] failed to create assessment', error)
-    if (error instanceof Error) {
-      errorMessage.value = error.message
-    } else {
-      errorMessage.value = '创建评测失败，请稍后重试'
-    }
+    errorMessage.value = error instanceof Error ? error.message : '创建评测失败，请稍后重试'
   } finally {
     submitting.value = false
   }

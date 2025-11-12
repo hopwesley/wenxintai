@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/hopwesley/wenxintai/server/assessment"
 	"github.com/hopwesley/wenxintai/server/internal/service"
 	"github.com/hopwesley/wenxintai/server/internal/store"
 	"github.com/hopwesley/wenxintai/server/internal/stream"
@@ -30,6 +31,8 @@ func main() {
 	defer db.Close()
 
 	repo := store.NewSQLRepo(db)
+	loadHobbiesFromDB(context.Background(), repo)
+
 	broker := stream.NewBroker(100, 2*time.Minute)
 	defer broker.Stop()
 	svc := service.NewSvc(repo, broker)
@@ -45,6 +48,7 @@ func main() {
 	mux.HandleFunc("/api/invites/verify", api.handleInviteVerify)
 	mux.HandleFunc("/api/invites/redeem", api.handleInviteRedeem)
 	mux.HandleFunc("/ws/assessments/", wsHandler)
+	mux.HandleFunc("/api/hobbies", api.handleHobbies) // ← 新增
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
@@ -81,6 +85,20 @@ func main() {
 	log.Println("server stopped")
 }
 
+func loadHobbiesFromDB(ctx context.Context, repo store.Repo) {
+	names, err := repo.ListHobbies(ctx)
+	if err != nil {
+		log.Printf("load hobbies from DB failed: %v; fallback to built-in (%d)", err, len(assessment.StudentHobbies))
+		return
+	}
+	if len(names) == 0 {
+		log.Printf("no hobbies found in DB; using built-in defaults (%d)", len(assessment.StudentHobbies))
+		return
+	}
+	assessment.StudentHobbies = names
+	log.Printf("loaded %d hobbies from DB", len(names))
+}
+
 type apiHandler struct {
 	svc        *service.Svc
 	invites    *service.InviteService
@@ -102,6 +120,17 @@ type createAssessmentResponse struct {
 	QuestionSetID string          `json:"question_set_id"`
 	Stage         string          `json:"stage"`
 	Questions     json.RawMessage `json:"questions"`
+}
+
+// server/main.go 内，与其它 apiHandler 方法同级新增
+func (h *apiHandler) handleHobbies(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "method not allowed")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"hobbies": assessment.StudentHobbies,
+	})
 }
 
 func (h *apiHandler) handleAssessments(w http.ResponseWriter, r *http.Request) {

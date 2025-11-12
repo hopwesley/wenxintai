@@ -100,15 +100,6 @@ func (s *Svc) CreateAssessment(ctx context.Context, mode string, inviteCode, wec
 	}
 
 	err = s.withTx(ctx, func(txCtx context.Context, tx *sql.Tx) error {
-		if inviteCode != nil {
-			ok, err := s.repo.RedeemInviteByCode(txCtx, *inviteCode, "by_assessment")
-			if err != nil {
-				return err
-			}
-			if !ok {
-				return newError(ErrorCodeConflict, "invite cannot be redeemed", nil)
-			}
-		}
 		if err := s.repo.CreateAssessment(txCtx, assessment); err != nil {
 			return err
 		}

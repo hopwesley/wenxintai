@@ -23,15 +23,14 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/ReportPage.vue')
     },
     {
+        path: '/test/:variant/step/:step(\\d+)',
+        name: 'test-stage',
+        component: () => import('@/views/QuestionsStageView.vue'),
+    },
+    {
         path: '/:pathMatch(.*)*',
         redirect: '/'
     },
-    // {
-    //     path: '/basic-info/:assessmentId',
-    //     name: 'basic-info',
-    //     component: () => import('@/views/BasicInfo.vue'),
-    // }
-
 ]
 
 export const router = createRouter({

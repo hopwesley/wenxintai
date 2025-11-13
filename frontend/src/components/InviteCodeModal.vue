@@ -220,13 +220,14 @@ async function handleConfirm() {
 }
 
 .btn-primary {
-  background: linear-gradient(90deg, #7aa2ff, #5b7cff);
+  background-color: var(--brand);
   color: #fff;
   box-shadow: 0 12px 28px rgba(91, 124, 255, 0.28);
 }
 
 .btn-primary:not(:disabled):hover {
   transform: translateY(-1px);
+  background-color: var(--brand-dark);
 }
 
 .btn-secondary {

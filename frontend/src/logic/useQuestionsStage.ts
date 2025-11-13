@@ -63,7 +63,6 @@ export function useQuestionsStage(opts: UseQuestionsStageOptions) {
 
     const cached = ref<StageQuestions | null>(null)
 
-    onMounted(() => { void loadQuestions() })
     watchEffect(() => { void loadQuestions() })
 
     async function loadQuestions() {
@@ -77,6 +76,8 @@ export function useQuestionsStage(opts: UseQuestionsStageOptions) {
             await router.replace({ path: `/test/${variant.value}/step/2` })
             return
         }
+
+        if (loading.value) return;
 
         loading.value = true
         errorMessage.value = ''

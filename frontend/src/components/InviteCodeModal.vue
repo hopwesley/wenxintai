@@ -17,16 +17,8 @@
               :disabled="loading"
               autocomplete="one-time-code"
           />
-          <p class="error-message" role="alert">{{ errorMessage || '\u00A0' }}</p>
+          <p :class="['error-message', { visible: !!errorMessage }]" role="alert">{{ errorMessage }}</p>
           <div class="actions">
-            <button
-                type="button"
-                class="btn btn-secondary"
-                @click="handleCancel"
-                :disabled="loading"
-            >
-              取消
-            </button>
             <button
                 type="submit"
                 class="btn btn-primary"
@@ -145,18 +137,19 @@ async function handleConfirm() {
   border-radius: 18px;
   padding: 28px 26px 32px;
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
-  text-align: left;
+  text-align: center;
 }
 
 .title {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   font-size: 20px;
+  line-height: 20px;
   font-weight: 600;
   color: #0f172a;
 }
 
 .description {
-  margin: 0 0 18px;
+  margin: 0 0 6px;
   font-size: 14px;
   color: #475569;
   line-height: 1.6;
@@ -189,15 +182,19 @@ async function handleConfirm() {
 }
 
 .error-message {
-  min-height: 18px;
-  margin: -4px 0 0;
+  text-align: left;
   font-size: 13px;
+  line-height: 13px;
   color: #ef4444;
+  display: none;
 }
 
+.error-message.visible {
+  display: block;
+}
 .actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 10px;
   margin-top: 6px;
 }

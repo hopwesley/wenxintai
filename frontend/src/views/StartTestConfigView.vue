@@ -60,9 +60,7 @@ import TestLayout from '@/layouts/TestLayout.vue'
 import StepIndicator from '@/components/StepIndicator.vue'
 import { STEPS, type Variant } from '@/config/testSteps'
 import {useRouter} from 'vue-router'
-import {createAssessment} from '@/api/assessment'   // ← 修正导入路径
 import {useTestSession, type ModeOption} from '@/store/testSession'
-import {setAssessmentId, setQuestionSet, type StageKey} from '@/store/assessmentFlow'
 import {getHobbies} from "@/api";
 
 
@@ -119,7 +117,7 @@ onMounted(async () => {
 
 async function handleSubmit() {
   if (!inviteCode.value) {
-    router.replace('/')
+    await router.replace('/')
     return
   }
   if (!selectedMode.value) {
@@ -136,36 +134,26 @@ async function handleSubmit() {
 
   try {
     const grade = form.grade.trim()
-    const interest = form.hobby.trim()
-    const response = await createAssessment({
-      invite_code: inviteCode.value,
-      mode: selectedMode.value,
-      grade
+    const hobby = form.hobby.trim()
+
+    // 只保存测试配置到 testSession
+    setTestConfig({
+      grade,
+      mode: selectedMode.value as ModeOption,
+      hobby: hobby || undefined,
     })
-
-    const questionSetId = response.active_question_set_id ?? response.question_set_id
-    if (!questionSetId) {
-      errorMessage.value = '未获取到题集信息'
-      return
-    }
-
-    setTestConfig({grade, mode: selectedMode.value, hobby: interest || undefined})
     setInviteCode(inviteCode.value)
 
-    setAssessmentId(response.assessment_id)
-    setQuestionSet(questionSetId, response.stage as StageKey, response.questions)
-
+    // 直接进入 Step2（题目页）
     await router.push({
       name: 'test-stage',
-      params: { variant: state.variant || 'basic', step: 2 }
+      params: { variant: state.variant || 'basic', step: 2 },
     })
-  } catch (error) {
-    console.error('[StartTestConfig] failed to create assessment', error)
-    errorMessage.value = error instanceof Error ? error.message : '创建评测失败，请稍后重试'
   } finally {
     submitting.value = false
   }
 }
+
 </script>
 
 <style scoped>

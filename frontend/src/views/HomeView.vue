@@ -1,12 +1,9 @@
 <template>
   <div class="home">
-    <!-- 顶部横幅 / Hero -->
     <section class="hero">
-      <!-- 顶部导航条：左 logo 右 登录 -->
       <div class="site-header">
         <div class="header-container">
           <div class="logo-dot" aria-label="问心台">
-            <!-- 用图片当背景，或把这个 div 换成 <img src="/img/logo.png"> -->
           </div>
           <button class="btn btn-ghost login-btn" @click="openLogin">登录</button>
         </div>
@@ -24,8 +21,6 @@
         </div>
       </div>
     </section>
-
-    <!-- 方案卡片 / Plans（可切换） -->
     <section class="plans container">
       <button
           class="plan-card plan-a"
@@ -93,7 +88,6 @@
         </div>
         <p class="plan-tip">需登录</p>
       </button>
-
       <button
           class="plan-card plan-pro"
           :class="{ 'is-active': activePlan === 'pro', disabled: true }"
@@ -161,7 +155,6 @@
         </div>
         <p class="plan-tip">需邀请</p>
       </button>
-
       <button
           class="plan-card plan-school"
           :class="{ 'is-active': activePlan === 'school', disabled: true }"
@@ -230,11 +223,9 @@
         <p class="plan-tip">需签约</p>
       </button>
     </section>
-
-    <!-- 说明模块 / Feature strip（随选择切换） -->
     <section class="summary container">
       <div class="summary-inner">
-        <h3>公益版 - 详情介绍</h3>
+        <h3>基础版 - 详情介绍</h3>
         <p>RIASE与ASC兼顾文理协同招生范围</p>
         <div class="summary-list">
           <div class="summary-item" v-for="item in summaryItems" :key="item.title">
@@ -265,7 +256,6 @@ import { useRouter } from 'vue-router'
 import { useTestSession } from '@/store/testSession'
 
 const showLogin = ref(false)
-
 const inviteModalOpen = ref(false)
 const router = useRouter()
 const { setInviteCode } = useTestSession()
@@ -285,11 +275,8 @@ function handleInviteSuccess(payload: { code: string; sessionId?: string }) {
 }
 
 type PlanKey = 'public' | 'pro' | 'school'
-
-/** 默认选中“基础版” */
 const activePlan = ref<PlanKey>('public')
 
-/** 三个版本对应的说明文案（你可以随时改成自己的最终文案） */
 const PLAN_DETAILS: Record<PlanKey, { items: { title: string; text: string }[] }> = {
   public: {
     items: [

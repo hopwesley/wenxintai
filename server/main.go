@@ -352,8 +352,50 @@ func (h *apiHandler) handleAssessmentDetail(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (h *apiHandler) creatingQuestionFromAI(w http.ResponseWriter, r *http.Request) {
+type createQuestionsRequest struct {
+	SessionID string `json:"session_id"`
+	Mode      string `json:"mode"`
+	Grade     string `json:"grade"`
+	Hobby     string `json:"hobby"`
+}
 
+type createQuestionsResponse struct {
+	Status       string `json:"status"`        // "processing" / "ready" 等
+	AssessmentID string `json:"assessment_id"` // 用于后续 SSE 订阅
+	EventsURL    string `json:"events_url"`    // 前端直接拿来 new EventSource
+}
+
+func (h *apiHandler) creatingQuestionFromAI(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "method not allowed")
+		return
+	}
+
+	var req createQuestionsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeServiceError(w, newError(service.ErrorCodeBadRequest, "invalid request body", err))
+		return
+	}
+
+	err := h.svc.StartQuestionGeneration(
+		r.Context(),
+		req.SessionID,
+		req.Mode,
+		req.Grade,
+		req.Hobby,
+	)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+
+	resp := createQuestionsResponse{
+		Status:       "processing",
+		AssessmentID: req.SessionID,
+		EventsURL:    "/api/assessments/" + req.SessionID + "/events",
+	}
+	// 可以用 200 或者 202，这里更语义化一点用 202 Accepted
+	writeJSON(w, http.StatusAccepted, resp)
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload interface{}) {

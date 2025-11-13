@@ -1,4 +1,4 @@
-import { computed, onMounted, ref, watchEffect } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTestSession } from '@/store/testSession'
 import { STEPS, type Variant, isVariant } from '@/config/testSteps'
@@ -94,7 +94,6 @@ export function useQuestionsStage(opts: UseQuestionsStageOptions) {
                 const resp = await getQuestions({
                     session_id: sessionId,
                     mode: (state.mode as ModeOption) ?? '3+3',
-                    gender: '',
                     grade: String(state.grade ?? ''),
                     hobby: state.hobby ?? '',
                 })

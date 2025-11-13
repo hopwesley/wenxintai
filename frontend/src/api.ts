@@ -68,10 +68,8 @@ export async function getHobbies(): Promise<string[]> {
 export interface QuestionsRequest {
   session_id?: string
   mode: string
-  gender: string
   grade: string
   hobby: string
-  api_key?: string
 }
 
 export async function getQuestions(payload: QuestionsRequest) {

@@ -89,11 +89,6 @@ h3,p{
     color: var(--brand);
     font-size: 16px;
 }
-.hero-visual{
-    display:flex;
-    justify-content:center
-}
-.hero-visual img{width:100%; max-width:420px; border-radius:22px; box-shadow: 0 10px 40px rgba(0,0,0,.35); background:#0b1220}
 
 /* Plans */
 .plans{display:grid; grid-template-columns: repeat(3,1fr); gap:22px; margin:28px auto}

@@ -4,68 +4,50 @@ interface RequestOptions {
   headers?: Record<string, string>
 }
 
-async function parseResponseBody(resp: Response) {
-  if (resp.status === 204) {
-    return null
-  }
-  const contentType = resp.headers.get('Content-Type') ?? ''
-  if (contentType.includes('application/json')) {
-    try {
-      return await resp.json()
-    } catch (error) {
-      console.warn('[api] failed to parse JSON response', error)
-      return null
-    }
-  }
-  try {
-    return await resp.text()
-  } catch (error) {
-    console.warn('[api] failed to read text response', error)
-    return null
-  }
-}
+type ApiError = Error & { code?: string; body?: any }
 
 async function request<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
-  const init: RequestInit = {
-    method: options.method ?? 'GET',
-    headers: { ...options.headers },
-    credentials: 'include'
-  }
-
-  if (options.body !== undefined) {
-    init.body = JSON.stringify(options.body)
-    init.headers = {
-      'Content-Type': 'application/json',
-      ...init.headers
+    const init: RequestInit = {
+        method: options.method ?? 'GET',
+        headers: { ...options.headers },
+        credentials: 'include',
     }
-  }
 
-  const resp = await fetch(path, init)
-
-  if (!resp.ok) {
-    const data = await parseResponseBody(resp)
-    let message = `请求失败 (${resp.status})`
-    let code = ''
-    if (data && typeof data === 'object') {
-      const maybeObj = data as Record<string, unknown>
-      if (typeof maybeObj.error === 'string' && maybeObj.error.trim()) {
-        message = maybeObj.error
-      }
-      if (typeof maybeObj.code === 'string' && maybeObj.code.trim()) {
-        code = maybeObj.code
-      }
-    } else if (typeof data === 'string' && data.trim()) {
-      message = data
+    if (options.body !== undefined) {
+        init.body = JSON.stringify(options.body)
+        init.headers = { 'Content-Type': 'application/json', ...init.headers }
     }
-    const error = new Error(message)
+
+    const resp = await fetch(path, init)
+
+    if (resp.ok) {
+        try {
+            return (await resp.json()) as T
+        } catch {
+            return undefined as T
+        }
+    }
+
+    let body: any = null
+    try {
+        body = await resp.json()
+    } catch {
+        body = null
+    }
+
+    const code = (body?.code && String(body.code)) || ''
+    const message = (body?.message && String(body.message)) || '请求失败，请稍后重试'
+
+    // 只对外暴露 code + message（UI 显示 message，必要时可读 err.code）
+    const err = new Error(message) as ApiError
     if (code) {
-      error.name = code
+        err.name = code
+        err.code = code
     }
-    ;(error as Error & { status?: number }).status = resp.status
-    throw error
-  }
+    err.body = body // 便于上层需要时做额外处理/埋点
 
-  return (await parseResponseBody(resp)) as T
+    console.debug('[API ERROR]', resp.status, path, body)
+    throw err
 }
 
 export interface LoginPayload {

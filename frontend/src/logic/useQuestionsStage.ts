@@ -68,7 +68,7 @@ export function useQuestionsStage(opts: UseQuestionsStageOptions) {
 
     async function loadQuestions() {
         // 基础资料缺失 → 回到 Step1
-        if (!state.mode || !state.hobby || !state.grade) {
+        if (!state.mode || !state.grade) {
             await router.replace({ path: `/test/${variant.value}/step/1` })
             return
         }
@@ -245,7 +245,7 @@ export function useQuestionsStage(opts: UseQuestionsStageOptions) {
         return {
             session_id,
             variant: variantValue,
-            age: state.age ?? undefined,
+            grade: state.grade ?? undefined,
             mode: modeValue,
             hobby: state.hobby ?? '',
             riasec_answers,

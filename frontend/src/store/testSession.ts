@@ -12,11 +12,9 @@ export interface TestSession {
   sessionId?: string
   variant: Variant
   currentStep: number
-  age?: number
   mode?: ModeOption
   hobby?: string
   grade?: string
-  interest?: string
   inviteCode?: string
   answersStage1: Record<string, AnswerValue>
   answersStage2: Record<string, AnswerValue>
@@ -34,11 +32,9 @@ const defaultSession: TestSession = {
   sessionId: readPersistedSessionId(),
   variant: 'basic',
   currentStep: 1,
-  age: undefined,
   mode: undefined,
   hobby: undefined,
   grade: undefined,
-  interest: undefined,
   inviteCode: undefined,
   answersStage1: {},
   answersStage2: {},
@@ -94,16 +90,17 @@ watch(
   { deep: true }
 )
 
-watch(
-  () => state.sessionId,
-  (value) => {
-    if (typeof window === 'undefined') return
-    if (typeof value === 'string' && value.trim()) {
-      window.localStorage.setItem(SESSION_ID_KEY, value)
-    } else {
-      window.localStorage.removeItem(SESSION_ID_KEY)
+watch<string | undefined>(
+    () => state.sessionId,
+    (value) => {
+        if (typeof window === 'undefined') return
+        const v = (value ?? '').trim()
+        if (v) {
+            window.localStorage.setItem(SESSION_ID_KEY, v)
+        } else {
+            window.localStorage.removeItem(SESSION_ID_KEY)
+        }
     }
-  }
 )
 
 export function useTestSession() {
@@ -146,27 +143,20 @@ export function useTestSession() {
     state.currentStep = 1
     state.answersStage1 = {}
     state.answersStage2 = {}
-    state.age = undefined
     state.mode = undefined
     state.hobby = undefined
     state.grade = undefined
-    state.interest = undefined
   }
 
   function setCurrentStep(step: number) {
     state.currentStep = step
   }
 
-  function setBasicInfo(payload: { age: number; mode: ModeOption; hobby: string }) {
-    state.age = payload.age
-    state.mode = payload.mode
-    state.hobby = payload.hobby
-  }
 
-  function setTestConfig(payload: { grade: string; mode: ModeOption; interest?: string }) {
+  function setTestConfig(payload: { grade: string; mode: ModeOption; hobby?: string }) {
     state.grade = payload.grade
     state.mode = payload.mode
-    state.interest = payload.interest
+    state.hobby = payload.hobby
   }
 
   function setInviteCode(code: string | null | undefined) {
@@ -215,11 +205,9 @@ export function useTestSession() {
     return {
       sessionId: state.sessionId,
       variant: state.variant,
-      age: state.age,
       mode: state.mode,
       hobby: state.hobby,
       grade: state.grade,
-      interest: state.interest,
       inviteCode: state.inviteCode,
       answersStage1: { ...state.answersStage1 },
       answersStage2: { ...state.answersStage2 },
@@ -233,7 +221,6 @@ export function useTestSession() {
     setSessionId,
     setVariant,
     setCurrentStep,
-    setBasicInfo,
     setTestConfig,
     setInviteCode,
     getInviteCode,

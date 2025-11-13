@@ -185,7 +185,7 @@ async function handleConfirm() {
   text-align: left;
   font-size: 13px;
   line-height: 13px;
-  color: #ef4444;
+  color: #F03B3B;
   display: none;
 }
 
@@ -214,15 +214,17 @@ async function handleConfirm() {
 
 .btn:disabled {
   cursor: not-allowed;
-  opacity: 0.7;
-  transform: none;
+  background: #e5e7eb;
+  color: #9ca3af;
   box-shadow: none;
 }
 
 .btn-primary {
   background-color: var(--brand);
   color: #fff;
-  box-shadow: 0 12px 28px rgba(91, 124, 255, 0.28);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 32px;
 }
 
 .btn-primary:not(:disabled):hover {

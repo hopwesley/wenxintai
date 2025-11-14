@@ -138,6 +138,8 @@ async function handleConfirm() {
   padding: 28px 26px 32px;
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
   text-align: center;
+  --brand: #5A60EA;
+  --brand-dark: #484DBB;
 }
 
 .title {

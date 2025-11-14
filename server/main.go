@@ -550,16 +550,16 @@ func buildTestRoutes(testType string) []testRouteDef {
 	case "basic":
 		// 基础版：RIASEC + ASC
 		middle = []testRouteDef{
-			{Router: "riasec", Desc: "兴趣测试"},
-			{Router: "asc", Desc: "能力测试"},
+			{Router: "riasec", Desc: "RIASEC"},
+			{Router: "asc", Desc: "ASC"},
 		}
 	case "pro":
 		// 举例：专业版增加更多量表，后面可以按实际再调整
 		middle = []testRouteDef{
-			{Router: "riasec", Desc: "兴趣测试"},
-			{Router: "asc", Desc: "能力测试"},
-			{Router: "big5", Desc: "人格测试"},
-			{Router: "motivation", Desc: "学习动机测试"},
+			{Router: "riasec", Desc: "RIASEC"},
+			{Router: "asc", Desc: "ASC"},
+			{Router: "big5", Desc: "OCEAN"},
+			{Router: "motivation", Desc: "MOTIVATION"},
 		}
 	default:
 		// 默认：至少给出基础流程，避免前端拿不到任何路由

@@ -491,9 +491,9 @@ import InviteCodeModal from '@/components/InviteCodeModal.vue'
 import {useRouter} from 'vue-router'
 import {useTestSession} from '@/store/testSession'
 import {fetchTestFlow, type TestRouteDef, type NextRouteInfo} from '@/api'
-import { useAlert } from '@/logic/useAlert'
+import {useAlert} from '@/logic/useAlert'
 
-const { showAlert } = useAlert()
+const {showAlert} = useAlert()
 const showLogin = ref(false)
 const inviteModalOpen = ref(false)
 const router = useRouter()

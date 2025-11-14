@@ -486,7 +486,6 @@
 
 <script setup lang="ts">
 import {ref} from 'vue'
-import '@/styles/home.css'
 import WeChatLoginDialog from '@/components/WeChatLoginDialog.vue'
 import InviteCodeModal from '@/components/InviteCodeModal.vue'
 import {useRouter} from 'vue-router'
@@ -571,5 +570,5 @@ async function handleInviteSuccess(payload: { code: string; sessionId?: string }
 
 type PlanKey = 'public' | 'pro' | 'school'
 const activePlan = ref<PlanKey>('public')
-
 </script>
+<style scoped src="@/styles/home.css"></style>

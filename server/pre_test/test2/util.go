@@ -2,13 +2,17 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 
 	"github.com/hopwesley/wenxintai/server/core"
+	"github.com/sashabaranov/go-openai"
 )
 
 type StreamResponse struct {
@@ -94,4 +98,55 @@ func callDeepSeek(apiKey string, reqBody interface{}) (string, error) {
 	}
 
 	return fullContent.String(), nil
+}
+
+func CallQwen(apiKey, userPrompt, systemPrompt string) {
+	config := openai.DefaultConfig(apiKey)
+	config.BaseURL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+	client := openai.NewClientWithConfig(config)
+
+	stream, err := client.CreateChatCompletionStream(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: "qwen-plus",
+			Messages: []openai.ChatCompletionMessage{
+				{Role: openai.ChatMessageRoleSystem, Content: systemPrompt},
+				{Role: openai.ChatMessageRoleUser, Content: userPrompt},
+			},
+			Stream: true,
+		},
+	)
+	if err != nil {
+		log.Fatal("Failed to create stream:", err)
+	}
+	defer stream.Close()
+
+	var fullContent string // 用于累积完整回复
+
+	for {
+		resp, err := stream.Recv()
+		if errors.Is(err, io.EOF) {
+			break // 流正常结束
+		}
+		if err != nil {
+			log.Fatal("Error receiving from stream:", err)
+		}
+
+		// 可选：输出每个 chunk 的 JSON（按你之前需求）
+
+		// 拼接完整内容
+		if len(resp.Choices) > 0 {
+			delta := resp.Choices[0].Delta
+			if delta.Content != "" {
+				fullContent += delta.Content
+				fmt.Print(delta.Content)
+			}
+		}
+	}
+
+	// 流结束后，打印完整内容
+	fmt.Println("\n--- Full Response ---")
+	fmt.Println(fullContent)
+
+	// 如果你最终需要返回这个完整内容，可以 return 它（需修改函数签名）
 }

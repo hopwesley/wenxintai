@@ -1,4 +1,5 @@
-:root{
+.home {
+    /* 原来在 :root 上的变量，挪到 .home 上，只影响这个页面 */
     --bg-hero:#0e1a2b;
     --bg-card:#ffffff;
     --bg-muted:#f7f8fb;
@@ -9,15 +10,12 @@
     --ring: rgba(91,124,255,.25);
     --shadow: 0 6px 28px rgba(15,23,42,.08);
     --radius: 20px;
+
+    /* 原来 body 上的文字样式，也改挂到 .home 上 */
+    color:var(--text-primary);
+    font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji';
 }
 
-*{box-sizing:border-box}
-html,body,#app{height:100%}
-body{
-    margin:0;
-    color:var(--text-primary);
-    font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji'
-}
 h3,p{
     margin: 0;
 }

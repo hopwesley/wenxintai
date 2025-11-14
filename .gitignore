@@ -37,4 +37,5 @@ go.work.sum
 /frontend/dist/
 /frontend/node_modules/
 /release/
-/config/
+/server/config/
+/server/config/

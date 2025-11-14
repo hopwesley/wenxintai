@@ -42,18 +42,21 @@ func main() {
 	api := newAPIHandler(svc, inviteSvc, sseHandler)
 
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	})
+
+	mux.HandleFunc("/api/hobbies", api.handleHobbies)
+	mux.HandleFunc("/api/invites/verify", api.handleInviteVerify)
+	mux.HandleFunc("/api/test_flow", api.handleTestFlow)
+
 	mux.HandleFunc("/api/assessments", api.handleAssessments)
 	mux.HandleFunc("/api/assessments/", api.handleAssessmentDetail)
 	mux.HandleFunc("/api/questions", api.creatingQuestionFromAI)
 	mux.HandleFunc("/api/question_sets/", api.handleQuestionSetAnswers)
-	mux.HandleFunc("/api/invites/verify", api.handleInviteVerify)
 	mux.HandleFunc("/api/invites/redeem", api.handleInviteRedeem)
 	mux.HandleFunc("/ws/assessments/", wsHandler)
-	mux.HandleFunc("/api/hobbies", api.handleHobbies) // ← 新增
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
-	})
-	mux.HandleFunc("/api/test_flow", api.handleTestFlow)
 
 	if stat, err := os.Stat(cfg.Server.StaticDir); err == nil && stat.IsDir() {
 		fileServer := http.FileServer(http.Dir(cfg.Server.StaticDir))

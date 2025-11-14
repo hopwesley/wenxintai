@@ -22,11 +22,8 @@ const routes: RouteRecordRaw[] = [
         name: 'assessment-report',
         component: () => import('@/views/ReportPage.vue')
     },
-    {
-        path: '/test/:variant/step/:step(\\d+)',
-        name: 'test-stage',
-        component: () => import('@/views/QuestionsStageView.vue'),
-    },
+    {path: '/test/:typ/:scale', name: 'test-scale', component: import('@/views/QuestionsStageView.vue')}
+    ,
     {
         path: '/:pathMatch(.*)*',
         redirect: '/'

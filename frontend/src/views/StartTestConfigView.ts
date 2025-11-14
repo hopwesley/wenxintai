@@ -111,9 +111,7 @@ export function useStartTestConfig() {
                 mode: selectedMode.value as ModeOption,
                 hobby: hobby || undefined,
             })
-            setInviteCode(inviteCode.value)
 
-            // 从 testRoutes 中找到 basic-info 的下一步
             const routes = state.testRoutes ?? []
             const idx = routes.findIndex((r) => r.router === 'basic-info')
             if (idx < 0 || idx === routes.length - 1) {

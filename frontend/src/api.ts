@@ -133,3 +133,39 @@ export async function redeemInvite(sessionId?: string) {
     body: sessionId ? { session_id: sessionId } : {}
   })
 }
+
+
+
+// 单个测试步骤
+export interface TestRouteDef {
+    router: string; // 英文路由名，例如 'basic-info' | 'riasec' | 'asc' | 'report'
+    desc: string;   // 中文描述，例如 '基本信息' | '兴趣测试' | '能力测试' | '测试报告'
+}
+
+
+// 请求参数：根据 test_type + 身份，获取测试计划和下一步
+export interface FetchTestFlowRequest {
+    test_type: string;
+    invite_code?: string;
+    wechat_openid?: string;
+}
+
+// 下一步路由信息
+export interface NextRouteInfo {
+    router: string;
+    needAI: boolean;
+}
+
+// 响应结构
+export interface FetchTestFlowResponse {
+    test_type: string;
+    routes: TestRouteDef[];
+    nextRoute?: NextRouteInfo | null;
+}
+
+export async function fetchTestFlow(payload: FetchTestFlowRequest) {
+    return request<FetchTestFlowResponse>('/api/test_flow', {
+        method: 'POST',
+        body: payload,
+    });
+}

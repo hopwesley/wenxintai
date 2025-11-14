@@ -8,8 +8,8 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/HomeView.vue'),
     },
     {
-        path: '/test/basic/step/1',
-        name: 'test-config',
+        path: '/test/:typ/basic-info',
+        name: 'test-basic-info',
         component: () => import('@/views/StartTestConfigView.vue'),
     },
     {

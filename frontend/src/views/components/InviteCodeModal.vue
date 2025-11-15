@@ -36,13 +36,15 @@
 
 <script setup lang="ts">
 import {computed, nextTick, ref, watch} from 'vue'
-import {verifyInvite} from '@/controller/InviteCode'
+import {verifyInvite, VerifyInviteResponse} from '@/controller/InviteCode'
 import {useTestSession} from '@/store/testSession'
+
+const {setInviteCode} = useTestSession()
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
-  (e: 'success', payload: { code: string; sessionId?: string }): void
+  (e: 'success', payload: VerifyInviteResponse): void
 }>()
 
 const code = ref('')
@@ -51,8 +53,6 @@ const errorMessage = ref('')
 const inputRef = ref<HTMLInputElement | null>(null)
 
 const trimmedCode = computed(() => code.value.trim())
-
-const {getSessionId, setSessionId} = useTestSession()
 
 watch(
     () => props.open,
@@ -91,24 +91,24 @@ async function handleConfirm() {
   errorMessage.value = ''
 
   try {
-    const sessionId = getSessionId() ?? undefined
-    const response = await verifyInvite(trimmedCode.value, sessionId)
-    let resolvedSessionId = sessionId
-    if (response) {
-      resolvedSessionId = response.session_id
-      setSessionId(response.session_id)
-    } else if (sessionId) {
-      setSessionId(sessionId)
+    const res = await verifyInvite(trimmedCode.value)
+    if (!res.ok) {
+      errorMessage.value = res.reason
+      return
     }
+
+    setInviteCode(trimmedCode.value)
     emit('update:open', false)
-    emit('success', {
-      code: trimmedCode.value,
-      sessionId: resolvedSessionId ?? undefined
-    })
+    emit('success', res)
+
   } catch (error) {
     console.error('[InviteCodeModal] verify failed', error)
     if (error instanceof Error) {
-      errorMessage.value = error.message
+      if (error.message === 'Failed to fetch') {
+        errorMessage.value = '网络异常，请检查网络后重试'
+      } else {
+        errorMessage.value = error.message
+      }
     } else {
       errorMessage.value = '验证失败，请稍后再试'
     }

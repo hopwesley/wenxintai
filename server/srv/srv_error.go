@@ -25,11 +25,11 @@ type ApiErr struct {
 }
 
 var (
-	ApiMethodInvalid = NewError(http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "method not allowed", nil)
+	ApiMethodInvalid = NewApiError(http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "method not allowed", nil)
 )
 
 func ApiInvalidReq(msg string, err error) *ApiErr {
-	return NewError(http.StatusBadRequest, ErrorCodeBadRequest, msg, err)
+	return NewApiError(http.StatusBadRequest, ErrorCodeBadRequest, msg, err)
 }
 
 func (e *ApiErr) Error() string {
@@ -46,7 +46,7 @@ func (e *ApiErr) Unwrap() error {
 	return e.Err
 }
 
-func NewError(status int, code ErrorCode, message string, err error) *ApiErr {
+func NewApiError(status int, code ErrorCode, message string, err error) *ApiErr {
 	if message == "" {
 		message = string(code)
 		if err != nil {

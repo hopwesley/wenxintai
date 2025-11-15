@@ -35,7 +35,7 @@
         </div>
       </div>
     </section>
-    <section class="plans container">
+    <section class="plans container" id="section-start-test">
       <button
           class="plan-card plan-a"
           :class="{ 'is-active': activePlan === 'public' }"
@@ -471,14 +471,6 @@
         域世安（北京）科技有限公司 | 京ICP备2025150532号-1
       </div>
     </section>
-
-
-    <section>
-      <div
-          style="margin: 0 auto;color: #b0b1b3; text-align: center;padding: 16px;border-top: 1px solid #ECECEE; font-size: 14px">
-        域世安（北京）科技有限公司 | 京ICP备2025150532号-1
-      </div>
-    </section>
     <InviteCodeModal v-model:open="inviteModalOpen" @success="handleInviteSuccess"/>
   </div>
 </template>
@@ -486,87 +478,22 @@
 <script setup lang="ts">
 import {ref} from 'vue'
 import InviteCodeModal from '@/views/components/InviteCodeModal.vue'
-import {useRouter} from 'vue-router'
-import {useTestSession} from '@/store/testSession'
-import {fetchTestFlow, type TestRouteDef, type NextRouteInfo} from '@/api'
-import {useAlert} from '@/logic/useAlert'
-import { useAuthStore } from '@/store/auth'
+import { useHomeView } from '@/controller/HomeView'
 
-const {showAlert} = useAlert()
-const inviteModalOpen = ref(false)
-const router = useRouter()
-const authStore = useAuthStore()
-const {state, setInviteCode, setTestType, setTestRoutes} = useTestSession()
-// 顶部导航 tab 配置
-const tabDefs = [
-  { key: 'start', label: '开始测试', targetId: 'section-start-test' },
-  { key: 'intro', label: '产品介绍', targetId: 'section-product-intro' },
-  { key: 'letter', label: '致家长的一封信', targetId: 'section-parent-letter' },
-] as const
-
-type TabKey = (typeof tabDefs)[number]['key']
-const activeTab = ref<TabKey>('start')
-
-// “致家长 / 致学生” tab
 type LetterTabKey = 'parent' | 'student'
 const activeLetterTab = ref<LetterTabKey>('parent')
 
-function handleTabClick(tab: typeof tabDefs[number]) {
-  activeTab.value = tab.key
+const {
+  activePlan,
+  inviteModalOpen,
+  activeTab,
+  tabDefs,
+  openLogin,
+  startTest,
+  handleTabClick,
+  handleInviteSuccess,
+} = useHomeView()
 
-  const el = document.getElementById(tab.targetId)
-  if (el) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-}
-
-function startTest(typ: string) {
-  setTestType(typ)
-  inviteModalOpen.value = true
-}
-
-function openLogin() {
-  authStore.openWeChatLogin()
-  console.log('[HomeView] dialogOpen ->', authStore.wechatLoginOpen)
-}
-
-async function handleInviteSuccess(payload: { code: string; sessionId?: string }) {
-  setInviteCode(payload.code)
-  const typ = state.testType || 'basic'
-  const req = {
-    test_type: typ,
-    invite_code: payload.code,
-    wechat_openid: state.wechatOpenId as string | undefined,
-  }
-
-  let routes: TestRouteDef[] = []
-  let nextRoute: NextRouteInfo | null | undefined
-
-  try {
-    const resp = await fetchTestFlow(req)
-    routes = resp.routes || []
-    nextRoute = resp.nextRoute ?? null
-
-    setTestRoutes(routes)
-
-  } catch (e) {
-    console.error('[handleInviteSuccess] fetchTestFlow failed', e)
-    showAlert('获取测试流程失败，请稍后再试:' + e)
-    return
-  }
-
-  const targetRouter =
-      nextRoute?.router || (routes.length > 0 ? routes[0].router : null)
-
-  if (!targetRouter) {
-    console.warn('[handleInviteSuccess] no target router found')
-    showAlert('测试流程配置异常，请稍后再试或联系管理员')
-    return
-  }
-  await router.push(`/assessment/${typ}/${targetRouter}`)
-}
-
-type PlanKey = 'public' | 'pro' | 'school'
-const activePlan = ref<PlanKey>('public')
 </script>
+
 <style scoped src="@/styles/home.css"></style>

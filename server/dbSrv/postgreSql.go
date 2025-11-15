@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/hopwesley/wenxintai/server/comm"
+	"github.com/rs/zerolog"
 )
 
 var (
@@ -24,11 +25,13 @@ func Instance() DbService {
 }
 
 type psDatabase struct {
-	db *sql.DB
+	db  *sql.DB
+	log zerolog.Logger
 }
 
 func newPostgreSqlService() *psDatabase {
-	var db = &psDatabase{}
+	var db = &psDatabase{
+		log: comm.LogInst().With().Str("model", "PostgreSql").Logger()}
 	return db
 }
 

@@ -9,6 +9,7 @@ import (
 // 前端发来的请求体
 type testFlowRequest struct {
 	TestType     string  `json:"test_type"`
+	TestRecordID string  `json:"record_id,omitempty"`
 	InviteCode   *string `json:"invite_code,omitempty"`
 	WechatOpenID *string `json:"wechat_openid,omitempty"`
 }
@@ -44,7 +45,7 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 
 	var req testFlowRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, NewError(http.StatusBadRequest, "METHOD_NOT_ALLOWED", "invalid request body", err))
+		writeError(w, ApiInvalidReq("invalid request body", err))
 		return
 	}
 

@@ -1,16 +1,18 @@
 import {apiRequest} from "@/api";
 const api_verify='/api/invites/verify';
 const api_redeem='/api/invites/redeem';
+
 export interface VerifyInviteResponse {
-    session_id: string
-    status: string
-    reserved_until?: string
+    ok: boolean
+    reason: string
+    has_record: boolean
+    test_id?: number | null
 }
 
-export async function verifyInvite(code: string, sessionId?: string): Promise<VerifyInviteResponse> {
+export async function verifyInvite(code: string): Promise<VerifyInviteResponse> {
     return apiRequest<VerifyInviteResponse>(api_verify, {
         method: 'POST',
-        body: { code, session_id: sessionId }
+        body: { invite_code:code }
     })
 }
 

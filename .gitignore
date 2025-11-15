@@ -40,3 +40,4 @@ go.work.sum
 /server/config/
 /server/config/
 /config/conf.json
+.idea

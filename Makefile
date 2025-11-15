@@ -29,10 +29,10 @@ LNX_ARCH ?= amd64                # 覆盖: make build-linux LNX_ARCH=arm64
 
 # ==== 构建前端 ====
 build-frontend:
-	cd $(FRONTEND_DIR) && npm ci && npm run build
+	cd frontend && npm ci --legacy-peer-deps && npm run build
 
 # ==== 同步静态文件 ====
-sync-dist:
+sync-dist:build-frontend
 	mkdir -p $(STATIC_DIR)
 	rm -rf $(STATIC_DIR)/*
 	cp -r $(FRONTEND_DIR)/dist/* $(STATIC_DIR)/

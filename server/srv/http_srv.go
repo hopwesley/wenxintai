@@ -41,7 +41,7 @@ func Instance() *HttpSrv {
 func newBusinessService() *HttpSrv {
 	return &HttpSrv{
 		log: comm.LogInst().With().
-			Str("service", "HttpSrv").
+			Str("model", "HttpSrv").
 			Logger(),
 	}
 }

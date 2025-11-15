@@ -11,6 +11,8 @@ type DbService interface {
 	Shutdown(ctx context.Context) error
 
 	ListHobbies(ctx context.Context) ([]string, error)
+	GetInviteByCode(ctx context.Context, code string) (*Invite, error)
+	FindLatestTestRecordByInvite(ctx context.Context, inviteCode string) (*TestRecord, error)
 }
 
 type txKey struct{}

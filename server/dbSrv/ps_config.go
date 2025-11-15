@@ -1,4 +1,4 @@
-package main
+package dbSrv
 
 import (
 	"context"
@@ -10,20 +10,30 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func connectDatabase(cfg databaseConfig) (*sql.DB, error) {
-	if err := cfg.validate(); err != nil {
-		return nil, err
-	}
-	dsn := buildDSN(cfg)
+type PSDBConfig struct {
+	Host        string `json:"host"`
+	Port        int    `json:"port"`
+	Database    string `json:"database"`
+	User        string `json:"user"`
+	Password    string `json:"password"`
+	SSLMode     string `json:"sslmode"`
+	MaxOpenConn int    `json:"max_open_conn,omitempty"`
+	MaxIdleConn int    `json:"max_idle_conn,omitempty"`
+	MaxLifeTime int    `json:"max_life_time,omitempty"`
+	ConnTimeOut int    `json:"conn_time_out,omitempty"`
+}
+
+func (cfg *PSDBConfig) connDB() (*sql.DB, error) {
+	dsn := cfg.buildDSN()
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
-	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(5)
-	db.SetConnMaxLifetime(30 * time.Minute)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	db.SetMaxOpenConns(cfg.MaxOpenConn)
+	db.SetMaxIdleConns(cfg.MaxIdleConn)
+	db.SetConnMaxLifetime(time.Duration(cfg.MaxLifeTime) * time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.ConnTimeOut)*time.Second)
 	defer cancel()
 	if err := db.PingContext(ctx); err != nil {
 		_ = db.Close()
@@ -32,7 +42,7 @@ func connectDatabase(cfg databaseConfig) (*sql.DB, error) {
 	return db, nil
 }
 
-func buildDSN(cfg databaseConfig) string {
+func (cfg *PSDBConfig) buildDSN() string {
 	parts := []string{
 		fmt.Sprintf("host=%s", cfg.Host),
 		fmt.Sprintf("port=%d", cfg.Port),
@@ -45,7 +55,7 @@ func buildDSN(cfg databaseConfig) string {
 	return strings.Join(parts, " ")
 }
 
-func (cfg databaseConfig) validate() error {
+func (cfg *PSDBConfig) Validate() error {
 	var missing []string
 	if strings.TrimSpace(cfg.Host) == "" {
 		missing = append(missing, "host")
@@ -65,6 +75,20 @@ func (cfg databaseConfig) validate() error {
 	if strings.TrimSpace(cfg.SSLMode) == "" {
 		missing = append(missing, "sslmode")
 	}
+
+	if cfg.MaxOpenConn <= 0 {
+		cfg.MaxOpenConn = 10
+	}
+	if cfg.MaxIdleConn <= 0 {
+		cfg.MaxIdleConn = 5
+	}
+	if cfg.MaxLifeTime <= 0 {
+		cfg.MaxLifeTime = 30
+	}
+	if cfg.ConnTimeOut <= 0 {
+		cfg.ConnTimeOut = 10
+	}
+
 	if len(missing) > 0 {
 		return fmt.Errorf("数据库配置缺少字段: %s", strings.Join(missing, ", "))
 	}

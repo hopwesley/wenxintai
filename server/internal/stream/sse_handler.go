@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hopwesley/wenxintai/server/comm"
 	"github.com/hopwesley/wenxintai/server/internal/store"
 )
 
@@ -22,7 +23,7 @@ func NewSSEHandler(repo store.Repo, broker *Broker) http.HandlerFunc {
 			return
 		}
 		if _, err := repo.GetAssessmentByID(r.Context(), assessmentID); err != nil {
-			if errors.Is(err, store.ErrNotFound) {
+			if errors.Is(err, comm.ErrNotFound) {
 				http.NotFound(w, r)
 				return
 			}

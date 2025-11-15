@@ -479,24 +479,23 @@
         域世安（北京）科技有限公司 | 京ICP备2025150532号-1
       </div>
     </section>
-    <WeChatLoginDialog v-model:open="showLogin"/>
     <InviteCodeModal v-model:open="inviteModalOpen" @success="handleInviteSuccess"/>
   </div>
 </template>
 
 <script setup lang="ts">
 import {ref} from 'vue'
-import WeChatLoginDialog from '@/components/WeChatLoginDialog.vue'
-import InviteCodeModal from '@/components/InviteCodeModal.vue'
+import InviteCodeModal from '@/views/components/InviteCodeModal.vue'
 import {useRouter} from 'vue-router'
 import {useTestSession} from '@/store/testSession'
 import {fetchTestFlow, type TestRouteDef, type NextRouteInfo} from '@/api'
 import {useAlert} from '@/logic/useAlert'
+import { useAuthStore } from '@/store/auth'
 
 const {showAlert} = useAlert()
-const showLogin = ref(false)
 const inviteModalOpen = ref(false)
 const router = useRouter()
+const authStore = useAuthStore()
 const {state, setInviteCode, setTestType, setTestRoutes} = useTestSession()
 // 顶部导航 tab 配置
 const tabDefs = [
@@ -521,15 +520,14 @@ function handleTabClick(tab: typeof tabDefs[number]) {
   }
 }
 
-
 function startTest(typ: string) {
   setTestType(typ)
   inviteModalOpen.value = true
 }
 
 function openLogin() {
-  showLogin.value = true
-  console.log('[HomeView] dialogOpen ->', showLogin.value)
+  authStore.openWeChatLogin()
+  console.log('[HomeView] dialogOpen ->', authStore.wechatLoginOpen)
 }
 
 async function handleInviteSuccess(payload: { code: string; sessionId?: string }) {
@@ -565,7 +563,7 @@ async function handleInviteSuccess(payload: { code: string; sessionId?: string }
     showAlert('测试流程配置异常，请稍后再试或联系管理员')
     return
   }
-  await router.push(`/test/${typ}/${targetRouter}`)
+  await router.push(`/assessment/${typ}/${targetRouter}`)
 }
 
 type PlanKey = 'public' | 'pro' | 'school'

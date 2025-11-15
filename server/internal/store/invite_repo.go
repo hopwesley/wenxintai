@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/hopwesley/wenxintai/server/comm"
 )
 
 func (r *SQLRepo) GetInviteForUpdate(ctx context.Context, code string) (*Invite, error) {
@@ -18,7 +20,7 @@ func (r *SQLRepo) GetInviteForUpdate(ctx context.Context, code string) (*Invite,
 	var inv Invite
 	if err := row.Scan(&inv.Code, &inv.Status, &inv.ExpiresAt, &inv.UsedBy, &inv.UsedAt, &inv.CreatedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNotFound
+			return nil, comm.ErrNotFound
 		}
 		return nil, err
 	}
@@ -41,7 +43,7 @@ func (r *SQLRepo) UpdateInviteReservation(ctx context.Context, code, sessionID s
 	}
 	n, _ := res.RowsAffected()
 	if n != 1 {
-		return ErrConflict
+		return comm.ErrConflict
 	}
 	return nil
 }

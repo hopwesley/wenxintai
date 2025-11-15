@@ -6,24 +6,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/hopwesley/wenxintai/server/dbSrv"
+	"github.com/hopwesley/wenxintai/server/srv"
 )
 
-type databaseConfig struct {
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Database string `json:"database"`
-	User     string `json:"user"`
-	Password string `json:"password"`
-	SSLMode  string `json:"sslmode"`
-}
-type serverConfig struct {
-	Port          string `json:"port"`
-	StaticDir     string `json:"static_dir"`
-	DefaultAPIKey string `json:"default_api_key"`
-}
 type appConfig struct {
-	Server   serverConfig   `json:"server"`
-	Database databaseConfig `json:"database"`
+	DebugLevel string            `json:"debug_level,omitempty"`
+	Server     *srv.Config       `json:"server"`
+	Database   *dbSrv.PSDBConfig `json:"database"`
 }
 
 func resolveDatabaseConfigPath() (string, error) {
@@ -69,15 +60,12 @@ func loadAppConfig() (*appConfig, error) {
 		return nil, fmt.Errorf("解析 conf.json 失败: %w", err)
 	}
 
-	if err := cfg.Database.validate(); err != nil {
+	if err := cfg.Database.Validate(); err != nil {
 		return nil, err
 	}
-	if cfg.Server.Port == "" {
-		cfg.Server.Port = "8080"
-	}
-	if cfg.Server.StaticDir == "" {
-		cfg.Server.StaticDir = "./static"
-	}
 
+	if err := cfg.Server.Validate(); err != nil {
+		return nil, err
+	}
 	return &cfg, nil
 }

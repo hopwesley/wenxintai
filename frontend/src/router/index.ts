@@ -8,22 +8,20 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/HomeView.vue'),
     },
     {
-        path: '/test/:typ/basic-info',
+        path: '/assessment/:typ/basic-info',
         name: 'test-basic-info',
         component: () => import('@/views/StartTestConfigView.vue'),
     },
     {
-        path: '/questions/:questionSetId?',
-        name: 'assessment-questions',
-        component: () => import('@/views/QuestionPage.vue')
+        path: '/assessment/:typ/:scale',
+        name: 'test-scale',
+        component: () => import('@/views/QuestionsStageView.vue'),
     },
     {
-        path: '/report/:assessmentId',
-        name: 'assessment-report',
-        component: () => import('@/views/ReportPage.vue')
+        path: '/assessment/:typ/report',
+        name: 'test-scale',
+        component: () => import('@/views/ReportView.vue'),
     },
-    { path: '/test/:typ/:scale', name: 'test-scale', component: () => import('@/views/QuestionsStageView.vue') }
-    ,
     {
         path: '/:pathMatch(.*)*',
         redirect: '/'
@@ -33,32 +31,4 @@ const routes: RouteRecordRaw[] = [
 export const router = createRouter({
     history: createWebHistory(),
     routes
-})
-
-router.beforeEach((to, _from, next) => {
-    const state = getAssessmentFlowState()
-    if (to.name === 'assessment-questions') {
-        const questionSetId = String(to.params.questionSetId ?? '')
-        if (questionSetId) {
-            next()
-            return
-        }
-        if (state.activeQuestionSetId) {
-            next({name: 'assessment-questions', params: {questionSetId: state.activeQuestionSetId}})
-            return
-        }
-        next({name: 'home'})
-        return
-    }
-    if (to.name === 'assessment-report') {
-        if (!to.params.assessmentId && state.assessmentId) {
-            next({name: 'assessment-report', params: {assessmentId: state.assessmentId}})
-            return
-        }
-        if (!to.params.assessmentId) {
-            next({name: 'home'})
-            return
-        }
-    }
-    next()
 })

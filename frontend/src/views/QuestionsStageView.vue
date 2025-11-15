@@ -48,8 +48,8 @@
 <script setup lang="ts">
 import {onMounted, ref} from 'vue'
 import TestLayout from '@/layouts/TestLayout.vue'
-import StepIndicator from '@/components/StepIndicator.vue'
-import {applyTest, useQuestionsStageView} from '@/views/QuestionsStageControl'
+import StepIndicator from '@/views/components/StepIndicator.vue'
+import {applyTest, useQuestionsStageView} from '@/controller/QuestionsStageControl'
 import {useTestSession} from "@/store/testSession";
 
 // 1) 从我们刚刚写的 TS 逻辑里拿：route / loading / 步骤条 / 标题

@@ -6,7 +6,7 @@ interface RequestOptions {
 
 type ApiError = Error & { code?: string; body?: any }
 
-async function request<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
+export async function apiRequest<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
     const init: RequestInit = {
         method: options.method ?? 'GET',
         headers: { ...options.headers },
@@ -57,11 +57,11 @@ export interface LoginPayload {
 }
 
 export async function login(payload: LoginPayload) {
-  return request('/api/login', { method: 'POST', body: payload })
+  return apiRequest('/api/login', { method: 'POST', body: payload })
 }
 
 export async function getHobbies(): Promise<string[]> {
-  const data = await request<{ hobbies: string[] }>('/api/hobbies')
+  const data = await apiRequest<{ hobbies: string[] }>('/api/hobbies')
   return data?.hobbies ?? []
 }
 
@@ -73,7 +73,7 @@ export interface QuestionsRequest {
 }
 
 export async function getQuestions(payload: QuestionsRequest) {
-  return request('/api/questions', { method: 'POST', body: payload })
+  return apiRequest('/api/questions', { method: 'POST', body: payload })
 }
 
 export interface AnswersRequest {
@@ -87,7 +87,7 @@ export interface AnswersRequest {
 }
 
 export async function sendAnswers(payload: AnswersRequest) {
-  return request('/api/answers', { method: 'POST', body: payload })
+  return apiRequest('/api/answers', { method: 'POST', body: payload })
 }
 
 export interface SubmitTestSessionRequest {
@@ -101,7 +101,7 @@ export interface SubmitTestSessionRequest {
 }
 
 export async function submitTestSession(payload: SubmitTestSessionRequest) {
-  return request('/api/test/submit', { method: 'POST', body: payload })
+  return apiRequest('/api/test/submit', { method: 'POST', body: payload })
 }
 
 export interface ReportRequest {
@@ -111,29 +111,8 @@ export interface ReportRequest {
 }
 
 export async function getReport(payload: ReportRequest) {
-  return request('/api/report', { method: 'POST', body: payload })
+  return apiRequest('/api/report', { method: 'POST', body: payload })
 }
-
-export interface VerifyInviteResponse {
-  session_id: string
-  status: string
-  reserved_until?: string
-}
-
-export async function verifyInvite(code: string, sessionId?: string): Promise<VerifyInviteResponse> {
-  return request<VerifyInviteResponse>('/api/invites/verify', {
-    method: 'POST',
-    body: { code, session_id: sessionId }
-  })
-}
-
-export async function redeemInvite(sessionId?: string) {
-  return request('/api/invites/redeem', {
-    method: 'POST',
-    body: sessionId ? { session_id: sessionId } : {}
-  })
-}
-
 
 
 // 单个测试步骤
@@ -164,7 +143,7 @@ export interface FetchTestFlowResponse {
 }
 
 export async function fetchTestFlow(payload: FetchTestFlowRequest) {
-    return request<FetchTestFlowResponse>('/api/test_flow', {
+    return apiRequest<FetchTestFlowResponse>('/api/test_flow', {
         method: 'POST',
         body: payload,
     });

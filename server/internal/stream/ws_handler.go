@@ -7,12 +7,14 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/hopwesley/wenxintai/server/comm"
 	"github.com/hopwesley/wenxintai/server/internal/store"
 )
 
@@ -30,7 +32,7 @@ func NewWSHandler(repo store.Repo, broker *Broker) http.HandlerFunc {
 			return
 		}
 		if _, err := repo.GetAssessmentByID(r.Context(), assessmentID); err != nil {
-			if err == store.ErrNotFound {
+			if errors.Is(err, comm.ErrNotFound) {
 				http.NotFound(w, r)
 				return
 			}

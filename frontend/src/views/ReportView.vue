@@ -25,7 +25,7 @@
 import { computed, onMounted, ref, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TestLayout from '@/layouts/TestLayout.vue'
-import StepIndicator from '@/components/StepIndicator.vue'
+import StepIndicator from '@/views/components/StepIndicator.vue'
 import { getReport } from '@/api'
 import { useTestSession } from '@/store/testSession'
 import { STEPS, isVariant, type Variant } from '@/config/testSteps'

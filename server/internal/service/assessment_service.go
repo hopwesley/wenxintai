@@ -12,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/uuid"
+	"github.com/hopwesley/wenxintai/server/comm"
 
 	"github.com/hopwesley/wenxintai/server/internal/ai"
 	"github.com/hopwesley/wenxintai/server/internal/appconsts"
@@ -67,12 +68,12 @@ func normalizeOptional(input *string) *string {
 
 func (s *Svc) CreateAssessment(ctx context.Context, mode string, inviteCode, wechatOpenID *string) (assessmentID, questionSetID string, questions json.RawMessage, err error) {
 	if strings.TrimSpace(mode) == "" {
-		return "", "", nil, newError(ErrorCodeBadRequest, "mode is required", nil)
+		return "", "", nil, comm.NewError(comm.ErrorCodeBadRequest, "mode is required", nil)
 	}
 	inviteCode = normalizeOptional(inviteCode)
 	wechatOpenID = normalizeOptional(wechatOpenID)
 	if inviteCode == nil && wechatOpenID == nil {
-		return "", "", nil, newError(ErrorCodeBadRequest, "invite_code or wechat_openid required", nil)
+		return "", "", nil, comm.NewError(comm.ErrorCodeBadRequest, "invite_code or wechat_openid required", nil)
 	}
 
 	questionsJSON, prompt, raw, err := s.generateQuestions(ctx, appconsts.StageS1, mode, map[string]string{
@@ -128,8 +129,8 @@ func (s *Svc) SubmitAnswersAndAdvance(ctx context.Context, questionSetID string,
 	err = s.withTx(ctx, func(txCtx context.Context, tx *sql.Tx) error {
 		qs, err := s.repo.GetQuestionSetByID(txCtx, questionSetID)
 		if err != nil {
-			if errors.Is(err, store.ErrNotFound) {
-				return newError(ErrorCodeNotFound, "resource not found", err)
+			if errors.Is(err, comm.ErrNotFound) {
+				return comm.NewError(comm.ErrorCodeNotFound, "resource not found", err)
 			}
 			return err
 		}
@@ -147,8 +148,8 @@ func (s *Svc) SubmitAnswersAndAdvance(ctx context.Context, questionSetID string,
 
 		assessment, err := s.repo.GetAssessmentByID(txCtx, qs.AssessmentID)
 		if err != nil {
-			if errors.Is(err, store.ErrNotFound) {
-				return newError(ErrorCodeNotFound, "resource not found", err)
+			if errors.Is(err, comm.ErrNotFound) {
+				return comm.NewError(comm.ErrorCodeNotFound, "resource not found", err)
 			}
 			return err
 		}
@@ -165,7 +166,7 @@ func (s *Svc) SubmitAnswersAndAdvance(ctx context.Context, questionSetID string,
 			var stageTwo *store.QuestionSet
 			stageTwo, err = s.repo.GetQuestionSetByAssessmentStage(txCtx, assessment.ID, appconsts.StageS2)
 			if err != nil {
-				if errors.Is(err, store.ErrNotFound) {
+				if errors.Is(err, comm.ErrNotFound) {
 					questionsJSON, prompt, raw, genErr := s.generateQuestions(ctx, appconsts.StageS2, assessment.Mode, map[string]string{
 						"stage":         "S2",
 						"assessment_id": assessment.ID,
@@ -221,7 +222,7 @@ func (s *Svc) SubmitAnswersAndAdvance(ctx context.Context, questionSetID string,
 				}
 				return nil
 			}
-			if reportErr != nil && !errors.Is(reportErr, store.ErrNotFound) {
+			if reportErr != nil && !errors.Is(reportErr, comm.ErrNotFound) {
 				return reportErr
 			}
 
@@ -230,7 +231,7 @@ func (s *Svc) SubmitAnswersAndAdvance(ctx context.Context, questionSetID string,
 				return err
 			}
 			if len(answersS1) == 0 {
-				return newError(ErrorCodeConflict, "stage S1 answers missing", nil)
+				return comm.NewError(comm.ErrorCodeConflict, "stage S1 answers missing", nil)
 			}
 			params, err := s.computeParams(answersS1, answersS2)
 			if err != nil {
@@ -248,7 +249,7 @@ func (s *Svc) SubmitAnswersAndAdvance(ctx context.Context, questionSetID string,
 			paramsForReport = params
 
 		default:
-			return newError(ErrorCodeInternal, fmt.Sprintf("unknown question set stage %d", qs.Stage), nil)
+			return comm.NewError(comm.ErrorCodeInternal, fmt.Sprintf("unknown question set stage %d", qs.Stage), nil)
 		}
 
 		return nil
@@ -361,8 +362,8 @@ func (s *Svc) publishEvent(assessmentID string, payload stream.Payload) {
 func (s *Svc) GetReport(ctx context.Context, assessmentID string) (*store.Report, error) {
 	report, err := s.repo.GetLatestReportByAssessment(ctx, assessmentID)
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			return nil, newError(ErrorCodeNotFound, "resource not found", err)
+		if errors.Is(err, comm.ErrNotFound) {
+			return nil, comm.NewError(comm.ErrorCodeNotFound, "resource not found", err)
 		}
 		return nil, err
 	}
@@ -377,8 +378,8 @@ type Progress struct {
 func (s *Svc) GetProgress(ctx context.Context, assessmentID string) (*Progress, error) {
 	assessment, err := s.repo.GetAssessmentByID(ctx, assessmentID)
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			return nil, newError(ErrorCodeNotFound, "resource not found", err)
+		if errors.Is(err, comm.ErrNotFound) {
+			return nil, comm.NewError(comm.ErrorCodeNotFound, "resource not found", err)
 		}
 		return nil, err
 	}
@@ -388,8 +389,8 @@ func (s *Svc) GetProgress(ctx context.Context, assessmentID string) (*Progress, 
 func (s *Svc) GetQuestionSet(ctx context.Context, questionSetID string) (*store.QuestionSet, error) {
 	qs, err := s.repo.GetQuestionSetByID(ctx, questionSetID)
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			return nil, newError(ErrorCodeNotFound, "resource not found", err)
+		if errors.Is(err, comm.ErrNotFound) {
+			return nil, comm.NewError(comm.ErrorCodeNotFound, "resource not found", err)
 		}
 		return nil, err
 	}

@@ -39,3 +39,4 @@ go.work.sum
 /release/
 /server/config/
 /server/config/
+/config/conf.json

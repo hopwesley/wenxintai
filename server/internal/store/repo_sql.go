@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/hopwesley/wenxintai/server/comm"
 )
 
 type sqlDB interface {
@@ -66,7 +67,7 @@ func (r *SQLRepo) UpdateAssessmentStatus(ctx context.Context, id string, status 
 		return fmt.Errorf("rows affected: %w", err)
 	}
 	if affected == 0 {
-		return ErrNotFound
+		return comm.ErrNotFound
 	}
 	return nil
 }
@@ -80,7 +81,7 @@ func (r *SQLRepo) GetAssessmentByID(ctx context.Context, id string) (*Assessment
 	var a Assessment
 	if err := row.Scan(&a.ID, &a.InviteCode, &a.WechatOpenID, &a.Mode, &a.Status, &a.CreatedAt, &a.UpdatedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNotFound
+			return nil, comm.ErrNotFound
 		}
 		return nil, fmt.Errorf("get assessment: %w", err)
 	}
@@ -121,7 +122,7 @@ func (r *SQLRepo) UpdateQuestionSetStatus(ctx context.Context, id string, status
 		return fmt.Errorf("rows affected: %w", err)
 	}
 	if affected == 0 {
-		return ErrNotFound
+		return comm.ErrNotFound
 	}
 	return nil
 }
@@ -135,7 +136,7 @@ func (r *SQLRepo) GetQuestionSetByID(ctx context.Context, id string) (*QuestionS
 	var qs QuestionSet
 	if err := row.Scan(&qs.ID, &qs.AssessmentID, &qs.Stage, &qs.QuestionsJSON, &qs.AIPrompt, &qs.AIRawResponse, &qs.Status, &qs.CreatedAt, &qs.UpdatedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNotFound
+			return nil, comm.ErrNotFound
 		}
 		return nil, fmt.Errorf("get question set: %w", err)
 	}
@@ -151,7 +152,7 @@ func (r *SQLRepo) GetQuestionSetByAssessmentStage(ctx context.Context, assessmen
 	var qs QuestionSet
 	if err := row.Scan(&qs.ID, &qs.AssessmentID, &qs.Stage, &qs.QuestionsJSON, &qs.AIPrompt, &qs.AIRawResponse, &qs.Status, &qs.CreatedAt, &qs.UpdatedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNotFound
+			return nil, comm.ErrNotFound
 		}
 		return nil, fmt.Errorf("get question set by stage: %w", err)
 	}
@@ -192,7 +193,7 @@ func (r *SQLRepo) getExistingAnswer(ctx context.Context, questionSetID string) (
 	var ans Answer
 	if err := row.Scan(&ans.ID, &ans.QuestionSetID, &ans.AnswerJSON, &ans.SubmittedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNotFound
+			return nil, comm.ErrNotFound
 		}
 		return nil, err
 	}
@@ -236,7 +237,7 @@ func (r *SQLRepo) GetLatestReportByAssessment(ctx context.Context, assessmentID 
 	var rp Report
 	if err := row.Scan(&rp.ID, &rp.AssessmentID, &rp.ReportType, &rp.Summary, &rp.FullJSON, &rp.CreatedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNotFound
+			return nil, comm.ErrNotFound
 		}
 		return nil, fmt.Errorf("get latest report: %w", err)
 	}

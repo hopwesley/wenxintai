@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/hopwesley/wenxintai/server/comm"
 
 	"github.com/hopwesley/wenxintai/server/internal/store"
 )
@@ -42,7 +43,7 @@ const (
 func (s *InviteService) Verify(ctx context.Context, code string, sessionID *string) (*VerifyInviteResult, error) {
 	code = strings.TrimSpace(code)
 	if code == "" {
-		return nil, newError(ErrorCodeBadRequest, "code is required", nil)
+		return nil, comm.NewError(comm.ErrorCodeBadRequest, "code is required", nil)
 	}
 
 	var result *VerifyInviteResult
@@ -50,8 +51,8 @@ func (s *InviteService) Verify(ctx context.Context, code string, sessionID *stri
 		txCtx := store.ContextWithTx(ctx, tx)
 		inv, err := s.repo.GetInviteForUpdate(txCtx, code)
 		if err != nil {
-			if errors.Is(err, store.ErrNotFound) {
-				return newError(ErrorCodeNotFound, "invite not found", err)
+			if errors.Is(err, comm.ErrNotFound) {
+				return comm.NewError(comm.ErrorCodeNotFound, "invite not found", err)
 			}
 			return err
 		}
@@ -60,10 +61,10 @@ func (s *InviteService) Verify(ctx context.Context, code string, sessionID *stri
 
 		// 自然过期（如果你希望 unused 也能自然过期，这里可判断 inv.ExpiresAt != nil && inv.ExpiresAt.Before(now)）
 		if inv.Status == inviteDisabled {
-			return newError(ErrorCodeInviteDisabled, "invite disabled", nil)
+			return comm.NewError(comm.ErrorCodeInviteDisabled, "invite disabled", nil)
 		}
 		if inv.Status == inviteRedeemed {
-			return newError(ErrorCodeInviteRedeemed, "invite already redeemed", nil)
+			return comm.NewError(comm.ErrorCodeInviteRedeemed, "invite already redeemed", nil)
 		}
 
 		// 选择/生成 sessionID
@@ -79,8 +80,8 @@ func (s *InviteService) Verify(ctx context.Context, code string, sessionID *stri
 		case inviteUnused:
 			// 直接占用
 			if err := s.repo.UpdateInviteReservation(txCtx, inv.Code, sess, until); err != nil {
-				if errors.Is(err, store.ErrConflict) {
-					return newError(ErrorCodeInviteReserved, "invite is reserved", nil)
+				if errors.Is(err, comm.ErrConflict) {
+					return comm.NewError(comm.ErrorCodeInviteReserved, "invite is reserved", nil)
 				}
 				return err
 			}
@@ -90,8 +91,8 @@ func (s *InviteService) Verify(ctx context.Context, code string, sessionID *stri
 			// 1) 自己占用且未过期 -> 续期
 			if inv.UsedBy != nil && *inv.UsedBy == sess && inv.ExpiresAt != nil && inv.ExpiresAt.After(now) {
 				if err := s.repo.UpdateInviteReservation(txCtx, inv.Code, sess, until); err != nil {
-					if errors.Is(err, store.ErrConflict) {
-						return newError(ErrorCodeInviteReserved, "invite is reserved", nil)
+					if errors.Is(err, comm.ErrConflict) {
+						return comm.NewError(comm.ErrorCodeInviteReserved, "invite is reserved", nil)
 					}
 					return err
 				}
@@ -99,20 +100,20 @@ func (s *InviteService) Verify(ctx context.Context, code string, sessionID *stri
 				// 2) 他人占用已过期 -> 抢占
 				if inv.ExpiresAt != nil && inv.ExpiresAt.Before(now) {
 					if err := s.repo.UpdateInviteReservation(txCtx, inv.Code, sess, until); err != nil {
-						if errors.Is(err, store.ErrConflict) {
-							return newError(ErrorCodeInviteReserved, "invite is reserved", nil)
+						if errors.Is(err, comm.ErrConflict) {
+							return comm.NewError(comm.ErrorCodeInviteReserved, "invite is reserved", nil)
 						}
 						return err
 					}
 				} else {
 					// 3) 他人占用未过期 -> 返回占用中
-					return newError(ErrorCodeInviteReserved, "invite is reserved", nil)
+					return comm.NewError(comm.ErrorCodeInviteReserved, "invite is reserved", nil)
 				}
 			}
 
 		default:
 			// 其他非法状态
-			return newError(ErrorCodeBadRequest, "invalid invite status", nil)
+			return comm.NewError(comm.ErrorCodeBadRequest, "invalid invite status", nil)
 		}
 
 		result = &VerifyInviteResult{
@@ -135,7 +136,7 @@ type RedeemInviteResult struct {
 func (s *InviteService) Redeem(ctx context.Context, sessionID string) (*RedeemInviteResult, error) {
 	sessionID = strings.TrimSpace(sessionID)
 	if sessionID == "" {
-		return nil, newError(ErrorCodeBadRequest, "session_id is required", nil)
+		return nil, comm.NewError(comm.ErrorCodeBadRequest, "session_id is required", nil)
 	}
 
 	var ok bool
@@ -147,7 +148,7 @@ func (s *InviteService) Redeem(ctx context.Context, sessionID string) (*RedeemIn
 			return err
 		}
 		if !ok {
-			return newError(ErrorCodeInviteReserved, "invite not reserved by session", nil)
+			return comm.NewError(comm.ErrorCodeInviteReserved, "invite not reserved by session", nil)
 		}
 		return nil
 	})
@@ -155,7 +156,7 @@ func (s *InviteService) Redeem(ctx context.Context, sessionID string) (*RedeemIn
 		return nil, err
 	}
 	if !ok {
-		return nil, newError(ErrorCodeInviteReserved, "invite not reserved by session", nil)
+		return nil, comm.NewError(comm.ErrorCodeInviteReserved, "invite not reserved by session", nil)
 	}
 	return &RedeemInviteResult{Status: "redeemed"}, nil
 }

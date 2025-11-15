@@ -35,9 +35,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
-import { verifyInvite } from '@/api'
-import { useTestSession } from '@/store/testSession'
+import {computed, nextTick, ref, watch} from 'vue'
+import {verifyInvite} from '@/controller/InviteCode'
+import {useTestSession} from '@/store/testSession'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{
@@ -52,20 +52,20 @@ const inputRef = ref<HTMLInputElement | null>(null)
 
 const trimmedCode = computed(() => code.value.trim())
 
-const { getSessionId, setSessionId } = useTestSession()
+const {getSessionId, setSessionId} = useTestSession()
 
 watch(
-  () => props.open,
-  async (isOpen) => {
-    if (isOpen) {
-      await nextTick()
-      errorMessage.value = ''
-      loading.value = false
-      inputRef.value?.focus()
-    } else {
-      reset()
+    () => props.open,
+    async (isOpen) => {
+      if (isOpen) {
+        await nextTick()
+        errorMessage.value = ''
+        loading.value = false
+        inputRef.value?.focus()
+      } else {
+        reset()
+      }
     }
-  }
 )
 
 function reset() {
@@ -194,6 +194,7 @@ async function handleConfirm() {
 .error-message.visible {
   display: block;
 }
+
 .actions {
   display: flex;
   justify-content: center;

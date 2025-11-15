@@ -46,10 +46,11 @@
   </TestLayout>
 </template>
 <script setup lang="ts">
-import {ref} from 'vue'
+import {onMounted, ref} from 'vue'
 import TestLayout from '@/layouts/TestLayout.vue'
 import StepIndicator from '@/components/StepIndicator.vue'
-import {useQuestionsStageView} from '@/views/QuestionsStageControl'
+import {applyTest, useQuestionsStageView} from '@/views/QuestionsStageControl'
+import {useTestSession} from "@/store/testSession";
 
 // 1) 从我们刚刚写的 TS 逻辑里拿：route / loading / 步骤条 / 标题
 const {
@@ -97,6 +98,42 @@ async function handlePrev() {
 
 async function handleNext() {
 }
+
+
+const {state /*, setCurrentTestId*/} = useTestSession()
+onMounted(async () => {
+  showLoading()
+  errorMessage.value = ''
+
+  const scaleKey = String(route.params.scale ?? '')  // riasec / asc ...
+  const testType = state.testType || 'basic'        // basic / pro 等
+
+  try {
+    const resp = await applyTest(scaleKey, {
+      test_type: testType,
+      invite_code: state.inviteCode || undefined,
+      wechat_openid: state.wechatOpenId || undefined,
+      grade: state.grade || undefined,
+      mode: state.mode || undefined,
+      hobby: state.hobby || undefined,
+      session_id: state.sessionId || undefined,
+    })
+
+    console.log('[QuestionsStageView] apply_test resp:', resp)
+
+    // TODO: 把问卷 ID 存到全局 store，后面提交答案 / 查报告都会用到
+    // setCurrentTestId(resp.test_id)
+
+    // 注意：这里“只建 tests_record 记录 + 启动 AI”，题目还没生成，
+    // 我建议暂时先“不关遮罩”，等后续 SSE / 拉题目成功后再 hideLoading()
+    // 如果你现在想先看界面，也可以临时在这里 hideLoading() 试效果。
+    // hideLoading()
+  } catch (err) {
+    console.error('[QuestionsStageView] applyTest error', err)
+    errorMessage.value = '初始化测试失败，请返回首页重试'
+    hideLoading()
+  }
+})
 </script>
 
 

@@ -2,6 +2,7 @@
   "name": "wenxintai-frontend",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -15,6 +16,6 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.0.0",
     "typescript": "^5.3.3",
-    "vite": "7.1.11"
+    "vite": "5.2.14"
   }
 }

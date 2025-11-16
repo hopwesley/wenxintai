@@ -1,12 +1,13 @@
+// vite.config.ts
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { resolve } from 'path'
 
 export default defineConfig({
     plugins: [vue()],
     resolve: {
         alias: {
-            '@': resolve(__dirname, './src'),
+            // 直接使用 import.meta.url + new URL()
+            '@': new URL('./src', import.meta.url).pathname,
         },
     },
     server: {
@@ -14,8 +15,8 @@ export default defineConfig({
         proxy: {
             '/api': {
                 target: 'http://localhost:8080',
-                changeOrigin: true
-            }
-        }
-    }
+                changeOrigin: true,
+            },
+        },
+    },
 })

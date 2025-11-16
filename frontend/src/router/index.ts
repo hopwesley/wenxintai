@@ -1,5 +1,4 @@
 import {createRouter, createWebHistory, RouteRecordRaw} from 'vue-router'
-import {getAssessmentFlowState} from '@/store/assessmentFlow'
 
 const routes: RouteRecordRaw[] = [
     {

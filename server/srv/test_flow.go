@@ -4,118 +4,194 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+
+	"github.com/hopwesley/wenxintai/server/dbSrv"
 )
 
-// 前端发来的请求体
+type TestBasicInfo struct {
+	Grade string `json:"grade"`
+	Mode  string `json:"mode"`
+	Hobby string `json:"hobby,omitempty"`
+}
+
 type testFlowRequest struct {
 	TestType     string  `json:"test_type"`
-	TestRecordID string  `json:"record_id,omitempty"`
+	TestPublicID string  `json:"public_id,omitempty"`
 	InviteCode   *string `json:"invite_code,omitempty"`
 	WechatOpenID *string `json:"wechat_openid,omitempty"`
 }
 
-// 单个测试步骤
+func (req *testFlowRequest) parseObj(r *http.Request) *ApiErr {
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return ApiInvalidReq("invalid request body", err)
+	}
+
+	if strings.TrimSpace(req.TestType) == "" {
+		return ApiInvalidReq("test_type is required", nil)
+	}
+
+	if (req.InviteCode == nil || strings.TrimSpace(*req.InviteCode) == "") &&
+		(req.WechatOpenID == nil || strings.TrimSpace(*req.WechatOpenID) == "") {
+		return ApiInvalidReq("请先微信登录或者使用邀请码开始测试", nil)
+	}
+
+	return nil
+}
+
+func (req *testFlowRequest) isInviteCodeUsage() bool {
+	return req.InviteCode != nil &&
+		len(strings.TrimSpace(*req.InviteCode)) > 2
+}
+
+func (req *testFlowRequest) isWeChatUsage() bool {
+	return req.WechatOpenID != nil &&
+		len(strings.TrimSpace(*req.WechatOpenID)) > 2
+}
+
+func (req *testFlowRequest) getUserId() (string, string) {
+	var inviteCode, weChatID = "", ""
+	if req.isInviteCodeUsage() {
+		inviteCode = *req.InviteCode
+	}
+	if req.isWeChatUsage() {
+		weChatID = *req.WechatOpenID
+	}
+
+	return inviteCode, weChatID
+}
+
 type testRouteDef struct {
 	Router string `json:"router"` // 英文路由名，例如 basic-info / riasec / asc / report
 	Desc   string `json:"desc"`   // 中文描述，例如 基本信息 / 兴趣测试 / 能力测试 / 测试报告
 }
 
-// 下一步题目从哪里来
-type questionSource string
-
-// 下一步路由信息
-type nextRouteInfo struct {
-	Router string         `json:"router"` // 英文路由名
-	Source questionSource `json:"source"` // 'db' or 'ai'
-}
-
-// /api/test_flow 响应体
 type testFlowResponse struct {
-	TestType  string         `json:"test_type"`
-	Routes    []testRouteDef `json:"routes"`
-	NextRoute *nextRouteInfo `json:"nextRoute,omitempty"`
+	TestPublicID string         `json:"public_id"`
+	Routes       []testRouteDef `json:"routes"`
+	NextRoute    string         `json:"nextRoute,omitempty"`
 }
 
-// /api/test_flow: 根据 test_type + 身份信息，返回整套测试流程 + 下一步要进入的路由
 func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, ApiMethodInvalid)
 		return
 	}
-
 	var req testFlowRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, ApiInvalidReq("invalid request body", err))
+	err := req.parseObj(r)
+	if err != nil {
+		writeError(w, err)
 		return
 	}
 
-	// test_type 必填
-	if strings.TrimSpace(req.TestType) == "" {
-		writeError(w, ApiInvalidReq("test_type is required", nil))
-		return
-	}
-
-	// 身份：邀请码或微信至少有一个（后面我们用它去查 tests_record）
-	if (req.InviteCode == nil || strings.TrimSpace(*req.InviteCode) == "") &&
-		(req.WechatOpenID == nil || strings.TrimSpace(*req.WechatOpenID) == "") {
-		writeError(w, ApiInvalidReq("invite_code or wechat_openid is required", nil))
-		return
-	}
-
-	// 1) 根据 test_type 构建完整的测试流程 routes
 	routes := buildTestRoutes(req.TestType)
+	if routes == nil {
+		writeError(w, NewApiError(http.StatusInternalServerError,
+			ErrorCodeInternal, "没有测试类型为："+req.TestType+"的测试卷", nil))
+		return
+	}
+	ctx := r.Context()
 
-	// 2) 计算 nextRoute：当前先不查数据库，统一返回 nil
-	//    等 tests_record + 各量表运行记录表建好后，在这里接 service 计算实际进度。
-	var next *nextRouteInfo
+	if len(req.TestPublicID) < 4 {
+		publicID, dbErr := dbSrv.Instance().NewTestRecord(ctx, req.TestType, req.InviteCode, req.WechatOpenID)
+		if dbErr != nil {
+			writeError(w, NewApiError(http.StatusInternalServerError,
+				ErrorCodeInternal, "创建文件数据库操作失败", dbErr))
+			return
+		}
 
-	// 示例：将来可以大致这样写（这里只是结构示意，暂不启用）：
-	// next, err := h.svc.ComputeNextRoute(r.Context(), req.TestType, req.InviteCode, req.WechatOpenID)
-	// if err != nil { ... }
+		resp := testFlowResponse{
+			Routes:       routes,
+			TestPublicID: publicID,
+		}
+		writeJSON(w, http.StatusOK, resp)
+		return
+	}
 
+	var inviteCode, weChatID = req.getUserId()
+	record, dbErr := dbSrv.Instance().FindRestRecordByUid(ctx, inviteCode, weChatID)
+	if dbErr != nil {
+		writeError(w, NewApiError(http.StatusInternalServerError,
+			ErrorCodeInternal, "查询文件数据库操作失败", dbErr))
+		return
+	}
+	var nextStep = calculate(record)
 	resp := testFlowResponse{
-		TestType:  req.TestType,
-		Routes:    routes,
-		NextRoute: next,
+		Routes:       routes,
+		TestPublicID: req.TestPublicID,
+		NextRoute:    nextStep,
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
 
-// 根据测试类型构建完整的测试流程。
-// 规则：basic-info 一定在最前，report 一定在最后，中间根据 test_type 不同插入不同的量表。
+func calculate(record *dbSrv.TestRecord) string {
+	switch record.Status {
+	case RecordStatusInit:
+		return StageBasic
+	default:
+		return StageBasic
+	}
+}
+
+const (
+	RecordStatusInit = 0
+)
+
+const (
+	StageBasic  = "basic-info"
+	StageReport = "report"
+
+	StageRiasec    = "riasec"
+	StageRiasecDes = "兴趣测试"
+
+	StageAsc    = "asc"
+	StageAscDes = "能力测试"
+
+	StageOcean    = "ocean"
+	StageOceanDes = "性格测试"
+
+	StageMotivation    = "motivation"
+	StageMotivationDes = "价值观测试"
+
+	TestTypeBasic  = "basic"
+	TestTypePro    = "pro"
+	TestTypeSchool = "school"
+)
+
 func buildTestRoutes(testType string) []testRouteDef {
-	// 基本信息 & 报告，这两个是固定的
-	basic := testRouteDef{Router: "basic-info", Desc: "基本信息"}
-	report := testRouteDef{Router: "report", Desc: "测试报告"}
+	basic := testRouteDef{Router: StageBasic, Desc: "基本信息"}
+	report := testRouteDef{Router: StageReport, Desc: "测试报告"}
 
 	var middle []testRouteDef
 
 	switch testType {
-	case "basic":
-		// 基础版：RIASEC + ASC
+	case TestTypeBasic:
 		middle = []testRouteDef{
-			{Router: "riasec", Desc: "RIASEC"},
-			{Router: "asc", Desc: "ASC"},
+			{Router: StageRiasec, Desc: StageRiasecDes},
+			{Router: StageAsc, Desc: StageAscDes},
 		}
-	case "pro":
-		// 举例：专业版增加更多量表，后面可以按实际再调整
+	case TestTypePro:
 		middle = []testRouteDef{
-			{Router: "riasec", Desc: "RIASEC"},
-			{Router: "asc", Desc: "ASC"},
-			{Router: "big5", Desc: "OCEAN"},
-			{Router: "motivation", Desc: "MOTIVATION"},
+			{Router: StageRiasec, Desc: StageRiasecDes},
+			{Router: StageAsc, Desc: StageAscDes},
+			{Router: StageOcean, Desc: StageOceanDes},
+			{Router: StageMotivation, Desc: StageMotivationDes},
 		}
+	case TestTypeSchool:
+		middle = []testRouteDef{
+			{Router: StageRiasec, Desc: StageRiasecDes},
+			{Router: StageAsc, Desc: StageAscDes},
+			{Router: StageOcean, Desc: StageOceanDes},
+			{Router: StageMotivation, Desc: StageMotivationDes},
+		}
+
 	default:
-		// 默认：至少给出基础流程，避免前端拿不到任何路由
-		middle = []testRouteDef{
-			{Router: "riasec", Desc: "兴趣测试"},
-			{Router: "asc", Desc: "能力测试"},
-		}
+		return nil
 	}
 
 	routes := make([]testRouteDef, 0, len(middle)+2)
 	routes = append(routes, basic)
 	routes = append(routes, middle...)
 	routes = append(routes, report)
+
 	return routes
 }

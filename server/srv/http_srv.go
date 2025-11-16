@@ -110,7 +110,7 @@ func (s *HttpSrv) loggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 		s.log.Debug().Str("method", r.Method).
 			Str("path", r.URL.Path).
-			Int64("time used:", int64(time.Since(start))).Send()
+			Float64("time used:", time.Since(start).Seconds()).Send()
 	})
 }
 

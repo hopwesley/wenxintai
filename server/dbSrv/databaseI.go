@@ -12,7 +12,8 @@ type DbService interface {
 
 	ListHobbies(ctx context.Context) ([]string, error)
 	GetInviteByCode(ctx context.Context, code string) (*Invite, error)
-	FindLatestTestRecordByInvite(ctx context.Context, inviteCode string) (*TestRecord, error)
+	FindRestRecordByUid(ctx context.Context, inviteCode, weChatID string) (*TestRecord, error)
+	NewTestRecord(ctx context.Context, testType string, inviteCode *string, weChatId *string) (string, error)
 }
 
 type txKey struct{}

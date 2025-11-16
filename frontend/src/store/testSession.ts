@@ -10,6 +10,7 @@ type ModeOption = '3+3' | '3+1+2'
 
 export interface TestSession {
     sessionId?: string
+    recordPublicID?: string
     variant: Variant
 
     testType?: 'basic' | 'pro' | string; // 当前选择的测试类型
@@ -20,8 +21,6 @@ export interface TestSession {
     grade?: string
     inviteCode?: string
     wechatOpenId?: string
-
-
 
     currentStep: number
     answersStage1: Record<string, AnswerValue>
@@ -217,6 +216,14 @@ export function useTestSession() {
         state.testRoutes = routes
     }
 
+    function setPublicID(pid: string) {
+        state.recordPublicID = pid
+    }
+
+    function getPublicID() {
+        return state.recordPublicID
+    }
+
     function toPayload() {
         return {
             sessionId: state.sessionId,
@@ -249,6 +256,8 @@ export function useTestSession() {
         toPayload,
         setTestType,
         setTestRoutes,
+        getPublicID,
+        setPublicID,
     }
 }
 

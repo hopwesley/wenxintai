@@ -14,10 +14,9 @@ type inviteVerifyRequest struct {
 }
 
 type inviteVerifyResponse struct {
-	OK        bool   `json:"ok"`                // 是否通过验证
-	Reason    string `json:"reason"`            // "ok_existing_record" | "ok_no_record" | "not_found" | "expired" | "invalid_status"
-	HasRecord bool   `json:"has_record"`        // 是否已经有对应 tests_record 记录
-	TestID    *int64 `json:"test_id,omitempty"` // 有记录时返回 test_id，没有时为 null/省略
+	OK       bool   `json:"ok"`
+	Reason   string `json:"reason"`
+	PublicId string `json:"public_id,omitempty"`
 }
 
 func (s *HttpSrv) handleInviteVerify(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +42,7 @@ func (s *HttpSrv) handleInviteVerify(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	// ---------- 第一步：先查 tests_record ----------
-	rec, err := dbSrv.Instance().FindLatestTestRecordByInvite(ctx, code)
+	rec, err := dbSrv.Instance().FindRestRecordByUid(ctx, code, "")
 	if err != nil {
 		s.log.Err(err).Str("invite_code", code).Msg("find test record error")
 		writeError(w, NewApiError(http.StatusInternalServerError, "db_error_tests_record", "查询问卷数据库失败", err))
@@ -52,10 +51,9 @@ func (s *HttpSrv) handleInviteVerify(w http.ResponseWriter, r *http.Request) {
 
 	if rec != nil {
 		resp := inviteVerifyResponse{
-			OK:        true,
-			Reason:    "ok_existing_record",
-			HasRecord: true,
-			TestID:    &rec.ID,
+			OK:       true,
+			Reason:   "ok_existing_record",
+			PublicId: rec.PublicId,
 		}
 		s.log.Info().Str("invite_code", code).Msg("test record found by invite code")
 		writeJSON(w, http.StatusOK, resp)
@@ -72,10 +70,8 @@ func (s *HttpSrv) handleInviteVerify(w http.ResponseWriter, r *http.Request) {
 
 	if inv == nil {
 		resp := inviteVerifyResponse{
-			OK:        false,
-			Reason:    "无此邀请码",
-			HasRecord: false,
-			TestID:    nil,
+			OK:     false,
+			Reason: "无此邀请码",
 		}
 		s.log.Info().Str("invite_code", code).Msg("invite code not found")
 		writeJSON(w, http.StatusOK, resp)
@@ -85,10 +81,8 @@ func (s *HttpSrv) handleInviteVerify(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	if inv.ExpiresAt.Valid && inv.ExpiresAt.Time.Before(now) {
 		resp := inviteVerifyResponse{
-			OK:        false,
-			Reason:    "邀请码过期",
-			HasRecord: false,
-			TestID:    nil,
+			OK:     false,
+			Reason: "邀请码过期",
 		}
 		s.log.Info().Str("invite_code", code).Msg("invite code expired")
 		writeJSON(w, http.StatusOK, resp)
@@ -98,10 +92,8 @@ func (s *HttpSrv) handleInviteVerify(w http.ResponseWriter, r *http.Request) {
 	// 检查 status 是否可用（这里只把 status=0 当作可用）
 	if inv.Status != dbSrv.InviteStatusUnused {
 		resp := inviteVerifyResponse{
-			OK:        false,
-			Reason:    "当前邀请码已经被使用",
-			HasRecord: false,
-			TestID:    nil,
+			OK:     false,
+			Reason: "当前邀请码已经被使用",
 		}
 		s.log.Info().Str("invite_code", code).Msg("invite code invalid")
 		writeJSON(w, http.StatusOK, resp)
@@ -109,10 +101,8 @@ func (s *HttpSrv) handleInviteVerify(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := inviteVerifyResponse{
-		OK:        true,
-		Reason:    "ok_no_record",
-		HasRecord: false,
-		TestID:    nil,
+		OK:     true,
+		Reason: "ok_no_record",
 	}
 
 	s.log.Debug().Str("invite_code", code).Msg("invite code found")

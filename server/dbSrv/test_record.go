@@ -8,31 +8,58 @@ import (
 )
 
 type TestRecord struct {
-	ID          int64
+	PublicId    string
 	TestType    string
 	InviteCode  sql.NullString
+	WeChatID    sql.NullString
 	Status      int16
 	CreatedAt   time.Time
 	CompletedAt sql.NullTime
 }
 
-// FindLatestTestRecordByInvite 根据 invite_code 查最近的一条测试记录。
-// 没查到时返回 (nil, nil)，出错返回 (nil, err)。
-func (pdb *psDatabase) FindLatestTestRecordByInvite(ctx context.Context, inviteCode string) (*TestRecord, error) {
-	pdb.log.Debug().Str("invite code", inviteCode).Msg("FindLatestTestRecordByInvite")
-	const q = `
-		SELECT id, test_type, invite_code, status, created_at, completed_at
-		FROM app.tests_record
-		WHERE invite_code = $1
-		ORDER BY created_at DESC
-		LIMIT 1
-	`
+func (pdb *psDatabase) FindRestRecordByUid(
+	ctx context.Context,
+	inviteCode, weChatID string,
+) (*TestRecord, error) {
+	pdb.log.Debug().
+		Str("invite code", inviteCode).
+		Str("wechat_openid", weChatID).
+		Msg("FindRestRecordByUid")
 
-	row := pdb.db.QueryRowContext(ctx, q, inviteCode)
+	if inviteCode == "" && weChatID == "" {
+		return nil, errors.New("either inviteCode or weChatID must be non-empty")
+	}
+
+	var (
+		q   string
+		arg string
+	)
+
+	if inviteCode != "" {
+		q = `
+            SELECT public_id, test_type, invite_code, status, created_at, completed_at
+            FROM app.tests_record
+            WHERE invite_code = $1
+            ORDER BY created_at DESC
+            LIMIT 1
+        `
+		arg = inviteCode
+	} else {
+		q = `
+            SELECT public_id, test_type, invite_code, status, created_at, completed_at
+            FROM app.tests_record
+            WHERE wechat_openid = $1
+            ORDER BY created_at DESC
+            LIMIT 1
+        `
+		arg = weChatID
+	}
+
+	row := pdb.db.QueryRowContext(ctx, q, arg)
 
 	var rec TestRecord
 	err := row.Scan(
-		&rec.ID,
+		&rec.PublicId,
 		&rec.TestType,
 		&rec.InviteCode,
 		&rec.Status,
@@ -40,13 +67,74 @@ func (pdb *psDatabase) FindLatestTestRecordByInvite(ctx context.Context, inviteC
 		&rec.CompletedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
-		pdb.log.Err(err).Str("invite code", inviteCode).Msg("no record")
+		pdb.log.Err(err).
+			Str("invite code", inviteCode).
+			Str("wechat_openid", weChatID).
+			Msg("no record")
 		return nil, nil
 	}
 	if err != nil {
-		pdb.log.Err(err).Str("invite code", inviteCode).Msg("database query error")
+		pdb.log.Err(err).
+			Str("invite code", inviteCode).
+			Str("wechat_openid", weChatID).
+			Msg("database query error")
 		return nil, err
 	}
-	pdb.log.Debug().Str("invite code", inviteCode).Msg("find record")
+
+	pdb.log.Debug().
+		Str("invite code", inviteCode).
+		Str("wechat_openid", weChatID).
+		Str("public_id", rec.PublicId).
+		Msg("find record")
+
 	return &rec, nil
+}
+
+func (pdb *psDatabase) NewTestRecord(ctx context.Context, testType string, inviteCode *string, weChatId *string) (string, error) {
+	pdb.log.Debug().Str("test_type", testType).Msg("NewTestRecord")
+
+	if inviteCode == nil && weChatId == nil {
+		return "", errors.New("either inviteCode or weChatId must be non-nil")
+	}
+
+	var inviteVal interface{}
+	var wechatVal interface{}
+
+	if inviteCode != nil {
+		inviteVal = *inviteCode
+	} else {
+		inviteVal = nil
+	}
+
+	if weChatId != nil {
+		wechatVal = *weChatId
+	} else {
+		wechatVal = nil
+	}
+
+	const q = `
+		INSERT INTO app.tests_record (test_type, wechat_openid, invite_code)
+		VALUES ($1, $2, $3)
+		RETURNING public_id
+	`
+
+	var publicID string
+	err := pdb.db.QueryRowContext(ctx, q,
+		testType,
+		wechatVal,
+		inviteVal,
+	).Scan(&publicID)
+	if err != nil {
+		pdb.log.Err(err).
+			Str("test_type", testType).
+			Msg("NewTestRecord insert failed")
+		return "", err
+	}
+
+	pdb.log.Debug().
+		Str("test_type", testType).
+		Str("public_id", publicID).
+		Msg("NewTestRecord created")
+
+	return publicID, nil
 }

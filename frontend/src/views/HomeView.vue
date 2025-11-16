@@ -38,8 +38,8 @@
     <section class="plans container" id="section-start-test">
       <button
           class="plan-card plan-a"
-          :class="{ 'is-active': activePlan === 'public' }"
-          @click="activePlan = 'public'"
+          :class="{ 'is-active': activePlan === 'basic' }"
+          @click="activePlan = 'basic'"
           type="button"
       >
         <div class="planA-head">基础版</div>
@@ -464,7 +464,6 @@
       </div>
     </section>
 
-    <!-- 原来的公司信息 section 保持在最后 -->
     <section>
       <div
           style="margin: 0 auto;color: #b0b1b3; text-align: center;padding: 16px;border-top: 1px solid #ECECEE; font-size: 14px">

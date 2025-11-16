@@ -103,6 +103,8 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 			Routes:       routes,
 			TestPublicID: publicID,
 		}
+
+		s.log.Debug().Str("public_id", publicID).Msg("no test public id found, init a empty test record")
 		writeJSON(w, http.StatusOK, resp)
 		return
 	}
@@ -114,16 +116,19 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 			ErrorCodeInternal, "查询文件数据库操作失败", dbErr))
 		return
 	}
-	var nextStep = calculate(record)
+
+	var nextStep = calculateNextStep(record)
 	resp := testFlowResponse{
 		Routes:       routes,
 		TestPublicID: req.TestPublicID,
 		NextRoute:    nextStep,
 	}
+	s.log.Debug().Str("test_type", req.TestType).Str("invite_code", inviteCode).
+		Str("wechat_id", weChatID).Str("next_step", nextStep).Msg("test record found")
 	writeJSON(w, http.StatusOK, resp)
 }
 
-func calculate(record *dbSrv.TestRecord) string {
+func calculateNextStep(record *dbSrv.TestRecord) string {
 	switch record.Status {
 	case RecordStatusInit:
 		return StageBasic

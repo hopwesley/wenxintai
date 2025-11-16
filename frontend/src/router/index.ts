@@ -10,12 +10,12 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/assessment/:typ/basic-info',
         name: 'test-basic-info',
-        component: () => import('@/views/StartTestConfigView.vue'),
+        component: () => import('@/views/AssessmentBasicInfo.vue'),
     },
     {
         path: '/assessment/:typ/:scale',
         name: 'test-scale',
-        component: () => import('@/views/QuestionsStageView.vue'),
+        component: () => import('@/views/AssessmentQuestions.vue'),
     },
     {
         path: '/assessment/:typ/report',

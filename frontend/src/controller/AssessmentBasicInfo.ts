@@ -1,8 +1,9 @@
 import {computed, onMounted, reactive, ref} from 'vue'
 import {useRouter} from 'vue-router'
-import {useTestSession, type ModeOption} from '@/store/testSession'
+import {useTestSession} from '@/store/testSession'
 import {getHobbies} from '@/api'
 import {useAlert} from '@/logic/useAlert'
+import {StageBasic, ModeOption, Mode33, Mode312, TestTypeBasic} from "@/controller/common";
 
 interface TestConfigForm {
     grade: string
@@ -13,19 +14,19 @@ interface TestConfigForm {
 export function useStartTestConfig() {
     const {showAlert} = useAlert()
     const router = useRouter()
-    const {state, setTestConfig, setInviteCode} = useTestSession()
+    const {state, setTestConfig} = useTestSession()
 
     function handleFlowError(msg?: string) {
         showAlert(msg ?? '测试流程异常，请返回首页重新开始', () => {
-            router.replace('/')
+            router.replace('/').then()
         })
     }
 
     const stepItems = computed(() => {
         const routes = state.testRoutes ?? []
         return routes.map((r) => ({
-            key: r.router, // 英文路由名
-            title: r.desc, // 中文描述
+            key: r.router,
+            title: r.desc,
         }))
     })
 
@@ -47,33 +48,26 @@ export function useStartTestConfig() {
     const inviteCode = computed(() => state.inviteCode ?? '')
 
     const selectedMode = computed<ModeOption | null>(() => {
-        return form.mode === '3+3' || form.mode === '3+1+2' ? form.mode : null
+        return form.mode === Mode33 || form.mode === Mode312 ? form.mode : null
     })
 
     const canSubmit = computed(() => {
-        return Boolean(inviteCode.value && form.grade.trim() && selectedMode.value)
+        return Boolean(form.grade.trim() && selectedMode.value)
     })
 
     onMounted(async () => {
-        // 没有邀请码：直接弹窗 + 回首页
-        if (!inviteCode.value) {
-            handleFlowError('未找到邀请码，请返回首页重新开始')
-            return
-        }
 
-        // 检查 testRoutes 是否存在、且包含 basic-info
         const routes = state.testRoutes ?? []
         if (!routes.length) {
             handleFlowError('测试流程异常，未找到测试流程，请返回首页重新开始')
             return
         }
-        const idx = routes.findIndex((r) => r.router === 'basic-info')
+        const idx = routes.findIndex((r) => r.router === StageBasic)
         if (idx < 0) {
             handleFlowError('测试流程异常，未找到 basic-info 步骤，请返回首页重新开始')
             return
         }
 
-        // 正常情况：拉兴趣爱好列表
         try {
             const list = await getHobbies()
             hobbies.value = Array.isArray(list) ? list.map(String) : []
@@ -84,11 +78,7 @@ export function useStartTestConfig() {
     })
 
     async function handleSubmit() {
-        if (!inviteCode.value) {
-            // 理论上不会走到这里，兜底一下
-            handleFlowError('未找到邀请码，请返回首页重新开始')
-            return
-        }
+
         if (!selectedMode.value) {
             errorMessage.value = '请选择测试模式'
             return
@@ -105,7 +95,6 @@ export function useStartTestConfig() {
             const grade = form.grade.trim()
             const hobby = form.hobby.trim()
 
-            // 写入测试配置到 TestSession
             setTestConfig({
                 grade,
                 mode: selectedMode.value as ModeOption,
@@ -113,14 +102,14 @@ export function useStartTestConfig() {
             })
 
             const routes = state.testRoutes ?? []
-            const idx = routes.findIndex((r) => r.router === 'basic-info')
+            const idx = routes.findIndex((r) => r.router === StageBasic)
             if (idx < 0 || idx === routes.length - 1) {
                 handleFlowError('测试流程异常，未找到下一步，请返回首页重新开始')
                 return
             }
 
             const next = routes[idx + 1]
-            const typ = state.testType || 'basic'
+            const typ = state.testType || TestTypeBasic
 
             await router.push(`/test/${typ}/${next.router}`)
         } catch (err) {

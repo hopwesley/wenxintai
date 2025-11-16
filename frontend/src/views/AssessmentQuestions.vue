@@ -1,4 +1,3 @@
-<!-- src/features/questions-stage/view/QuestionsStageView.vue -->
 <template>
   <TestLayout :key="route.fullPath">
     <template #header>
@@ -49,10 +48,10 @@
 import {onMounted, ref} from 'vue'
 import TestLayout from '@/layouts/TestLayout.vue'
 import StepIndicator from '@/views/components/StepIndicator.vue'
-import {applyTest, useQuestionsStageView} from '@/controller/QuestionsStageControl'
+import {applyTest, useQuestionsStageView} from '@/controller/AssessmentQuestions'
 import {useTestSession} from "@/store/testSession";
+import {StageBasic, TestTypeBasic} from "@/controller/common";
 
-// 1) 从我们刚刚写的 TS 逻辑里拿：route / loading / 步骤条 / 标题
 const {
   route,
   loading,
@@ -63,27 +62,16 @@ const {
   hideLoading,
 } = useQuestionsStageView()
 
-// 2) 下面这些还是占位，避免模板报错，后面我们再一点点补全真实逻辑
-
-// 分页占位
 const totalPages = ref(1)
 const currentPage = ref(1)
 const currentPageQuestions = ref<{ id: string; text: string }[]>([])
-
-// 错误 & 提交状态
 const errorMessage = ref('')
 const submitting = ref(false)
 const nextLabel = ref('下一步')
-
-// 当前页是否完成
 const isCurrentPageComplete = ref(true)
-
-// 题目 & 选项占位
 const highlightedId = ref<string | null>(null)
 const scaleOptions = ref<{ value: number; label: string }[]>([])
 
-function setRef() {
-}
 
 function getAnswer(_id: string) {
   return undefined
@@ -92,21 +80,19 @@ function getAnswer(_id: string) {
 function onSelect(_id: string, _value: number) {
 }
 
-// 上一步 / 下一步 先留空实现，后面再接路由跳转逻辑
 async function handlePrev() {
 }
 
 async function handleNext() {
 }
 
-
-const {state /*, setCurrentTestId*/} = useTestSession()
+const {state} = useTestSession()
 onMounted(async () => {
   showLoading()
   errorMessage.value = ''
 
-  const scaleKey = String(route.params.scale ?? '')  // riasec / asc ...
-  const testType = state.testType || 'basic'        // basic / pro 等
+  const scaleKey = String(route.params.scale ?? StageBasic)
+  const testType = state.testType || TestTypeBasic
 
   try {
     const resp = await applyTest(scaleKey, {
@@ -121,16 +107,11 @@ onMounted(async () => {
 
     console.log('[QuestionsStageView] apply_test resp:', resp)
 
-    // TODO: 把问卷 ID 存到全局 store，后面提交答案 / 查报告都会用到
-    // setCurrentTestId(resp.test_id)
-
-    // 注意：这里“只建 tests_record 记录 + 启动 AI”，题目还没生成，
-    // 我建议暂时先“不关遮罩”，等后续 SSE / 拉题目成功后再 hideLoading()
-    // 如果你现在想先看界面，也可以临时在这里 hideLoading() 试效果。
-    // hideLoading()
   } catch (err) {
     console.error('[QuestionsStageView] applyTest error', err)
     errorMessage.value = '初始化测试失败，请返回首页重试'
+    hideLoading()
+  }finally {
     hideLoading()
   }
 })

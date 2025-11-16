@@ -57,7 +57,7 @@
 <script setup lang="ts">
 import TestLayout from '@/layouts/TestLayout.vue'
 import StepIndicator from '@/views/components/StepIndicator.vue'
-import { useStartTestConfig } from '@/controller/StartTestConfigView'
+import { useStartTestConfig } from '@/controller/AssessmentBasicInfo'
 
 const {
   inviteCode,
@@ -72,5 +72,5 @@ const {
 } = useStartTestConfig()
 </script>
 
-<style scoped src="@/styles/start-test-config.css"></style>
+<style scoped src="@/styles/assessment-basic-info.css"></style>
 

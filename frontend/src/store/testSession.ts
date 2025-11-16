@@ -1,12 +1,11 @@
 import {reactive, watch} from 'vue'
 import type {Variant} from '@/config/testSteps'
+import {ModeOption} from '@/controller/common'
 
 const STORAGE_KEY = 'wenxintai:test-session'
 const SESSION_ID_KEY = 'session_id'
 
 type AnswerValue = 1 | 2 | 3 | 4 | 5
-
-type ModeOption = '3+3' | '3+1+2'
 
 export interface TestSession {
     sessionId?: string

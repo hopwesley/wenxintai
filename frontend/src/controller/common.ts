@@ -11,7 +11,7 @@ export const StageMotivation = "motivation"
 
 export const Mode33 = '3+3'
 export const Mode312 = '3+1+2'
-export type ModeOption = typeof Mode33 | typeof Mode312
+export type ModeOption = '3+3' | '3+1+2'
 
 
 export interface CommonResponse {
@@ -25,7 +25,7 @@ export interface UseSSEOptions {
     onMsg?: (data: any) => void
     onOpen?: () => void
     onError?: (event: Error) => void
-    onClose?:()=>void
+    onClose?: () => void
 }
 
 function eventToError(ev: Event, message = '[SSE] connection error'): Error {
@@ -40,7 +40,7 @@ export function useSubscriptBySSE(
     scaleKey: string,
     testType: string,
     options: UseSSEOptions = {},
-){
+) {
     let es: EventSource | null = null
 
     onMounted(() => {
@@ -90,4 +90,12 @@ export function useSubscriptBySSE(
             es = null
         }
     })
+    const stop = () => {
+        if (es) {
+            es.close()
+            es = null
+        }
+    }
+
+    return { stop }
 }

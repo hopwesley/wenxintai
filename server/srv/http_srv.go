@@ -96,10 +96,9 @@ func (s *HttpSrv) initRouter() error {
 	fileServer := http.FileServer(http.Dir(s.cfg.StaticDir))
 	mux.Handle("/", fileServer)
 
-	handler := s.loggingMiddleware(mux)
 	srv := &http.Server{
 		Addr:              s.cfg.srvAddr(),
-		Handler:           handler,
+		Handler:           mux,
 		ReadTimeout:       time.Duration(s.cfg.ReadTimeout) * time.Second,
 		ReadHeaderTimeout: time.Duration(s.cfg.ReadTimeout) * time.Second,
 	}

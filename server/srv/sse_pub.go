@@ -1,19 +1,19 @@
 package srv
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/hopwesley/wenxintai/server/ai_api"
 	"github.com/hopwesley/wenxintai/server/dbSrv"
 )
 
 type AIChannelMsg struct {
-	ChID string `json:"ch_id"`
-	Msg  string `json:"msg"`
+	Typ string `json:"typ"`
+	Msg string `json:"msg"`
 }
 
 func (acm *AIChannelMsg) Str() string {
@@ -22,7 +22,6 @@ func (acm *AIChannelMsg) Str() string {
 }
 
 func (s *HttpSrv) initSSE() error {
-
 	return nil
 }
 
@@ -92,12 +91,6 @@ func (s *HttpSrv) handleSSEEvent(w http.ResponseWriter, r *http.Request) {
 	scaleKey := q.Get("scaleKey")
 	testType := q.Get("testType")
 
-	s.log.Info().
-		Str("channel", channelID).
-		Str("scaleKey", scaleKey).
-		Str("testType", testType).
-		Msg("SSE channel created")
-
 	aiTestType := parseAITestTyp(scaleKey, testType)
 	if len(aiTestType) == 0 || aiTestType == ai_api.TypUnknown {
 		s.log.Error().Str("channel", channelID).Msg("Invalid scaleKey or testType")
@@ -115,43 +108,41 @@ func (s *HttpSrv) handleSSEEvent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "不支持流式数据传输", http.StatusInternalServerError)
 		return
 	}
-	s.log.Info().Str("channel", channelID).Msg("SSE channel created")
+	s.log.Info().
+		Str("channel", channelID).
+		Str("scaleKey", scaleKey).
+		Str("testType", testType).
+		Msg("SSE channel created")
 
 	ctx := r.Context()
 
-	bi, dbErr := dbSrv.Instance().QueryBasicInfo(ctx, channelID)
-	if dbErr != nil {
-		s.log.Err(dbErr).Str("channel", channelID).Msg("Query basic info from SSE channel error")
-		http.Error(w, "查询用户基本信息失败:"+dbErr.Error(), http.StatusInternalServerError)
-		return
-	}
+	msgCh := make(chan string, 16)
 
-	testContent, aiErr := ai_api.Instance().GenerateQuestion(ctx, bi, aiTestType, s.aiProcessInfo)
-	if aiErr != nil {
-		s.log.Err(dbErr).Str("channel", channelID).Msg("ai generate questions error")
-		http.Error(w, "AI 生成测试题目失败:"+aiErr.Error(), http.StatusInternalServerError)
-		return
-	}
+	go s.aiProcess(w, msgCh, channelID, aiTestType)
 
-	dbErrR := dbSrv.Instance().SaveRiasecSession(ctx, channelID, testContent)
-	if dbErrR != nil {
-		s.log.Err(dbErr).Str("channel", channelID).Msg("save questions error")
-		http.Error(w, "存储AI 测试题目失败:"+aiErr.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	for i := 1; i <= 200; i++ {
+	for {
 		select {
 		case <-ctx.Done():
-			s.log.Info().Str("channel", channelID).Msg("SSE channel closed by client")
+			s.log.Info().
+				Str("channel", channelID).
+				Msg("SSE channel closed by client")
 			return
-		case <-time.After(1 * time.Second):
 
-			msg := &AIChannelMsg{Msg: "this message is from ai", ChID: channelID}
+		case token, ok := <-msgCh:
+			if !ok {
+				// 后台 publish 那边关闭了 channel，说明本 channel 的任务结束
+				s.log.Info().
+					Str("channel", channelID).
+					Msg("SSE channel closed: msgCh closed")
+				return
+			}
 
-			n, err := fmt.Fprintf(w, "data: %s\n\n", msg.Str())
-			if n == 0 || err != nil {
-				s.log.Err(err).Str("channel", channelID).Msg("SSE channel failed")
+			msg := &AIChannelMsg{Msg: token, Typ: "data"}
+
+			if _, err := fmt.Fprintf(w, "data: %s\n\n", msg.Str()); err != nil {
+				s.log.Err(err).
+					Str("channel", channelID).
+					Msg("SSE write failed")
 				return
 			}
 
@@ -160,6 +151,67 @@ func (s *HttpSrv) handleSSEEvent(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *HttpSrv) aiProcessInfo(token string) error {
+func (s *HttpSrv) aiProcess(w http.ResponseWriter, msgCh chan string, channelID string, aiTestType ai_api.TestTyp) {
+	defer close(msgCh)
 
+	bgCtx := context.Background()
+
+	bi, dbErr := dbSrv.Instance().QueryBasicInfo(bgCtx, channelID)
+	if dbErr != nil {
+		s.log.Err(dbErr).Str("channel", channelID).Msg("Query basic info from SSE channel error")
+		http.Error(w, "查询基本信息失败："+dbErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	callback := func(token string) error {
+		return sendSafe(msgCh, token)
+	}
+
+	testContent, aiErr := ai_api.Instance().GenerateQuestion(bgCtx, bi, aiTestType, callback)
+	if aiErr != nil {
+		http.Error(w, "AI 生成 RIASEC 试卷失败："+aiErr.Error(), http.StatusInternalServerError)
+		s.log.Err(aiErr).Str("channel", channelID).Msg("ai generate questions error")
+		return
+	}
+
+	if err := s.saveAIContentByTyp(bgCtx, aiTestType, channelID, testContent); err != nil {
+		http.Error(w, "保持 RIASEC 试卷失败："+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	msg := &AIChannelMsg{Msg: string(testContent), Typ: "done"}
+
+	_, err := fmt.Fprintf(w, "data: %s\n\n", msg.Str())
+
+	if err != nil {
+		s.log.Err(err).Str("channel", channelID).Msg("maybe client is closed")
+	} else {
+		s.log.Info().
+			Str("channel", channelID).
+			Msg("GenerateQuestion finished and saved")
+	}
+
+}
+
+func (s *HttpSrv) saveAIContentByTyp(bgCtx context.Context, typ ai_api.TestTyp, channelID string, content []byte) error {
+	switch typ {
+	case ai_api.TypRIASEC:
+		dbErrR := dbSrv.Instance().SaveRiasecSession(bgCtx, channelID, content)
+		if dbErrR != nil {
+			s.log.Err(dbErrR).Str("channel", channelID).Msg("save questions error")
+			return dbErrR
+		}
+	}
+
+	s.log.Info().Msg("Invalid testType")
+	return fmt.Errorf("invalid testType")
+}
+
+func sendSafe(ch chan string, token string) error {
+	defer func() {
+		_ = recover()
+	}()
+
+	ch <- token
+	return nil
 }

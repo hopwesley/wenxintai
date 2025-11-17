@@ -10,6 +10,9 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/hopwesley/wenxintai/server/comm"
+	"github.com/rs/zerolog"
 )
 
 var (
@@ -19,6 +22,7 @@ var (
 )
 
 type DeepSeekApi struct {
+	log zerolog.Logger
 	cfg *Cfg
 }
 
@@ -38,7 +42,9 @@ type StreamResponse struct {
 }
 
 func newDeepSeek() *DeepSeekApi {
-	return &DeepSeekApi{}
+	return &DeepSeekApi{
+		log: comm.LogInst().With().Str("model", "DeepSeek").Logger(),
+	}
 }
 
 func Instance() AIApi {
@@ -56,6 +62,7 @@ func (dai *DeepSeekApi) Init(cfg *Cfg) error {
 func (dai *DeepSeekApi) GenerateQuestion(ctx context.Context, basicInfo *BasicInfo, tt TestTyp, callback TokenHandler) (json.RawMessage, error) {
 	systemPrompt, err := composeSystemPrompt(tt)
 	if err != nil {
+		dai.log.Err(err).Str("test_type", string(tt)).Msgf("composeSystemPrompt failed:%v", basicInfo)
 		return nil, err
 	}
 
@@ -75,10 +82,10 @@ func (dai *DeepSeekApi) GenerateQuestion(ctx context.Context, basicInfo *BasicIn
 		},
 	}
 
-	content, err := dai.streamChat(ctx, reqBody, callback)
-
-	if err != nil {
-		return nil, err
+	content, sErr := dai.streamChat(ctx, reqBody, callback)
+	if sErr != nil {
+		dai.log.Err(sErr).Str("test_type", string(tt)).Msgf("streamChat failed:%v", basicInfo)
+		return nil, sErr
 	}
 	raw := strings.TrimSpace(content)
 	if raw == "" {
@@ -157,15 +164,18 @@ func (dai *DeepSeekApi) streamChat(ctx context.Context, reqBody interface{}, onT
 			continue
 		}
 
-		if len(streamResp.Choices) > 0 {
-			content := streamResp.Choices[0].Delta.Content
-			if content != "" {
-				fullContent.WriteString(content)
-				if onToken != nil {
-					if err := onToken(content); err != nil {
-						return "", err
-					}
-				}
+		if len(streamResp.Choices) == 0 {
+			continue
+		}
+		content := streamResp.Choices[0].Delta.Content
+		if len(content) == 0 {
+			continue
+		}
+
+		fullContent.WriteString(content)
+		if onToken != nil {
+			if err := onToken(content); err != nil {
+				dai.log.Error().Err(err).Str("content", content).Msg("onToken failed, Maybe client is closed.")
 			}
 		}
 	}

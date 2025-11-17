@@ -342,9 +342,6 @@
     <!-- ② 科学与人文的双重考量（新模块） -->
     <section class="home-section theory-section">
       <div class="container">
-        <header class="section-header">
-          <h2>科学与人文的双重考量</h2>
-        </header>
         <section class="home-section theory-section">
           <div class="container">
             <header class="section-header">

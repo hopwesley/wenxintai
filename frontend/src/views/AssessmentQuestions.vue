@@ -97,29 +97,38 @@ const testType = state.testType || TestTypeBasic
 
 console.log('[QuestionsStageView] apply_test resp:', scaleKey, testType)
 
-useSubscriptBySSE(public_id, scaleKey, testType, {
+const { stop } = useSubscriptBySSE(public_id, scaleKey, testType, {
+  onOpen(){
+    showLoading()
+  },
   onError(err) {
     console.log("------>>> sse channel error:", err)
     showAlert('获取测试流程失败，请稍后再试:' + err)
+    stop()
+    hideLoading()
   },
   onMsg(data) {
-    latestMessage.value = data.msg;
-    console.log("------>>> sse msg:", data)
+    console.log("------>>> sse msg:", data.msg);
+    if (data.type === 'done') {
+      stop()
+      hideLoading()
+    }else{
+      latestMessage.value = data.msg;
+    }
   },
   onClose() {
     console.log("------>>> sse closed:")
+    hideLoading()
   }
 })
 
 onMounted(async () => {
-  showLoading()
   errorMessage.value = ''
 
   try {
   } catch (err) {
     console.error('[QuestionsStageView] applyTest error', err)
     errorMessage.value = '初始化测试失败，请返回首页重试'
-    hideLoading()
   } finally {
     hideLoading()
   }

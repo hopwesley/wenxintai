@@ -6,6 +6,9 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/hopwesley/wenxintai/server/ai_api"
+	"github.com/hopwesley/wenxintai/server/dbSrv"
 )
 
 type AIChannelMsg struct {
@@ -43,11 +46,62 @@ func parseTestIDFromPath(path string) (string, error) {
 	return idStr, nil
 }
 
+func parseAITestTyp(scaleKey, testType string) ai_api.TestTyp {
+	switch testType {
+	case TestTypeBasic:
+		switch scaleKey {
+		case StageRiasec:
+			return ai_api.TypRIASEC
+		case StageAsc:
+			return ai_api.TypSEC
+		}
+	case TestTypePro:
+		switch scaleKey {
+		case StageRiasec:
+			return ai_api.TypRIASEC
+		case StageOcean:
+			return ai_api.TypOCEAN
+		case StageAsc:
+			return ai_api.TypSEC
+		}
+
+	case TestTypeSchool:
+		switch scaleKey {
+		case StageRiasec:
+			return ai_api.TypRIASEC
+		case StageOcean:
+			return ai_api.TypOCEAN
+		case StageAsc:
+			return ai_api.TypSEC
+		}
+	}
+
+	return ai_api.TypUnknown
+}
+
 func (s *HttpSrv) handleSSEEvent(w http.ResponseWriter, r *http.Request) {
 	channelID, err := parseTestIDFromPath(r.URL.Path)
 	if err != nil {
 		s.log.Err(err).Msg("SSE channel parse failed")
-		writeError(w, ApiInvalidReq("invalid test id", err))
+		http.Error(w, "无效的问卷编号:"+err.Error(), http.StatusBadRequest)
+
+		return
+	}
+
+	q := r.URL.Query()
+	scaleKey := q.Get("scaleKey")
+	testType := q.Get("testType")
+
+	s.log.Info().
+		Str("channel", channelID).
+		Str("scaleKey", scaleKey).
+		Str("testType", testType).
+		Msg("SSE channel created")
+
+	aiTestType := parseAITestTyp(scaleKey, testType)
+	if len(aiTestType) == 0 || aiTestType == ai_api.TypUnknown {
+		s.log.Error().Str("channel", channelID).Msg("Invalid scaleKey or testType")
+		http.Error(w, "需要参数正确的测试类型和测试阶段参数：scaleKey testType", http.StatusBadRequest)
 		return
 	}
 
@@ -58,12 +112,33 @@ func (s *HttpSrv) handleSSEEvent(w http.ResponseWriter, r *http.Request) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		s.log.Err(err).Str("channel", channelID).Msg("SSE channel created error")
-		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
+		http.Error(w, "不支持流式数据传输", http.StatusInternalServerError)
+		return
+	}
+	s.log.Info().Str("channel", channelID).Msg("SSE channel created")
+
+	ctx := r.Context()
+
+	bi, dbErr := dbSrv.Instance().QueryBasicInfo(ctx, channelID)
+	if dbErr != nil {
+		s.log.Err(dbErr).Str("channel", channelID).Msg("Query basic info from SSE channel error")
+		http.Error(w, "查询用户基本信息失败:"+dbErr.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	ctx := r.Context()
-	s.log.Info().Str("channel", channelID).Msg("SSE channel created")
+	testContent, aiErr := ai_api.Instance().GenerateQuestion(ctx, bi, aiTestType, s.aiProcessInfo)
+	if aiErr != nil {
+		s.log.Err(dbErr).Str("channel", channelID).Msg("ai generate questions error")
+		http.Error(w, "AI 生成测试题目失败:"+aiErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	dbErrR := dbSrv.Instance().SaveRiasecSession(ctx, channelID, testContent)
+	if dbErrR != nil {
+		s.log.Err(dbErr).Str("channel", channelID).Msg("save questions error")
+		http.Error(w, "存储AI 测试题目失败:"+aiErr.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	for i := 1; i <= 200; i++ {
 		select {
@@ -83,4 +158,8 @@ func (s *HttpSrv) handleSSEEvent(w http.ResponseWriter, r *http.Request) {
 			flusher.Flush()
 		}
 	}
+}
+
+func (s *HttpSrv) aiProcessInfo(token string) error {
+
 }

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/hopwesley/wenxintai/server/ai_api"
 	"github.com/hopwesley/wenxintai/server/dbSrv"
 	"github.com/hopwesley/wenxintai/server/srv"
 )
@@ -15,6 +16,7 @@ type appConfig struct {
 	DebugLevel string            `json:"debug_level,omitempty"`
 	Server     *srv.Config       `json:"server"`
 	Database   *dbSrv.PSDBConfig `json:"database"`
+	AIApi      *ai_api.Cfg       `json:"ai_api"`
 }
 
 func resolveDatabaseConfigPath() (string, error) {

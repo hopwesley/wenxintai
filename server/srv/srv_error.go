@@ -31,7 +31,9 @@ var (
 func ApiInvalidReq(msg string, err error) *ApiErr {
 	return NewApiError(http.StatusBadRequest, ErrorCodeBadRequest, msg, err)
 }
-
+func ApiInternalErr(msg string, err error) *ApiErr {
+	return NewApiError(http.StatusInternalServerError, ErrorCodeInternal, msg, err)
+}
 func (e *ApiErr) Error() string {
 	if e.Message != "" {
 		return e.Message

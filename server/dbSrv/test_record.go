@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"time"
+
+	"github.com/hopwesley/wenxintai/server/ai_api"
 )
 
 type TestRecord struct {
@@ -150,6 +152,58 @@ func (pdb *psDatabase) UpdateBasicInfo(ctx context.Context, publicId string, gra
     `
 	_, err := pdb.db.ExecContext(ctx, q, publicId, grade, mode, hobby)
 	return err
+}
+
+func (pdb *psDatabase) QueryBasicInfo(ctx context.Context, publicId string) (*ai_api.BasicInfo, error) {
+
+	const q = `
+        SELECT public_id, grade, "mode", COALESCE(hobby, '')
+        FROM app.tests_record
+        WHERE public_id = $1
+    `
+
+	var (
+		publicIDDB string
+		gradeStr   string
+		modeStr    string
+		hobbyStr   string
+	)
+
+	pdb.log.Debug().
+		Str("public_id", publicId).
+		Msg("QueryBasicInfo: start")
+
+	err := pdb.db.
+		QueryRowContext(ctx, q, publicId).
+		Scan(&publicIDDB, &gradeStr, &modeStr, &hobbyStr)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			pdb.log.Warn().
+				Str("public_id", publicId).
+				Msg("QueryBasicInfo: no record found")
+		} else {
+			pdb.log.Err(err).
+				Str("public_id", publicId).
+				Msg("QueryBasicInfo failed")
+		}
+		return nil, err
+	}
+
+	info := &ai_api.BasicInfo{
+		PublicId: publicIDDB,
+		Grade:    ai_api.Grade(gradeStr),
+		Mode:     ai_api.Mode(modeStr),
+	}
+	if hobbyStr != "" {
+		info.Hobby = hobbyStr
+	}
+
+	pdb.log.Debug().
+		Str("public_id", publicId).
+		Interface("basic_info", info).
+		Msg("QueryBasicInfo: done")
+
+	return info, nil
 }
 
 func (pdb *psDatabase) SaveRiasecSession(

@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/hopwesley/wenxintai/server/ai_api"
 	"github.com/hopwesley/wenxintai/server/comm"
 	"github.com/hopwesley/wenxintai/server/dbSrv"
 	"github.com/hopwesley/wenxintai/server/srv"
@@ -50,6 +51,11 @@ func main() {
 	err = srv.Instance().Init(cfg.Server)
 	if err != nil {
 		panic(fmt.Sprintf("create http service: %v", err))
+	}
+
+	err = ai_api.Instance().Init(cfg.AIApi)
+	if err != nil {
+		panic(fmt.Sprintf("ai api service: %v", err))
 	}
 
 	srv.Instance().StartServing()

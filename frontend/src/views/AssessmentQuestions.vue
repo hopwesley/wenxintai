@@ -92,7 +92,12 @@ const {state, getPublicID} = useTestSession()
 const public_id: string = getPublicID() as string
 const {showAlert} = useAlert()
 
-useSubscriptBySSE(public_id, {
+const scaleKey = String(route.params.scale ?? StageBasic)
+const testType = state.testType || TestTypeBasic
+
+console.log('[QuestionsStageView] apply_test resp:', scaleKey, testType)
+
+useSubscriptBySSE(public_id, scaleKey, testType, {
   onError(err) {
     console.log("------>>> sse channel error:", err)
     showAlert('获取测试流程失败，请稍后再试:' + err)
@@ -110,11 +115,7 @@ onMounted(async () => {
   showLoading()
   errorMessage.value = ''
 
-  const scaleKey = String(route.params.scale ?? StageBasic)
-  const testType = state.testType || TestTypeBasic
-
   try {
-    console.log('[QuestionsStageView] apply_test resp:', scaleKey, testType)
   } catch (err) {
     console.error('[QuestionsStageView] applyTest error', err)
     errorMessage.value = '初始化测试失败，请返回首页重试'

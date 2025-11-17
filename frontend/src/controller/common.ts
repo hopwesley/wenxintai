@@ -9,16 +9,15 @@ export const StageAsc = "asc"
 export const StageOcean = "ocean"
 export const StageMotivation = "motivation"
 
-export type ModeOption = 'Mode33' | 'Mode312'
-export const Mode33 = 'Mode33'
-export const Mode312 = 'Mode312'
+export const Mode33 = '3+3'
+export const Mode312 = '3+1+2'
+export type ModeOption = typeof Mode33 | typeof Mode312
 
 
 export interface CommonResponse {
     ok: boolean
     msg: string | null
 }
-
 
 import {onMounted, onBeforeUnmount} from 'vue'
 
@@ -36,11 +35,22 @@ function eventToError(ev: Event, message = '[SSE] connection error'): Error {
     return err
 }
 
-export function useSubscriptBySSE(eventID: string, options: UseSSEOptions = {}) {
+export function useSubscriptBySSE(
+    eventID: string,
+    scaleKey: string,
+    testType: string,
+    options: UseSSEOptions = {},
+){
     let es: EventSource | null = null
 
     onMounted(() => {
-        const url = `/api/sub/${eventID}`
+        const params = new URLSearchParams({
+            scaleKey,
+            testType,
+        })
+
+        const url = `/api/sub/${eventID}?${params.toString()}`
+
         es = new EventSource(url)
 
         es.onopen = () => {

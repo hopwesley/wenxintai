@@ -3,6 +3,8 @@ package dbSrv
 import (
 	"context"
 	"database/sql"
+
+	"github.com/hopwesley/wenxintai/server/ai_api"
 )
 
 type DbService interface {
@@ -15,6 +17,7 @@ type DbService interface {
 	FindRestRecordByUid(ctx context.Context, inviteCode, weChatID string) (*TestRecord, error)
 	NewTestRecord(ctx context.Context, testType string, inviteCode *string, weChatId *string) (string, error)
 	UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string) error
+	QueryBasicInfo(ctx context.Context, publicId string) (*ai_api.BasicInfo, error)
 	SaveRiasecSession(ctx context.Context, publicId string, questionsJSON []byte) error
 	UpdateRiasecAnswers(ctx context.Context, publicId string, answersJSON []byte) error
 }

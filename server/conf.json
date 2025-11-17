@@ -1,8 +1,11 @@
 {
+  "ai_api": {
+    "default_api_key": ""
+  },
   "server": {
     "port": "8080",
     "static_dir": "./static",
-    "default_api_key": ""
+    "read_timeout":10
   },
   "database": {
     "host": "127.0.0.1",

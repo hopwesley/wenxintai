@@ -1,13 +1,9 @@
 package srv
 
-import "fmt"
-
 type Config struct {
 	Host           string `json:"host"`
 	Port           string `json:"port"`
-	SSEPort        string `json:"sse_port"`
 	StaticDir      string `json:"static_dir"`
-	DefaultAPIKey  string `json:"default_api_key"`
 	studentHobbies []string
 	ReadTimeout    int64 `json:"read_timeout,omitempty"`
 }
@@ -17,10 +13,6 @@ func (cfg *Config) srvAddr() string {
 }
 
 func (cfg *Config) Validate() error {
-
-	if len(cfg.DefaultAPIKey) < 4 {
-		return fmt.Errorf("invalid ai key:%s", cfg.DefaultAPIKey)
-	}
 
 	if cfg.Host == "" {
 		cfg.Host = "localhost"
@@ -34,7 +26,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.ReadTimeout <= 0 {
-		cfg.ReadTimeout = 15
+		cfg.ReadTimeout = 10
 	}
 
 	return nil

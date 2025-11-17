@@ -15,6 +15,8 @@ type DbService interface {
 	FindRestRecordByUid(ctx context.Context, inviteCode, weChatID string) (*TestRecord, error)
 	NewTestRecord(ctx context.Context, testType string, inviteCode *string, weChatId *string) (string, error)
 	UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string) error
+	SaveRiasecSession(ctx context.Context, publicId string, questionsJSON []byte) error
+	UpdateRiasecAnswers(ctx context.Context, publicId string, answersJSON []byte) error
 }
 
 type txKey struct{}

@@ -49,6 +49,7 @@ func (pdb *psDatabase) WithTx(ctx context.Context, fn func(tx *sql.Tx) error) er
 	}
 	return nil
 }
+
 func (pdb *psDatabase) Init(cfg any) error {
 	pbCfg, ok := cfg.(*PSDBConfig)
 	if !ok {

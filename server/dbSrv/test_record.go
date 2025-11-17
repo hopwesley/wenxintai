@@ -151,3 +151,84 @@ func (pdb *psDatabase) UpdateBasicInfo(ctx context.Context, publicId string, gra
 	_, err := pdb.db.ExecContext(ctx, q, publicId, grade, mode, hobby)
 	return err
 }
+
+func (pdb *psDatabase) SaveRiasecSession(
+	ctx context.Context,
+	publicId string,
+	questionsJSON []byte,
+) error {
+	if publicId == "" {
+		return errors.New("publicId must be non-empty")
+	}
+	if len(questionsJSON) == 0 {
+		return errors.New("questionsJSON must be non-empty")
+	}
+
+	pdb.log.Debug().
+		Str("public_id", publicId).
+		Msg("SaveRiasecSession: start")
+
+	const q = `
+		INSERT INTO app.riasec_sessions (public_id, questions)
+		VALUES ($1, $2::jsonb)
+		ON CONFLICT (public_id)
+		DO UPDATE SET
+			questions = EXCLUDED.questions,
+			-- 保留最初创建时间，只更新题目内容
+			created_at = app.riasec_sessions.created_at
+	`
+
+	_, err := pdb.db.ExecContext(ctx, q, publicId, string(questionsJSON))
+	if err != nil {
+		pdb.log.Err(err).
+			Str("public_id", publicId).
+			Msg("SaveRiasecSession failed")
+		return err
+	}
+
+	pdb.log.Debug().
+		Str("public_id", publicId).
+		Msg("SaveRiasecSession: done")
+
+	return nil
+}
+
+// UpdateRiasecAnswers 更新指定 publicId 对应的 RIASEC 测试答案 JSON。
+func (pdb *psDatabase) UpdateRiasecAnswers(
+	ctx context.Context,
+	publicId string,
+	answersJSON []byte,
+) error {
+	pdb.log.Debug().
+		Str("public_id", publicId).
+		Msg("UpdateRiasecAnswers")
+
+	if publicId == "" {
+		return errors.New("publicId must be non-empty")
+	}
+	if len(answersJSON) == 0 {
+		return errors.New("answersJSON must be non-empty")
+	}
+
+	const q = `
+		UPDATE app.riasec_sessions
+		SET
+			answers      = $2::jsonb,
+			completed_at = now()
+		WHERE public_id = $1
+	`
+
+	_, err := pdb.db.ExecContext(ctx, q,
+		publicId,
+		string(answersJSON),
+	)
+
+	if err != nil {
+		pdb.log.Err(err).
+			Str("public_id", publicId).
+			Msg("UpdateRiasecAnswers failed")
+		return err
+	}
+
+	return nil
+}

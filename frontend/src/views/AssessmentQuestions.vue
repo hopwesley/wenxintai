@@ -49,7 +49,7 @@
 import {onMounted, ref} from 'vue'
 import TestLayout from '@/layouts/TestLayout.vue'
 import StepIndicator from '@/views/components/StepIndicator.vue'
-import {applyTest, useQuestionsStageView} from '@/controller/AssessmentQuestions'
+import {useQuestionsStageView} from '@/controller/AssessmentQuestions'
 import {useTestSession} from "@/store/testSession";
 import {StageBasic, TestTypeBasic, useSubscriptBySSE} from "@/controller/common";
 import {useAlert} from "@/logic/useAlert";

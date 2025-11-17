@@ -14,6 +14,7 @@ type DbService interface {
 	GetInviteByCode(ctx context.Context, code string) (*Invite, error)
 	FindRestRecordByUid(ctx context.Context, inviteCode, weChatID string) (*TestRecord, error)
 	NewTestRecord(ctx context.Context, testType string, inviteCode *string, weChatId *string) (string, error)
+	UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string) error
 }
 
 type txKey struct{}

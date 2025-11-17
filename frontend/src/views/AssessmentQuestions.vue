@@ -41,6 +41,7 @@
     <!-- 全屏遮罩 -->
     <div v-if="loading" class="overlay">
       <div class="overlay__card">正在从服务器获取信息…</div>
+      <p v-if="latestMessage">{{ latestMessage }}</p>
     </div>
   </TestLayout>
 </template>
@@ -50,7 +51,8 @@ import TestLayout from '@/layouts/TestLayout.vue'
 import StepIndicator from '@/views/components/StepIndicator.vue'
 import {applyTest, useQuestionsStageView} from '@/controller/AssessmentQuestions'
 import {useTestSession} from "@/store/testSession";
-import {StageBasic, TestTypeBasic} from "@/controller/common";
+import {StageBasic, TestTypeBasic, useSubscriptBySSE} from "@/controller/common";
+import {useAlert} from "@/logic/useAlert";
 
 const {
   route,
@@ -71,7 +73,7 @@ const nextLabel = ref('下一步')
 const isCurrentPageComplete = ref(true)
 const highlightedId = ref<string | null>(null)
 const scaleOptions = ref<{ value: number; label: string }[]>([])
-
+let latestMessage = ref("")
 
 function getAnswer(_id: string) {
   return undefined
@@ -86,7 +88,24 @@ async function handlePrev() {
 async function handleNext() {
 }
 
-const {state} = useTestSession()
+const {state, getPublicID} = useTestSession()
+const public_id: string = getPublicID() as string
+const {showAlert} = useAlert()
+
+useSubscriptBySSE(public_id, {
+  onError(err) {
+    console.log("------>>> sse channel error:", err)
+    showAlert('获取测试流程失败，请稍后再试:' + err)
+  },
+  onMsg(data) {
+    latestMessage.value = data.msg;
+    console.log("------>>> sse msg:", data)
+  },
+  onClose() {
+    console.log("------>>> sse closed:")
+  }
+})
+
 onMounted(async () => {
   showLoading()
   errorMessage.value = ''
@@ -95,23 +114,12 @@ onMounted(async () => {
   const testType = state.testType || TestTypeBasic
 
   try {
-    const resp = await applyTest(scaleKey, {
-      test_type: testType,
-      invite_code: state.inviteCode || undefined,
-      wechat_openid: state.wechatOpenId || undefined,
-      grade: state.grade || undefined,
-      mode: state.mode || undefined,
-      hobby: state.hobby || undefined,
-      session_id: state.sessionId || undefined,
-    })
-
-    console.log('[QuestionsStageView] apply_test resp:', resp)
-
+    console.log('[QuestionsStageView] apply_test resp:', scaleKey, testType)
   } catch (err) {
     console.error('[QuestionsStageView] applyTest error', err)
     errorMessage.value = '初始化测试失败，请返回首页重试'
     hideLoading()
-  }finally {
+  } finally {
     hideLoading()
   }
 })

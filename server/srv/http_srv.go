@@ -14,10 +14,12 @@ import (
 )
 
 const (
-	apiHealthy      = "/api/health"
-	apiLoadHobbies  = "/api/hobbies"
-	apiInviteVerify = "/api/invites/verify"
-	apiTestFlow     = "/api/test_flow"
+	apiHealthy       = "/api/health"
+	apiLoadHobbies   = "/api/hobbies"
+	apiInviteVerify  = "/api/invites/verify"
+	apiTestFlow      = "/api/test_flow"
+	apiTestBasicInfo = "/api/tests/basic_info"
+	apiSSESubChannel = "/api/sub/"
 )
 
 var (
@@ -81,6 +83,8 @@ func (s *HttpSrv) initRouter() error {
 	mux.HandleFunc(apiLoadHobbies, s.handleHobbies)
 	mux.HandleFunc(apiInviteVerify, s.handleInviteVerify)
 	mux.HandleFunc(apiTestFlow, s.handleTestFlow)
+	mux.HandleFunc(apiTestBasicInfo, s.updateBasicInfo)
+	mux.HandleFunc(apiSSESubChannel, s.handleSSEEvent)
 
 	if stat, err := os.Stat(s.cfg.StaticDir); err != nil || !stat.IsDir() {
 		if err == nil {
@@ -92,12 +96,12 @@ func (s *HttpSrv) initRouter() error {
 	fileServer := http.FileServer(http.Dir(s.cfg.StaticDir))
 	mux.Handle("/", fileServer)
 
+	handler := s.loggingMiddleware(mux)
 	srv := &http.Server{
-		Addr:         s.cfg.srvAddr(),
-		Handler:      s.loggingMiddleware(mux),
-		ReadTimeout:  time.Duration(s.cfg.ReadTimeout) * time.Second,
-		WriteTimeout: time.Duration(s.cfg.WriteTimeout) * time.Second,
-		IdleTimeout:  time.Duration(s.cfg.WriteTimeout) * time.Second,
+		Addr:              s.cfg.srvAddr(),
+		Handler:           handler,
+		ReadTimeout:       time.Duration(s.cfg.ReadTimeout) * time.Second,
+		ReadHeaderTimeout: time.Duration(s.cfg.ReadTimeout) * time.Second,
 	}
 
 	s.srv = srv
@@ -114,18 +118,17 @@ func (s *HttpSrv) loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (s *HttpSrv) initSSE() error {
-	return nil
-}
 func (s *HttpSrv) initWS() error {
 	return nil
 }
 
 func (s *HttpSrv) StartServing() {
-	s.log.Info().Msgf("HTTP server listening on %s", s.srv.Addr)
-	if err := s.srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		s.log.Fatal().Msgf("listen: %v", err)
-	}
+	go func() {
+		s.log.Info().Msgf("HTTP server listening on %s", s.srv.Addr)
+		if err := s.srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			s.log.Fatal().Msgf("listen: %v", err)
+		}
+	}()
 }
 
 func (s *HttpSrv) Shutdown(ctx context.Context) error {

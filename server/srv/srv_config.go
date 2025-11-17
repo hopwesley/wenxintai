@@ -5,12 +5,11 @@ import "fmt"
 type Config struct {
 	Host           string `json:"host"`
 	Port           string `json:"port"`
+	SSEPort        string `json:"sse_port"`
 	StaticDir      string `json:"static_dir"`
 	DefaultAPIKey  string `json:"default_api_key"`
 	studentHobbies []string
 	ReadTimeout    int64 `json:"read_timeout,omitempty"`
-	WriteTimeout   int64 `json:"write_timeout,omitempty"`
-	IdleTimeout    int64 `json:"idle_timeout,omitempty"`
 }
 
 func (cfg *Config) srvAddr() string {
@@ -36,14 +35,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.ReadTimeout <= 0 {
 		cfg.ReadTimeout = 15
-	}
-
-	if cfg.WriteTimeout <= 0 {
-		cfg.WriteTimeout = 15
-	}
-
-	if cfg.IdleTimeout <= 0 {
-		cfg.IdleTimeout = 60
 	}
 
 	return nil

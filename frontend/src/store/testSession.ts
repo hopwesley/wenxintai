@@ -159,7 +159,7 @@ export function useTestSession() {
     }
 
 
-    function setTestConfig(payload: { grade: string; mode: ModeOption; hobby?: string }) {
+    function setTestConfig(payload: {grade: string; mode: ModeOption; hobby?: string }) {
         state.grade = payload.grade
         state.mode = payload.mode
         state.hobby = payload.hobby

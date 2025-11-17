@@ -11,9 +11,30 @@ import (
 	"github.com/hopwesley/wenxintai/server/comm"
 	"github.com/hopwesley/wenxintai/server/dbSrv"
 	"github.com/hopwesley/wenxintai/server/srv"
+	"golang.org/x/sys/unix"
 )
 
+func bumpRlimitNoFile() {
+	var r unix.Rlimit
+	if err := unix.Getrlimit(unix.RLIMIT_NOFILE, &r); err != nil {
+		fmt.Printf("Getrlimit failed: %v", err)
+		return
+	}
+
+	// 把软限制拉到硬限制（如果你有权限）
+	r.Cur = r.Max
+
+	if err := unix.Setrlimit(unix.RLIMIT_NOFILE, &r); err != nil {
+		fmt.Printf("Setrlimit failed: %v", err)
+		return
+	}
+
+	fmt.Printf("RLIMIT_NOFILE set to %d", r.Cur)
+}
+
 func main() {
+	bumpRlimitNoFile()
+
 	cfg, err := loadAppConfig()
 	if err != nil {
 		panic(fmt.Sprintf("load config: %v", err))
@@ -31,7 +52,7 @@ func main() {
 		panic(fmt.Sprintf("create http service: %v", err))
 	}
 
-	go srv.Instance().StartServing()
+	srv.Instance().StartServing()
 
 	waitShutDown()
 }

@@ -28,8 +28,8 @@
             <span>测试模式</span>
             <select v-model="form.mode" :disabled="submitting" required>
               <option value="">请选择模式</option>
-              <option value="3+3">3+3 模式</option>
-              <option value="3+1+2">3+1+2 模式</option>
+              <option value=Mode33>3+3 模式</option>
+              <option value=Mode312>3+1+2 模式</option>
             </select>
           </label>
 

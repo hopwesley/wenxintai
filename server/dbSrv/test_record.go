@@ -138,3 +138,16 @@ func (pdb *psDatabase) NewTestRecord(ctx context.Context, testType string, invit
 
 	return publicID, nil
 }
+
+func (pdb *psDatabase) UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string) error {
+	const q = `
+        UPDATE app.tests_record
+        SET grade = $2,
+            "mode" = $3,
+            hobby = NULLIF($4, ''),
+            updated_at = now()
+        WHERE public_id = $1
+    `
+	_, err := pdb.db.ExecContext(ctx, q, publicId, grade, mode, hobby)
+	return err
+}

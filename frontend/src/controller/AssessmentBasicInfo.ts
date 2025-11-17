@@ -1,9 +1,9 @@
 import {computed, onMounted, reactive, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {useTestSession} from '@/store/testSession'
-import {getHobbies} from '@/api'
+import {apiRequest, getHobbies} from '@/api'
 import {useAlert} from '@/logic/useAlert'
-import {StageBasic, ModeOption, Mode33, Mode312, TestTypeBasic} from "@/controller/common";
+import {StageBasic, ModeOption, Mode33, Mode312, TestTypeBasic, CommonResponse} from "@/controller/common";
 
 interface TestConfigForm {
     grade: string
@@ -14,7 +14,7 @@ interface TestConfigForm {
 export function useStartTestConfig() {
     const {showAlert} = useAlert()
     const router = useRouter()
-    const {state, setTestConfig} = useTestSession()
+    const {state, setTestConfig, getPublicID} = useTestSession()
 
     function handleFlowError(msg?: string) {
         showAlert(msg ?? '测试流程异常，请返回首页重新开始', () => {
@@ -38,7 +38,7 @@ export function useStartTestConfig() {
 
     const form = reactive<TestConfigForm>({
         grade: state.grade ?? '',
-        mode: state.mode ?? '', // 默认空，强制用户选择
+        mode: state.mode ?? '',
         hobby: state.hobby ?? '',
     })
 
@@ -46,6 +46,7 @@ export function useStartTestConfig() {
     const errorMessage = ref('')
     const submitting = ref(false)
     const inviteCode = computed(() => state.inviteCode ?? '')
+    const public_id:string = getPublicID() as string
 
     const selectedMode = computed<ModeOption | null>(() => {
         return form.mode === Mode33 || form.mode === Mode312 ? form.mode : null
@@ -56,6 +57,10 @@ export function useStartTestConfig() {
     })
 
     onMounted(async () => {
+        if(!public_id){
+            handleFlowError("没有找到测试记录，请登录重试")
+            return
+        }
 
         const routes = state.testRoutes ?? []
         if (!routes.length) {
@@ -77,6 +82,21 @@ export function useStartTestConfig() {
         }
     })
 
+
+    interface BasicInfoReq {
+        public_id: string
+        grade: string
+        mode: string
+        hobby?: string | null
+    }
+
+    function updateTestBasicInfo(payload: BasicInfoReq) {
+        return apiRequest<CommonResponse>('/api/tests/basic_info', {
+            method: 'POST',
+            body: payload,
+        })
+    }
+
     async function handleSubmit() {
 
         if (!selectedMode.value) {
@@ -95,6 +115,12 @@ export function useStartTestConfig() {
             const grade = form.grade.trim()
             const hobby = form.hobby.trim()
 
+            await updateTestBasicInfo({
+                public_id: public_id,
+                grade,
+                mode: selectedMode.value as ModeOption,
+                hobby: hobby || null,
+            })
             setTestConfig({
                 grade,
                 mode: selectedMode.value as ModeOption,
@@ -111,7 +137,7 @@ export function useStartTestConfig() {
             const next = routes[idx + 1]
             const typ = state.testType || TestTypeBasic
 
-            await router.push(`/test/${typ}/${next.router}`)
+            await router.push(`/assessment/${typ}/${next.router}`)
         } catch (err) {
             console.error('[StartTestConfig] handleSubmit error', err)
             handleFlowError(

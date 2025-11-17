@@ -8,10 +8,29 @@ import (
 	"github.com/hopwesley/wenxintai/server/dbSrv"
 )
 
-type TestBasicInfo struct {
-	Grade string `json:"grade"`
-	Mode  string `json:"mode"`
-	Hobby string `json:"hobby,omitempty"`
+type BasicInfoReq struct {
+	PublicId string `json:"public_id"`
+	Grade    Grade  `json:"grade"`
+	Mode     Mode   `json:"mode"`
+	Hobby    string `json:"hobby,omitempty"`
+}
+
+func (bi *BasicInfoReq) parseObj(r *http.Request) *ApiErr {
+	if err := json.NewDecoder(r.Body).Decode(bi); err != nil {
+		return ApiInvalidReq("无效的请求体", err)
+	}
+
+	if len(bi.PublicId) <= 4 {
+		return ApiInvalidReq("缺少有效的测试 ID", nil)
+	}
+	if !bi.Grade.IsValid() {
+		return ApiInvalidReq("年级不合法，只能是：初二、初三、高一", nil)
+	}
+	if !bi.Mode.IsValid() {
+		return ApiInvalidReq("模式不合法，只能是：Mode33 或 Mode312", nil)
+	}
+
+	return nil
 }
 
 type testFlowRequest struct {
@@ -199,4 +218,35 @@ func buildTestRoutes(testType string) []testRouteDef {
 	routes = append(routes, report)
 
 	return routes
+}
+
+func (s *HttpSrv) updateBasicInfo(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, ApiMethodInvalid)
+		return
+	}
+
+	var req BasicInfoReq
+	err := req.parseObj(r)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	ctx := r.Context()
+	if err := dbSrv.Instance().UpdateBasicInfo(
+		ctx,
+		req.PublicId,
+		string(req.Grade),
+		string(req.Mode),
+		req.Hobby,
+	); err != nil {
+		writeError(w, NewApiError(http.StatusInternalServerError, "db_update_failed", "更新基本信息失败", err))
+		return
+	}
+
+	writeJSON(w, http.StatusOK, &CommonRes{
+		Ok:  true,
+		Msg: "更新基本信息成功",
+	})
 }

@@ -1,4 +1,5 @@
 import {createRouter, createWebHistory, RouteRecordRaw} from 'vue-router'
+import {StageBasic, StageReport} from "@/controller/common";
 
 const routes: RouteRecordRaw[] = [
     {
@@ -7,19 +8,19 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/HomeView.vue'),
     },
     {
-        path: '/assessment/:typ/basic-info',
+        path: '/assessment/:typ/'+StageBasic,
         name: 'test-basic-info',
         component: () => import('@/views/AssessmentBasicInfo.vue'),
+    },
+    {
+        path: '/assessment/:typ/'+StageReport,
+        name: 'test-report',
+        component: () => import('@/views/AssessmentReport.vue'),
     },
     {
         path: '/assessment/:typ/:scale',
         name: 'test-scale',
         component: () => import('@/views/AssessmentQuestions.vue'),
-    },
-    {
-        path: '/assessment/:typ/report',
-        name: 'test-scale',
-        component: () => import('@/views/ReportView.vue'),
     },
     {
         path: '/:pathMatch(.*)*',

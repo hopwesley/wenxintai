@@ -101,6 +101,7 @@ onMounted(() => {
     return
   }
 
+  let message="";
   const sseCtrl = useSubscriptBySSE(public_id, businessType, testStage, {
     autoStart: false,
     onOpen() {
@@ -114,7 +115,8 @@ onMounted(() => {
     },
 
     onMsg(msg) {
-      latestMessage.value = msg;
+      message+=msg;
+      latestMessage.value = message;
     },
 
     onClose() {

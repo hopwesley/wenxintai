@@ -70,6 +70,7 @@ export function useSubscriptBySSE(
         es = new EventSource(url)
 
         es.addEventListener('done', (ev: MessageEvent) => {
+            console.log("done message", ev)
             if (options.onDone) {
                 options.onDone(ev.data as string)
             }
@@ -77,6 +78,7 @@ export function useSubscriptBySSE(
         })
 
         es.addEventListener('app-error', (ev: MessageEvent) => {
+            console.log("app error", ev)
             const msg = (ev.data as string) || '服务器返回未知错误'
             if (options.onError) {
                 options.onError(new Error(msg))
@@ -109,6 +111,7 @@ export function useSubscriptBySSE(
     }
 
     const stop = () => {
+        console.log('[SSE] connection closed')
         if (es) {
             es.close()
             es = null

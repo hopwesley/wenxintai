@@ -9,8 +9,8 @@ import (
 
 type Invite struct {
 	Code      string
-	PublicID  string
 	Status    int16
+	PublicID  sql.NullString
 	ExpiresAt sql.NullTime
 	UsedBy    sql.NullString
 	UsedAt    sql.NullTime

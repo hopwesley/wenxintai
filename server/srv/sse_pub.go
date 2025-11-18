@@ -25,11 +25,36 @@ type SSEMessage struct {
 	Msg string
 }
 
+//
+//func (acm *SSEMessage) SSEMsg() string {
+//	if len(acm.Typ) == 0 {
+//		acm.Typ = SSE_MT_DATA
+//	}
+//	return fmt.Sprintf("event: %s\ndata: %s\n\n", acm.Typ, acm.Msg)
+//}
+
 func (acm *SSEMessage) SSEMsg() string {
 	if len(acm.Typ) == 0 {
 		acm.Typ = SSE_MT_DATA
 	}
-	return fmt.Sprintf("event: %s\ndata: %s\n\n", acm.Typ, acm.Msg)
+
+	// 统一换行符，先把 \r\n 转成 \n
+	normalized := strings.ReplaceAll(acm.Msg, "\r\n", "\n")
+	lines := strings.Split(normalized, "\n")
+
+	var b strings.Builder
+	b.WriteString("event: ")
+	b.WriteString(string(acm.Typ))
+	b.WriteByte('\n')
+
+	for _, line := range lines {
+		b.WriteString("data: ")
+		b.WriteString(line)
+		b.WriteByte('\n')
+	}
+
+	b.WriteByte('\n') // 结束整个 event
+	return b.String()
 }
 
 func (s *HttpSrv) initSSE() error {
@@ -169,6 +194,9 @@ func (s *HttpSrv) querySavedQuestionsFirst(bgCtx context.Context, publicId, busi
 		if err != nil {
 			return nil, fmt.Errorf("查询 RIASEC 试题失败：" + err.Error())
 		}
+		if riasecRecord == nil {
+			return nil, nil
+		}
 		return riasecRecord, nil
 
 	case ai_api.TypSEC:
@@ -185,7 +213,7 @@ func (s *HttpSrv) querySavedQuestionsFirst(bgCtx context.Context, publicId, busi
 func (s *HttpSrv) aiProcess(msgCh chan *SSEMessage, publicId, businessTyp string, aiTestType ai_api.TestTyp) {
 
 	sLog := s.log.With().Str("channel", publicId).Str("business_type", businessTyp).Str("ai_Type", string(aiTestType)).Logger()
-	defer close(msgCh)
+	//defer close(msgCh)
 
 	bgCtx := context.Background()
 

@@ -69,11 +69,11 @@ func (s *HttpSrv) handleInviteVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(inv.PublicID) > 0 {
+	if inv.PublicID.Valid {
 		resp := inviteVerifyResponse{
 			OK:       true,
 			Reason:   "试卷已创建",
-			PublicId: inv.PublicID,
+			PublicId: inv.PublicID.String,
 		}
 
 		localLog.Info().Msg("test record found by invite code")

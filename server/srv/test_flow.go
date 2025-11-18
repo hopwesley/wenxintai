@@ -116,7 +116,7 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var nextStep = calculateNextStep(record)
+	var nextStep = calculateNextStep(record, routes)
 	resp := testFlowResponse{
 		Routes:       routes,
 		TestPublicID: req.TestPublicID,
@@ -128,10 +128,17 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
-func calculateNextStep(record *dbSrv.TestRecord) string {
+func calculateNextStep(record *dbSrv.TestRecord, routes []testRouteDef) string {
+	if int(record.Status) >= len(routes) {
+		return StageReport
+	}
+
 	switch record.Status {
 	case RecordStatusInit:
 		return StageBasic
+	case RecordStatusInTest:
+		return routes[record.Status].Router
+
 	default:
 		return StageBasic
 	}
@@ -157,6 +164,7 @@ func (s *HttpSrv) updateBasicInfo(w http.ResponseWriter, r *http.Request) {
 		string(req.Grade),
 		string(req.Mode),
 		req.Hobby,
+		RecordStatusInTest,
 	); err != nil {
 		writeError(w, NewApiError(http.StatusInternalServerError, "db_update_failed", "更新基本信息失败", err))
 		return

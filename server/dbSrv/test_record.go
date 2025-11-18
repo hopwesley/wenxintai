@@ -142,24 +142,25 @@ func (pdb *psDatabase) NewTestRecord(ctx context.Context, businessTyp string, in
 	return publicID, nil
 }
 
-func (pdb *psDatabase) UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string) error {
+func (pdb *psDatabase) UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string, status int) error {
 	// language=SQL
 	const q = `
         UPDATE app.tests_record
         SET grade = $2,
-            "mode" = $3,
+            mode = $3,
             hobby = NULLIF($4, ''),
+            status=$5,
             updated_at = now()
         WHERE public_id = $1
     `
-	_, err := pdb.db.ExecContext(ctx, q, publicId, grade, mode, hobby)
+	_, err := pdb.db.ExecContext(ctx, q, publicId, grade, mode, hobby, status)
 	return err
 }
 
 func (pdb *psDatabase) QueryBasicInfo(ctx context.Context, publicId string) (*ai_api.BasicInfo, error) {
 
 	const q = `
-        SELECT public_id, grade, "mode", COALESCE(hobby, '')
+        SELECT public_id, grade, mode, COALESCE(hobby, '')
         FROM app.tests_record
         WHERE public_id = $1
     `

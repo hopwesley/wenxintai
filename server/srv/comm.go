@@ -45,7 +45,8 @@ func writeError(w http.ResponseWriter, err *ApiErr) {
 }
 
 const (
-	RecordStatusInit = 0
+	RecordStatusInit   = 0
+	RecordStatusInTest = 1
 )
 
 const (

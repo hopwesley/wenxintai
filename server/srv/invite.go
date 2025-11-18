@@ -42,7 +42,7 @@ func (s *HttpSrv) handleInviteVerify(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	// ---------- 第一步：先查 tests_record ----------
-	rec, err := dbSrv.Instance().FindRestRecordByUid(ctx, code, "")
+	rec, err := dbSrv.Instance().FindTestRecordByUid(ctx, code, "")
 	if err != nil {
 		s.log.Err(err).Str("invite_code", code).Msg("find test record error")
 		writeError(w, NewApiError(http.StatusInternalServerError, "db_error_tests_record", "查询问卷数据库失败", err))

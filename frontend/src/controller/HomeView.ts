@@ -14,7 +14,7 @@ export interface TestRouteDef {
 }
 
 export interface FetchTestFlowRequest {
-    test_type: string;
+    business_type: string;
     public_id?: string | null;
     invite_code?: string;
     wechat_openid?: string;
@@ -89,7 +89,7 @@ export function useHomeView() {
     async function handleInviteSuccess(payload: VerifyInviteResponse) {
         const typ = state.testType || TestTypeBasic
         const req = {
-            test_type: typ,
+            business_type: typ,
             public_id:payload.public_id,
             invite_code: state.inviteCode as string | undefined,
             wechat_openid: state.wechatOpenId as string | undefined,

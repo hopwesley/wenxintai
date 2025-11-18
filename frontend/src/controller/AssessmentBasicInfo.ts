@@ -32,7 +32,7 @@ export function useStartTestConfig() {
 
     const currentStepIndex = computed(() => {
         const routes = state.testRoutes ?? []
-        const idx = routes.findIndex((r) => r.router === 'basic-info')
+        const idx = routes.findIndex((r) => r.router === StageBasic)
         return idx >= 0 ? idx + 1 : 0
     })
 

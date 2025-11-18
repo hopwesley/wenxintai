@@ -10,23 +10,23 @@ import (
 )
 
 type TestRecord struct {
-	PublicId    string
-	TestType    string
-	InviteCode  sql.NullString
-	WeChatID    sql.NullString
-	Status      int16
-	CreatedAt   time.Time
-	CompletedAt sql.NullTime
+	PublicId     string
+	BusinessType string
+	InviteCode   sql.NullString
+	WeChatID     sql.NullString
+	Status       int16
+	CreatedAt    time.Time
+	CompletedAt  sql.NullTime
 }
 
-func (pdb *psDatabase) FindRestRecordByUid(
+func (pdb *psDatabase) FindTestRecordByUid(
 	ctx context.Context,
 	inviteCode, weChatID string,
 ) (*TestRecord, error) {
 	pdb.log.Debug().
 		Str("invite code", inviteCode).
 		Str("wechat_openid", weChatID).
-		Msg("FindRestRecordByUid")
+		Msg("FindTestRecordByUid")
 
 	if inviteCode == "" && weChatID == "" {
 		return nil, errors.New("either inviteCode or weChatID must be non-empty")
@@ -39,7 +39,7 @@ func (pdb *psDatabase) FindRestRecordByUid(
 
 	if inviteCode != "" {
 		q = `
-            SELECT public_id, test_type, invite_code, status, created_at, completed_at
+            SELECT public_id, business_type, invite_code, status, created_at, completed_at
             FROM app.tests_record
             WHERE invite_code = $1
             ORDER BY created_at DESC
@@ -48,7 +48,7 @@ func (pdb *psDatabase) FindRestRecordByUid(
 		arg = inviteCode
 	} else {
 		q = `
-            SELECT public_id, test_type, invite_code, status, created_at, completed_at
+            SELECT public_id, business_type, invite_code, status, created_at, completed_at
             FROM app.tests_record
             WHERE wechat_openid = $1
             ORDER BY created_at DESC
@@ -62,7 +62,7 @@ func (pdb *psDatabase) FindRestRecordByUid(
 	var rec TestRecord
 	err := row.Scan(
 		&rec.PublicId,
-		&rec.TestType,
+		&rec.BusinessType,
 		&rec.InviteCode,
 		&rec.Status,
 		&rec.CreatedAt,
@@ -92,8 +92,8 @@ func (pdb *psDatabase) FindRestRecordByUid(
 	return &rec, nil
 }
 
-func (pdb *psDatabase) NewTestRecord(ctx context.Context, testType string, inviteCode *string, weChatId *string) (string, error) {
-	pdb.log.Debug().Str("test_type", testType).Msg("NewTestRecord")
+func (pdb *psDatabase) NewTestRecord(ctx context.Context, businessTyp string, inviteCode *string, weChatId *string) (string, error) {
+	pdb.log.Debug().Str("business_type", businessTyp).Msg("NewTestRecord")
 
 	if inviteCode == nil && weChatId == nil {
 		return "", errors.New("either inviteCode or weChatId must be non-nil")
@@ -116,26 +116,26 @@ func (pdb *psDatabase) NewTestRecord(ctx context.Context, testType string, invit
 
 	// language=SQL
 	const q = `
-		INSERT INTO app.tests_record (test_type, wechat_openid, invite_code)
+		INSERT INTO app.tests_record (business_type, wechat_openid, invite_code)
 		VALUES ($1, $2, $3)
 		RETURNING public_id
 	`
 
 	var publicID string
 	err := pdb.db.QueryRowContext(ctx, q,
-		testType,
+		businessTyp,
 		wechatVal,
 		inviteVal,
 	).Scan(&publicID)
 	if err != nil {
 		pdb.log.Err(err).
-			Str("test_type", testType).
+			Str("business_type", businessTyp).
 			Msg("NewTestRecord insert failed")
 		return "", err
 	}
 
 	pdb.log.Debug().
-		Str("test_type", testType).
+		Str("business_type", businessTyp).
 		Str("public_id", publicID).
 		Msg("NewTestRecord created")
 
@@ -143,6 +143,7 @@ func (pdb *psDatabase) NewTestRecord(ctx context.Context, testType string, invit
 }
 
 func (pdb *psDatabase) UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string) error {
+	// language=SQL
 	const q = `
         UPDATE app.tests_record
         SET grade = $2,

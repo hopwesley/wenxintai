@@ -9,7 +9,7 @@ import (
 )
 
 type testFlowRequest struct {
-	TestType     string  `json:"test_type"`
+	BusinessType string  `json:"business_type"`
 	TestPublicID string  `json:"public_id,omitempty"`
 	InviteCode   *string `json:"invite_code,omitempty"`
 	WechatOpenID *string `json:"wechat_openid,omitempty"`
@@ -20,8 +20,8 @@ func (req *testFlowRequest) parseObj(r *http.Request) *ApiErr {
 		return ApiInvalidReq("invalid request body", err)
 	}
 
-	if strings.TrimSpace(req.TestType) == "" {
-		return ApiInvalidReq("test_type is required", nil)
+	if strings.TrimSpace(req.BusinessType) == "" {
+		return ApiInvalidReq("business_type is required", nil)
 	}
 
 	if (req.InviteCode == nil || strings.TrimSpace(*req.InviteCode) == "") &&
@@ -73,21 +73,25 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 	var req testFlowRequest
 	err := req.parseObj(r)
 	if err != nil {
+		s.log.Err(err).Msgf("invalid test flow request")
 		writeError(w, err)
 		return
 	}
 
-	routes := buildTestRoutes(req.TestType)
+	routes := buildTestRoutes(req.BusinessType)
 	if routes == nil {
+		s.log.Err(err).Msgf("failed build test routes for request:%v", req)
 		writeError(w, NewApiError(http.StatusInternalServerError,
-			ErrorCodeInternal, "没有测试类型为："+req.TestType+"的测试卷", nil))
+			ErrorCodeInternal, "没有测试类型为："+req.BusinessType+"的测试卷", nil))
 		return
 	}
+
 	ctx := r.Context()
 
 	if len(req.TestPublicID) < 4 {
-		publicID, dbErr := dbSrv.Instance().NewTestRecord(ctx, req.TestType, req.InviteCode, req.WechatOpenID)
+		publicID, dbErr := dbSrv.Instance().NewTestRecord(ctx, req.BusinessType, req.InviteCode, req.WechatOpenID)
 		if dbErr != nil {
+			s.log.Err(dbErr).Msgf("create new test record failed, request:%v", req)
 			writeError(w, NewApiError(http.StatusInternalServerError,
 				ErrorCodeInternal, "创建文件数据库操作失败", dbErr))
 			return
@@ -98,14 +102,15 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 			TestPublicID: publicID,
 		}
 
-		s.log.Debug().Str("public_id", publicID).Msg("no test public id found, init a empty test record")
+		s.log.Info().Str("public_id", publicID).Msg("no test public id found, init a empty test record")
 		writeJSON(w, http.StatusOK, resp)
 		return
 	}
 
 	var inviteCode, weChatID = req.getUserId()
-	record, dbErr := dbSrv.Instance().FindRestRecordByUid(ctx, inviteCode, weChatID)
+	record, dbErr := dbSrv.Instance().FindTestRecordByUid(ctx, inviteCode, weChatID)
 	if dbErr != nil {
+		s.log.Err(dbErr).Str("invite_code", inviteCode).Str("wechat_id", weChatID).Msg("failed find test record")
 		writeError(w, NewApiError(http.StatusInternalServerError,
 			ErrorCodeInternal, "查询文件数据库操作失败", dbErr))
 		return
@@ -117,7 +122,8 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 		TestPublicID: req.TestPublicID,
 		NextRoute:    nextStep,
 	}
-	s.log.Debug().Str("test_type", req.TestType).Str("invite_code", inviteCode).
+
+	s.log.Debug().Str("business_type", req.BusinessType).Str("invite_code", inviteCode).
 		Str("wechat_id", weChatID).Str("next_step", nextStep).Msg("test record found")
 	writeJSON(w, http.StatusOK, resp)
 }

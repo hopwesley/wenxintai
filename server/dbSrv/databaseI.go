@@ -14,8 +14,8 @@ type DbService interface {
 
 	ListHobbies(ctx context.Context) ([]string, error)
 	GetInviteByCode(ctx context.Context, code string) (*Invite, error)
-	FindRestRecordByUid(ctx context.Context, inviteCode, weChatID string) (*TestRecord, error)
-	NewTestRecord(ctx context.Context, testType string, inviteCode *string, weChatId *string) (string, error)
+	FindTestRecordByUid(ctx context.Context, inviteCode, weChatID string) (*TestRecord, error)
+	NewTestRecord(ctx context.Context, businessType string, inviteCode *string, weChatId *string) (string, error)
 	UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string) error
 	QueryBasicInfo(ctx context.Context, publicId string) (*ai_api.BasicInfo, error)
 	FindRiasecSession(ctx context.Context, businessType, publicId string) (*RiasecSession, error)

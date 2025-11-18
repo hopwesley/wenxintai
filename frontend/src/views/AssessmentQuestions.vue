@@ -51,7 +51,7 @@ import TestLayout from '@/layouts/TestLayout.vue'
 import StepIndicator from '@/views/components/StepIndicator.vue'
 import {useQuestionsStageView} from '@/controller/AssessmentQuestions'
 import {useTestSession} from "@/store/testSession";
-import {StageBasic, TestTypeBasic, useSubscriptBySSE} from "@/controller/common";
+import {StageBasic, StageRiasec, TestTypeBasic, useSubscriptBySSE} from "@/controller/common";
 import {useAlert} from "@/logic/useAlert";
 
 const {
@@ -62,6 +62,7 @@ const {
   currentStepTitle,
   showLoading,
   hideLoading,
+  validateTestStage,
 } = useQuestionsStageView()
 
 const totalPages = ref(1)
@@ -74,6 +75,46 @@ const isCurrentPageComplete = ref(true)
 const highlightedId = ref<string | null>(null)
 const scaleOptions = ref<{ value: number; label: string }[]>([])
 let latestMessage = ref("")
+
+const {getPublicID} = useTestSession()
+const public_id: string = getPublicID() as string
+const {showAlert} = useAlert()
+
+const {businessType, testStage} = route.params as { businessType: string; testStage: string }
+
+console.log('[QuestionsStageView] apply_test resp:', testStage, businessType)
+
+if (validateTestStage(testStage)) {
+  useSubscriptBySSE(public_id, businessType, testStage, {
+    onOpen() {
+      showLoading()
+    },
+
+    onError(err) {
+      console.log("------>>> sse channel error:", err)
+      showAlert('获取测试流程失败，请稍后再试:' + err)
+      hideLoading()
+    },
+
+    onMsg(data) {
+      latestMessage.value = data.msg;
+    },
+
+    onClose() {
+      console.log("------>>> sse closed:")
+      hideLoading()
+    },
+
+    onDone(questionStr) {
+      console.log("------>>> go questions:", questionStr)
+      hideLoading()
+    }
+  })
+
+  onMounted(async () => {
+    errorMessage.value = ''
+  })
+}
 
 function getAnswer(_id: string) {
   return undefined
@@ -88,52 +129,6 @@ async function handlePrev() {
 async function handleNext() {
 }
 
-const {state, getPublicID} = useTestSession()
-const public_id: string = getPublicID() as string
-const {showAlert} = useAlert()
-
-const scaleKey = String(route.params.scale ?? StageBasic)
-const testType = state.testType || TestTypeBasic
-
-console.log('[QuestionsStageView] apply_test resp:', scaleKey, testType)
-
-const { stop } = useSubscriptBySSE(public_id, scaleKey, testType, {
-  onOpen(){
-    showLoading()
-  },
-  onError(err) {
-    console.log("------>>> sse channel error:", err)
-    showAlert('获取测试流程失败，请稍后再试:' + err)
-    stop()
-    hideLoading()
-  },
-  onMsg(data) {
-    console.log("------>>> sse msg:", data.msg);
-    if (data.type === 'done') {
-      stop()
-      hideLoading()
-    }else{
-      latestMessage.value = data.msg;
-    }
-  },
-  onClose() {
-    console.log("------>>> sse closed:")
-    hideLoading()
-  }
-})
-
-onMounted(async () => {
-  errorMessage.value = ''
-
-  try {
-  } catch (err) {
-    console.error('[QuestionsStageView] applyTest error', err)
-    errorMessage.value = '初始化测试失败，请返回首页重试'
-  } finally {
-    hideLoading()
-  }
-})
 </script>
-
 
 <style scoped src="@/styles/questions-stage.css"></style>

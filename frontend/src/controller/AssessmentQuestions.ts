@@ -1,10 +1,14 @@
 import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute,useRouter } from 'vue-router'
 import { useTestSession } from '@/store/testSession'
+import {StageAsc, StageMotivation, StageOcean, StageRiasec} from "@/controller/common";
+import {useAlert} from "@/logic/useAlert";
 
 export function useQuestionsStageView() {
     const route = useRoute()
+    const router = useRouter()
     const { state } = useTestSession()
+    const {showAlert} = useAlert()
 
     const loading = ref(true)
 
@@ -26,8 +30,8 @@ export function useQuestionsStageView() {
 
     const currentStep = computed(() => {
         const routes = state.testRoutes ?? []
-        const scaleKey = String(route.params.scale ?? '')
-        const idx = routes.findIndex(r => r.router === scaleKey)
+        const testStage = String(route.params.testStage ?? '')
+        const idx = routes.findIndex(r => r.router === testStage)
         return idx >= 0 ? idx + 1 : 0
     })
 
@@ -40,7 +44,27 @@ export function useQuestionsStageView() {
         return '正在加载…'
     })
 
+    function validateTestStage(testStage: string): boolean {
+
+        const validStages = [
+            StageRiasec,
+            StageAsc,
+            StageOcean,
+            StageMotivation,
+        ]
+
+        if (!validStages.includes(testStage)) {
+            showAlert( '测试流程异常，请返回首页重新开始', () => {
+                router.replace('/').then()
+            })
+            return false
+        }
+        return true
+    }
+
     return {
+        validateTestStage,
+        showAlert,
         route,
         loading,
         stepItems,

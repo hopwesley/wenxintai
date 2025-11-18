@@ -26,9 +26,11 @@ export interface UseSSEOptions {
     onOpen?: () => void
     onError?: (event: Error) => void
     onClose?: () => void
+    onDone?: (question: string) => void
 }
 
 function eventToError(ev: Event, message = '[SSE] connection error'): Error {
+    console.log(ev)
     const err = new Error(message)
     ;(err as any).cause = ev            // 挂在 cause 上，方便调试
     ;(err as any).rawEvent = ev        // 你也可以自定义属性
@@ -37,7 +39,7 @@ function eventToError(ev: Event, message = '[SSE] connection error'): Error {
 
 export function useSubscriptBySSE(
     eventID: string,
-    scaleKey: string,
+    businessType: string,
     testType: string,
     options: UseSSEOptions = {},
 ) {
@@ -45,13 +47,29 @@ export function useSubscriptBySSE(
 
     onMounted(() => {
         const params = new URLSearchParams({
-            scaleKey,
-            testType,
+            business_type:businessType,
+            test_type:testType,
         })
 
         const url = `/api/sub/${eventID}?${params.toString()}`
 
         es = new EventSource(url)
+
+        es.addEventListener('done', (ev) => {
+            if (options.onDone) {
+                options.onDone(ev.data as string)
+            }
+            stop()
+        });
+
+        es.addEventListener('app-error', (ev) => {
+            const msg = ev.data || '服务器返回未知错误'
+            if (options.onError) {
+                options.onError(new Error(msg))
+            }
+            stop();
+        });
+
 
         es.onopen = () => {
             console.log('[SSE] connection opened')
@@ -66,29 +84,19 @@ export function useSubscriptBySSE(
                 const err = eventToError(ev)
                 options.onError(err)
             }
+            stop()
         }
 
         es.onmessage = (e) => {
-            try {
-                const data = JSON.parse(e.data)
-                if (options.onMsg) {
-                    options.onMsg(data)
-                }
-            } catch (e2) {
-                console.warn('[SSE] invalid json', e.data)
-                if (options.onError) {
-                    const err = e2 instanceof Error ? e2 : new Error('[SSE] invalid json: ' + String(e2))
-                    options.onError(err)
-                }
+            if (options.onMsg) {
+                options.onMsg(e.data)
             }
         }
+
     })
 
     onBeforeUnmount(() => {
-        if (es) {
-            es.close()
-            es = null
-        }
+        stop()
     })
     const stop = () => {
         if (es) {
@@ -97,5 +105,5 @@ export function useSubscriptBySSE(
         }
     }
 
-    return { stop }
+    return
 }

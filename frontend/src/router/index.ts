@@ -18,8 +18,8 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/AssessmentReport.vue'),
     },
     {
-        path: '/assessment/:typ/:scale',
-        name: 'test-scale',
+        path: '/assessment/:businessType/:testStage',
+        name: 'test-stage',
         component: () => import('@/views/AssessmentQuestions.vue'),
     },
     {

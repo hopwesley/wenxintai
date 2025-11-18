@@ -135,9 +135,9 @@ export function useStartTestConfig() {
             }
 
             const next = routes[idx + 1]
-            const typ = state.testType || TestTypeBasic
+            const businessType = state.testType || TestTypeBasic
 
-            await router.push(`/assessment/${typ}/${next.router}`)
+            await router.push(`/assessment/${businessType}/${next.router}`)
         } catch (err) {
             console.error('[StartTestConfig] handleSubmit error', err)
             handleFlowError(

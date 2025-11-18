@@ -69,5 +69,10 @@ func loadAppConfig() (*appConfig, error) {
 	if err := cfg.Server.Validate(); err != nil {
 		return nil, err
 	}
+
+	if err := cfg.AIApi.Validate(); err != nil {
+		return nil, err
+	}
+
 	return &cfg, nil
 }

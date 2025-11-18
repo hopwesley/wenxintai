@@ -59,21 +59,26 @@ func (dai *DeepSeekApi) Init(cfg *Cfg) error {
 	return nil
 }
 
-func (dai *DeepSeekApi) GenerateQuestion(ctx context.Context, basicInfo *BasicInfo, tt TestTyp, callback TokenHandler) (json.RawMessage, error) {
+func (dai *DeepSeekApi) GenerateQuestion(ctx context.Context, bi *BasicInfo, tt TestTyp, callback TokenHandler) (json.RawMessage, error) {
+	log := dai.log.With().
+		Str("ai-test-type", string(tt)).
+		Str("public-id", bi.PublicId).
+		Logger()
+
 	systemPrompt, err := composeSystemPrompt(tt)
 	if err != nil {
-		dai.log.Err(err).Str("test_type", string(tt)).Msgf("composeSystemPrompt failed:%v", basicInfo)
+		log.Err(err).Msg("composeSystemPrompt failed")
 		return nil, err
 	}
 
 	temperature := getTemperature(tt)
 
-	userPrompt := genUserPrompt(basicInfo)
+	userPrompt := genUserPrompt(bi)
 
 	reqBody := map[string]interface{}{
 		"model":           "deepseek-chat",
 		"temperature":     temperature,
-		"max_tokens":      dai.cfg.QuestionMaxToken,
+		"max_tokens":      dai.cfg.QMaxToken,
 		"stream":          true,
 		"response_format": map[string]string{"type": "json_object"},
 		"messages": []map[string]string{
@@ -84,21 +89,24 @@ func (dai *DeepSeekApi) GenerateQuestion(ctx context.Context, basicInfo *BasicIn
 
 	content, sErr := dai.streamChat(ctx, reqBody, callback)
 	if sErr != nil {
-		dai.log.Err(sErr).Str("test_type", string(tt)).Msgf("streamChat failed:%v", basicInfo)
+		log.Err(sErr).Msg("streamChat failed")
 		return nil, sErr
 	}
+
 	raw := strings.TrimSpace(content)
 	if raw == "" {
+		log.Warn().Msg("test content from ai is empty")
 		return nil, fmt.Errorf("模型返回空内容 for %s", tt)
 	}
 
 	var tmp any
 	if err := json.Unmarshal([]byte(raw), &tmp); err != nil {
+		log.Err(err).Msg("test content is not json")
 		return nil, fmt.Errorf("%s 返回内容非合法 JSON: %w", tt, err)
 	}
 
+	log.Info().Msg("generate ai test success")
 	return json.RawMessage(raw), nil
-
 }
 
 func (dai *DeepSeekApi) streamChat(ctx context.Context, reqBody interface{}, onToken TokenHandler) (string, error) {
@@ -107,12 +115,14 @@ func (dai *DeepSeekApi) streamChat(ctx context.Context, reqBody interface{}, onT
 	}
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
+		dai.log.Err(err).Msg("invalid ai request body failed")
 		return "", fmt.Errorf("marshal request: %w", err)
 	}
 
 	endpoint := strings.TrimRight(dai.cfg.BaseUrl, "/") + "/v1/chat/completions"
 	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewReader(jsonData))
 	if err != nil {
+		dai.log.Err(err).Msg("build ai request body failed")
 		return "", fmt.Errorf("build request: %w", err)
 	}
 
@@ -124,12 +134,14 @@ func (dai *DeepSeekApi) streamChat(ctx context.Context, reqBody interface{}, onT
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		dai.log.Err(err).Msg("request deepseek failed")
 		return "", fmt.Errorf("request deepseek: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		dai.log.Warn().Str("err-response", strings.TrimSpace(string(body))).Msg(" deepseek status is not ok")
 		return "", fmt.Errorf("deepseek status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 
@@ -175,10 +187,11 @@ func (dai *DeepSeekApi) streamChat(ctx context.Context, reqBody interface{}, onT
 		fullContent.WriteString(content)
 		if onToken != nil {
 			if err := onToken(content); err != nil {
-				dai.log.Error().Err(err).Str("content", content).Msg("onToken failed, Maybe client is closed.")
+				dai.log.Err(err).Str("content", content).Msg("onToken failed, Maybe client is closed.")
 			}
 		}
 	}
 
+	dai.log.Info().Msg("DeepSeek stream finished")
 	return fullContent.String(), nil
 }

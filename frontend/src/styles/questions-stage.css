@@ -11,10 +11,6 @@
 .question__option { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 999px; background: #fff; }
 
 .questions__footer { margin-top: 8px; display: flex; justify-content: space-between; gap: 12px; }
-.questions__nav { padding: 10px 18px; border-radius: 999px; border: none; cursor: pointer; font-size: 16px; font-weight: 600; transition: opacity .2s ease; }
-.questions__nav--prev { background: rgba(148,163,184,.2); color: #1f2937; }
-.questions__nav--next { background: #6366f1; color: #fff; }
-.questions__nav:disabled { opacity: .6; cursor: not-allowed; }
 
 .overlay { position: fixed; inset: 0; background: rgba(15,23,42,.45); backdrop-filter: blur(2px); z-index: 999;
     display: flex; align-items: center; justify-content: center; }

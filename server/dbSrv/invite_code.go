@@ -9,6 +9,7 @@ import (
 
 type Invite struct {
 	Code      string
+	PublicID  string
 	Status    int16
 	ExpiresAt sql.NullTime
 	UsedBy    sql.NullString
@@ -18,9 +19,8 @@ type Invite struct {
 
 const (
 	InviteStatusUnused int16 = 0
-	// 其它状态你可以按实际再扩展：
+	InviteStatusInUse  int16 = 1
 	// InviteStatusUsed    int16 = 1
-	// InviteStatusExpired int16 = 2
 	// InviteStatusBlocked int16 = 3
 )
 
@@ -28,7 +28,7 @@ const (
 func (pdb *psDatabase) GetInviteByCode(ctx context.Context, code string) (*Invite, error) {
 	pdb.log.Debug().Str("code", code).Msg("GetInviteByCode")
 	const q = `
-		SELECT code, status, expires_at, used_by, used_at, created_at
+		SELECT code, status, expires_at, used_by, used_at, created_at, public_id
 		FROM app.invites
 		WHERE code = $1
 	`
@@ -43,7 +43,9 @@ func (pdb *psDatabase) GetInviteByCode(ctx context.Context, code string) (*Invit
 		&inv.UsedBy,
 		&inv.UsedAt,
 		&inv.CreatedAt,
+		&inv.PublicID,
 	)
+
 	if errors.Is(err, sql.ErrNoRows) {
 		pdb.log.Debug().Err(err).Msg("database query invite code not found")
 		return nil, nil
@@ -54,4 +56,51 @@ func (pdb *psDatabase) GetInviteByCode(ctx context.Context, code string) (*Invit
 	}
 	pdb.log.Debug().Interface("inv", inv).Msg("invite code found")
 	return &inv, nil
+}
+
+// UpdateInviteStatus 根据邀请码 code 更新其状态字段。
+func (pdb *psDatabase) UpdateInviteStatus(ctx context.Context, code string, newStatus int16) error {
+	pdb.log.Debug().
+		Str("code", code).
+		Int16("new_status", newStatus).
+		Msg("UpdateInviteStatus: start")
+
+	const q = `
+		UPDATE app.invites
+		SET status = $2
+		WHERE code = $1
+	`
+
+	res, err := pdb.db.ExecContext(ctx, q, code, newStatus)
+	if err != nil {
+		pdb.log.Error().
+			Err(err).
+			Str("code", code).
+			Int16("new_status", newStatus).
+			Msg("UpdateInviteStatus: exec error")
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		pdb.log.Error().
+			Err(err).
+			Str("code", code).
+			Msg("UpdateInviteStatus: RowsAffected error")
+		return err
+	}
+
+	if rows == 0 {
+		// 没有这个邀请码，可以按你习惯返回 sql.ErrNoRows 或自定义错误
+		pdb.log.Warn().
+			Str("code", code).
+			Msg("UpdateInviteStatus: no rows affected")
+		return sql.ErrNoRows
+	}
+
+	pdb.log.Debug().
+		Str("code", code).
+		Int64("rows", rows).
+		Msg("UpdateInviteStatus: success")
+	return nil
 }

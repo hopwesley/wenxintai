@@ -3,7 +3,6 @@ package dbSrv
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"sync"
 
 	"github.com/hopwesley/wenxintai/server/comm"
@@ -36,18 +35,24 @@ func newPostgreSqlService() *psDatabase {
 }
 
 func (pdb *psDatabase) WithTx(ctx context.Context, fn func(tx *sql.Tx) error) error {
-	tx, err := pdb.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	tx, err := pdb.db.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("begin tx: %w", err)
+		return err
 	}
+
+	defer func() {
+		if p := recover(); p != nil {
+			_ = tx.Rollback()
+			panic(p)
+		}
+	}()
+
 	if err := fn(tx); err != nil {
 		_ = tx.Rollback()
 		return err
 	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit tx: %w", err)
-	}
-	return nil
+
+	return tx.Commit()
 }
 
 func (pdb *psDatabase) Init(cfg any) error {

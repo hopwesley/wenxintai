@@ -3,6 +3,7 @@ package srv
 import (
 	"encoding/json"
 	"net/http"
+	"regexp"
 
 	"github.com/hopwesley/wenxintai/server/ai_api"
 )
@@ -12,15 +13,20 @@ type CommonRes struct {
 	Msg string `json:"msg,omitempty"`
 }
 
+var publicIDRegex = regexp.MustCompile(`^[a-f0-9]{32}$`)
+
+func IsValidPublicID(publicID string) bool {
+	return publicIDRegex.MatchString(publicID)
+}
+
 type BasicInfoReq ai_api.BasicInfo
 
 func (bi *BasicInfoReq) parseObj(r *http.Request) *ApiErr {
 	if err := json.NewDecoder(r.Body).Decode(bi); err != nil {
 		return ApiInvalidReq("无效的请求体", err)
 	}
-
-	if len(bi.PublicId) <= 4 {
-		return ApiInvalidReq("缺少有效的测试 ID", nil)
+	if !IsValidPublicID(bi.PublicId) {
+		return ApiInvalidReq("无效的问卷编号", nil)
 	}
 	if !bi.Grade.IsValid() {
 		return ApiInvalidReq("年级不合法，只能是：初二、初三、高一", nil)
@@ -28,7 +34,6 @@ func (bi *BasicInfoReq) parseObj(r *http.Request) *ApiErr {
 	if !bi.Mode.IsValid() {
 		return ApiInvalidReq("模式不合法，只能是：Mode33 或 Mode312", nil)
 	}
-
 	return nil
 }
 

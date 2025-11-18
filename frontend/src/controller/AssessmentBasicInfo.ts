@@ -2,7 +2,7 @@ import {computed, onMounted, reactive, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {useTestSession} from '@/store/testSession'
 import {apiRequest, getHobbies} from '@/api'
-import {useAlert} from '@/logic/useAlert'
+import {useAlert} from '@/controller/useAlert'
 import {StageBasic, ModeOption, Mode33, Mode312, TestTypeBasic, CommonResponse} from "@/controller/common";
 
 interface TestConfigForm {
@@ -135,7 +135,7 @@ export function useStartTestConfig() {
             }
 
             const next = routes[idx + 1]
-            const businessType = state.testType || TestTypeBasic
+            const businessType = state.businessType || TestTypeBasic
 
             await router.push(`/assessment/${businessType}/${next.router}`)
         } catch (err) {

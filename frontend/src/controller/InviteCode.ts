@@ -1,24 +1,26 @@
 import {apiRequest} from "@/api";
-const api_verify='/api/invites/verify';
-const api_redeem='/api/invites/redeem';
+import {useTestSession} from "@/store/testSession";
+
+const api_verify = '/api/invites/verify';
+const api_redeem = '/api/invites/redeem';
 
 export interface VerifyInviteResponse {
     ok: boolean
     reason: string
-    public_id?: string | null
+    public_id: string
 }
 
-export async function verifyInvite(code: string): Promise<VerifyInviteResponse> {
+export async function verifyInvite(invite_code: string, business_type: string): Promise<VerifyInviteResponse> {
     return apiRequest<VerifyInviteResponse>(api_verify, {
         method: 'POST',
-        body: { invite_code:code }
+        body: {invite_code, business_type}
     })
 }
 
 export async function redeemInvite(sessionId?: string) {
     return apiRequest(api_redeem, {
         method: 'POST',
-        body: sessionId ? { session_id: sessionId } : {}
+        body: sessionId ? {session_id: sessionId} : {}
     })
 }
 
@@ -39,17 +41,26 @@ export interface VerifyInviteResult {
  * 组件只需要关心 ok / errorMessage / response
  */
 export async function verifyInviteWithMessage(rawCode: string): Promise<VerifyInviteResult> {
-    const code = rawCode.trim()
+    const {state} = useTestSession()
 
+    const code = rawCode.trim()
+    const bType = state.businessType
     if (!code) {
         return {
             ok: false,
             errorMessage: '请输入邀请码',
         }
     }
+    if (!bType) {
+        return {
+            ok: false,
+            errorMessage: '未知的测试版本',
+        }
+    }
 
     try {
-        const res = await verifyInvite(code)
+
+        const res = await verifyInvite(code, bType)
 
         if (!res.ok) {
             return {

@@ -59,7 +59,7 @@ func (dai *DeepSeekApi) Init(cfg *Cfg) error {
 	return nil
 }
 
-func (dai *DeepSeekApi) GenerateQuestion(ctx context.Context, bi *BasicInfo, tt TestTyp, callback TokenHandler) (json.RawMessage, error) {
+func (dai *DeepSeekApi) GenerateQuestion(ctx context.Context, bi *BasicInfo, tt TestTyp, callback TokenHandler) (string, error) {
 	log := dai.log.With().
 		Str("ai-test-type", string(tt)).
 		Str("public-id", bi.PublicId).
@@ -68,7 +68,7 @@ func (dai *DeepSeekApi) GenerateQuestion(ctx context.Context, bi *BasicInfo, tt 
 	systemPrompt, err := composeSystemPrompt(tt)
 	if err != nil {
 		log.Err(err).Msg("composeSystemPrompt failed")
-		return nil, err
+		return "", err
 	}
 
 	temperature := getTemperature(tt)
@@ -90,23 +90,23 @@ func (dai *DeepSeekApi) GenerateQuestion(ctx context.Context, bi *BasicInfo, tt 
 	content, sErr := dai.streamChat(ctx, reqBody, callback)
 	if sErr != nil {
 		log.Err(sErr).Msg("streamChat failed")
-		return nil, sErr
+		return "", sErr
 	}
 
 	raw := strings.TrimSpace(content)
 	if raw == "" {
 		log.Warn().Msg("test content from ai is empty")
-		return nil, fmt.Errorf("模型返回空内容 for %s", tt)
+		return "", fmt.Errorf("模型返回空内容 for %s", tt)
 	}
 
 	var tmp any
 	if err := json.Unmarshal([]byte(raw), &tmp); err != nil {
 		log.Err(err).Msg("test content is not json")
-		return nil, fmt.Errorf("%s 返回内容非合法 JSON: %w", tt, err)
+		return "", fmt.Errorf("%s 返回内容非合法 JSON: %w", tt, err)
 	}
 
 	log.Info().Msg("generate ai test success")
-	return json.RawMessage(raw), nil
+	return raw, nil
 }
 
 func (dai *DeepSeekApi) streamChat(ctx context.Context, reqBody interface{}, onToken TokenHandler) (string, error) {

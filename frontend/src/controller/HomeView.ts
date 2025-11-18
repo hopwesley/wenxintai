@@ -3,7 +3,7 @@ import {apiRequest} from "@/api";
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTestSession } from '@/store/testSession'
-import { useAlert } from '@/logic/useAlert'
+import { useAlert } from '@/controller/useAlert'
 import {VerifyInviteResponse} from "@/controller/InviteCode";
 import { useAuthStore } from '@/store/auth'
 import {TestTypeBasic, TestTypePro, TestTypeSchool} from "@/controller/common";
@@ -14,10 +14,7 @@ export interface TestRouteDef {
 }
 
 export interface FetchTestFlowRequest {
-    business_type: string;
-    public_id?: string | null;
-    invite_code?: string;
-    wechat_openid?: string;
+    public_id: string;
 }
 
 export interface FetchTestFlowResponse {
@@ -48,7 +45,7 @@ export function useHomeView() {
 
     const { showAlert } = useAlert()
     const router = useRouter()
-    const { state, setPublicID, setTestType, setTestRoutes } = useTestSession()
+    const { state, setPublicID, setBusinessType, setTestRoutes } = useTestSession()
     const authStore = useAuthStore()
     const inviteModalOpen = ref(false)
 
@@ -58,7 +55,7 @@ export function useHomeView() {
     }
 
     function startTest(typ: string) {
-        setTestType(typ)
+        setBusinessType(typ)
         inviteModalOpen.value = true
     }
 
@@ -87,12 +84,9 @@ export function useHomeView() {
     })
 
     async function handleInviteSuccess(payload: VerifyInviteResponse) {
-        const typ = state.testType || TestTypeBasic
+        const typ = state.businessType || TestTypeBasic
         const req = {
-            business_type: typ,
             public_id:payload.public_id,
-            invite_code: state.inviteCode as string | undefined,
-            wechat_openid: state.wechatOpenId as string | undefined,
         }
 
         let routes: TestRouteDef[] = []

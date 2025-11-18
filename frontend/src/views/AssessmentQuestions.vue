@@ -29,12 +29,6 @@
       </div>
 
       <footer class="questions__footer" v-if="!loading && !errorMessage">
-        <button type="button" class="questions__nav questions__nav--prev" @click="handlePrev">上一步</button>
-        <button type="button" class="questions__nav questions__nav--next"
-                :disabled="!isCurrentPageComplete || submitting" @click="handleNext">
-          <span v-if="submitting">提交中…</span>
-          <span v-else>{{ nextLabel }}</span>
-        </button>
       </footer>
     </section>
 
@@ -51,8 +45,9 @@ import TestLayout from '@/layouts/TestLayout.vue'
 import StepIndicator from '@/views/components/StepIndicator.vue'
 import {useQuestionsStageView} from '@/controller/AssessmentQuestions'
 import {useTestSession} from "@/store/testSession";
-import {StageBasic, StageRiasec, TestTypeBasic, useSubscriptBySSE} from "@/controller/common";
-import {useAlert} from "@/logic/useAlert";
+import {useSubscriptBySSE} from "@/controller/common";
+import {useAlert} from "@/controller/useAlert";
+import {router} from "@/router";
 
 const {
   route,
@@ -69,23 +64,45 @@ const totalPages = ref(1)
 const currentPage = ref(1)
 const currentPageQuestions = ref<{ id: string; text: string }[]>([])
 const errorMessage = ref('')
-const submitting = ref(false)
-const nextLabel = ref('下一步')
-const isCurrentPageComplete = ref(true)
 const highlightedId = ref<string | null>(null)
 const scaleOptions = ref<{ value: number; label: string }[]>([])
 let latestMessage = ref("")
 
-const {getPublicID} = useTestSession()
-const public_id: string = getPublicID() as string
+const {state, getPublicID} = useTestSession()
+const public_id: string | undefined = getPublicID()
 const {showAlert} = useAlert()
-
+const routes = state.testRoutes ?? []
 const {businessType, testStage} = route.params as { businessType: string; testStage: string }
 
-console.log('[QuestionsStageView] apply_test resp:', testStage, businessType)
+console.log('[QuestionsStageView] apply_test resp:', testStage, businessType, public_id, routes)
 
-if (validateTestStage(testStage)) {
-  useSubscriptBySSE(public_id, businessType, testStage, {
+function getAnswer(_id: string) {
+  return undefined
+}
+
+function onSelect(_id: string, _value: number) {
+}
+
+onMounted(() => {
+  errorMessage.value = ''
+
+  if (!public_id || !routes.length || !validateTestStage(testStage)) {
+    showAlert('测试流程异常，请返回首页重新开始', () => {
+      router.replace('/').then()
+    })
+    return
+  }
+
+  const idx = routes.findIndex(r => r.router === String(testStage || ''))
+  if (idx === -1) {
+    showAlert('测试流程异常，未能识别当前步骤，请返回首页重新开始', () => {
+      router.replace('/').then()
+    })
+    return
+  }
+
+  const sseCtrl = useSubscriptBySSE(public_id, businessType, testStage, {
+    autoStart: false,
     onOpen() {
       showLoading()
     },
@@ -96,8 +113,8 @@ if (validateTestStage(testStage)) {
       hideLoading()
     },
 
-    onMsg(data) {
-      latestMessage.value = data.msg;
+    onMsg(msg) {
+      latestMessage.value = msg;
     },
 
     onClose() {
@@ -111,20 +128,8 @@ if (validateTestStage(testStage)) {
     }
   })
 
-  onMounted(async () => {
-    errorMessage.value = ''
-  })
-}
-
-function getAnswer(_id: string) {
-  return undefined
-}
-
-function onSelect(_id: string, _value: number) {
-}
-
-async function handlePrev() {
-}
+  sseCtrl.start()
+})
 
 async function handleNext() {
 }

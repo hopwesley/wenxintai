@@ -3,55 +3,25 @@ package srv
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/hopwesley/wenxintai/server/dbSrv"
 )
 
 type testFlowRequest struct {
-	BusinessType string  `json:"business_type"`
-	TestPublicID string  `json:"public_id,omitempty"`
-	InviteCode   *string `json:"invite_code,omitempty"`
-	WechatOpenID *string `json:"wechat_openid,omitempty"`
+	TestPublicID string `json:"public_id"`
 }
 
 func (req *testFlowRequest) parseObj(r *http.Request) *ApiErr {
+	if r.Method != http.MethodPost {
+		return ApiMethodInvalid
+	}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		return ApiInvalidReq("invalid request body", err)
 	}
-
-	if strings.TrimSpace(req.BusinessType) == "" {
-		return ApiInvalidReq("business_type is required", nil)
+	if !IsValidPublicID(req.TestPublicID) {
+		return ApiInvalidReq("无效的问卷编号", nil)
 	}
-
-	if (req.InviteCode == nil || strings.TrimSpace(*req.InviteCode) == "") &&
-		(req.WechatOpenID == nil || strings.TrimSpace(*req.WechatOpenID) == "") {
-		return ApiInvalidReq("请先微信登录或者使用邀请码开始测试", nil)
-	}
-
 	return nil
-}
-
-func (req *testFlowRequest) isInviteCodeUsage() bool {
-	return req.InviteCode != nil &&
-		len(strings.TrimSpace(*req.InviteCode)) > 2
-}
-
-func (req *testFlowRequest) isWeChatUsage() bool {
-	return req.WechatOpenID != nil &&
-		len(strings.TrimSpace(*req.WechatOpenID)) > 2
-}
-
-func (req *testFlowRequest) getUserId() (string, string) {
-	var inviteCode, weChatID = "", ""
-	if req.isInviteCodeUsage() {
-		inviteCode = *req.InviteCode
-	}
-	if req.isWeChatUsage() {
-		weChatID = *req.WechatOpenID
-	}
-
-	return inviteCode, weChatID
 }
 
 type testRouteDef struct {
@@ -66,10 +36,7 @@ type testFlowResponse struct {
 }
 
 func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeError(w, ApiMethodInvalid)
-		return
-	}
+
 	var req testFlowRequest
 	err := req.parseObj(r)
 	if err != nil {
@@ -77,42 +44,21 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-
-	routes := buildTestRoutes(req.BusinessType)
-	if routes == nil {
-		s.log.Err(err).Msgf("failed build test routes for request:%v", req)
-		writeError(w, NewApiError(http.StatusInternalServerError,
-			ErrorCodeInternal, "没有测试类型为："+req.BusinessType+"的测试卷", nil))
-		return
-	}
-
 	ctx := r.Context()
 
-	if len(req.TestPublicID) < 4 {
-		publicID, dbErr := dbSrv.Instance().NewTestRecord(ctx, req.BusinessType, req.InviteCode, req.WechatOpenID)
-		if dbErr != nil {
-			s.log.Err(dbErr).Msgf("create new test record failed, request:%v", req)
-			writeError(w, NewApiError(http.StatusInternalServerError,
-				ErrorCodeInternal, "创建文件数据库操作失败", dbErr))
-			return
-		}
+	sLog := s.log.With().Str("public_id", req.TestPublicID).Logger()
 
-		resp := testFlowResponse{
-			Routes:       routes,
-			TestPublicID: publicID,
-		}
-
-		s.log.Info().Str("public_id", publicID).Msg("no test public id found, init a empty test record")
-		writeJSON(w, http.StatusOK, resp)
+	record, dbErr := dbSrv.Instance().FindTestRecordByPublicId(ctx, req.TestPublicID)
+	if dbErr != nil {
+		sLog.Err(dbErr).Msg("failed find test record")
+		writeError(w, ApiInternalErr("查询文件数据库操作失败", dbErr))
 		return
 	}
 
-	var inviteCode, weChatID = req.getUserId()
-	record, dbErr := dbSrv.Instance().FindTestRecordByUid(ctx, inviteCode, weChatID)
-	if dbErr != nil {
-		s.log.Err(dbErr).Str("invite_code", inviteCode).Str("wechat_id", weChatID).Msg("failed find test record")
-		writeError(w, NewApiError(http.StatusInternalServerError,
-			ErrorCodeInternal, "查询文件数据库操作失败", dbErr))
+	routes := buildTestRoutes(record.BusinessType)
+	if routes == nil {
+		sLog.Err(err).Msgf("failed build test routes")
+		writeError(w, ApiInternalErr("没有测试类型为："+record.BusinessType+"的测试卷", nil))
 		return
 	}
 
@@ -123,8 +69,7 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 		NextRoute:    nextStep,
 	}
 
-	s.log.Debug().Str("business_type", req.BusinessType).Str("invite_code", inviteCode).
-		Str("wechat_id", weChatID).Str("next_step", nextStep).Msg("test record found")
+	sLog.Debug().Str("next_step", nextStep).Msg("test record found")
 	writeJSON(w, http.StatusOK, resp)
 }
 

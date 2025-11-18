@@ -10,7 +10,28 @@ import (
 )
 
 type inviteVerifyRequest struct {
-	InviteCode string `json:"invite_code"`
+	InviteCode   string `json:"invite_code"`
+	BusinessType string `json:"business_type"`
+}
+
+func (req *inviteVerifyRequest) parseObj(r *http.Request) *ApiErr {
+	if r.Method != http.MethodPost {
+		return ApiMethodInvalid
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return ApiInvalidReq("json 解析参数失败", nil)
+	}
+
+	if strings.TrimSpace(req.InviteCode) == "" {
+		return ApiInvalidReq("无效的邀请码", nil)
+	}
+
+	if strings.TrimSpace(req.BusinessType) == "" {
+		return ApiInvalidReq("无效的业务类型", nil)
+	}
+
+	return nil
 }
 
 type inviteVerifyResponse struct {
@@ -20,51 +41,21 @@ type inviteVerifyResponse struct {
 }
 
 func (s *HttpSrv) handleInviteVerify(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		s.log.Error().Interface("method", r.Method).Interface("request", r).Msg("invalid method")
-		writeError(w, ApiMethodInvalid)
-		return
-	}
 
 	var req inviteVerifyRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.log.Err(err).Msg("decode json error when handleInviteVerify")
-		writeError(w, ApiInvalidReq("无效的邀请码", nil))
+	if err := req.parseObj(r); err != nil {
+		s.log.Err(err).Msg("decode requests error when handleInviteVerify")
+		writeError(w, err)
 		return
 	}
 
-	code := strings.TrimSpace(req.InviteCode)
-	if code == "" {
-		s.log.Error().Msg("code is empty when handleInviteVerify")
-		writeError(w, ApiInvalidReq("无效的邀请码", nil))
-		return
-	}
+	localLog := s.log.With().Str("invite_code", req.InviteCode).Str("business_type", req.BusinessType).Logger()
 
 	ctx := r.Context()
-	// ---------- 第一步：先查 tests_record ----------
-	rec, err := dbSrv.Instance().FindTestRecordByUid(ctx, code, "")
+	inv, err := dbSrv.Instance().GetInviteByCode(ctx, req.InviteCode)
 	if err != nil {
-		s.log.Err(err).Str("invite_code", code).Msg("find test record error")
-		writeError(w, NewApiError(http.StatusInternalServerError, "db_error_tests_record", "查询问卷数据库失败", err))
-		return
-	}
-
-	if rec != nil {
-		resp := inviteVerifyResponse{
-			OK:       true,
-			Reason:   "ok_existing_record",
-			PublicId: rec.PublicId,
-		}
-		s.log.Info().Str("invite_code", code).Msg("test record found by invite code")
-		writeJSON(w, http.StatusOK, resp)
-		return
-	}
-
-	// ---------- 第二步：再查 invites 表 ----------
-	inv, err := dbSrv.Instance().GetInviteByCode(ctx, code)
-	if err != nil {
-		s.log.Err(err).Str("invite_code", code).Msg("get invite error")
-		writeError(w, NewApiError(http.StatusInternalServerError, "db_error_invites", "查询邀请码数据库失败", err))
+		localLog.Err(err).Msg("get invite error")
+		writeError(w, ApiInternalErr("查询邀请码数据库失败", err))
 		return
 	}
 
@@ -73,7 +64,19 @@ func (s *HttpSrv) handleInviteVerify(w http.ResponseWriter, r *http.Request) {
 			OK:     false,
 			Reason: "无此邀请码",
 		}
-		s.log.Info().Str("invite_code", code).Msg("invite code not found")
+		localLog.Info().Msg("invite code not found")
+		writeJSON(w, http.StatusOK, resp)
+		return
+	}
+
+	if len(inv.PublicID) > 0 {
+		resp := inviteVerifyResponse{
+			OK:       true,
+			Reason:   "试卷已创建",
+			PublicId: inv.PublicID,
+		}
+
+		localLog.Info().Msg("test record found by invite code")
 		writeJSON(w, http.StatusOK, resp)
 		return
 	}
@@ -84,27 +87,34 @@ func (s *HttpSrv) handleInviteVerify(w http.ResponseWriter, r *http.Request) {
 			OK:     false,
 			Reason: "邀请码过期",
 		}
-		s.log.Info().Str("invite_code", code).Msg("invite code expired")
+		localLog.Info().Msg("invite code expired")
 		writeJSON(w, http.StatusOK, resp)
 		return
 	}
 
-	// 检查 status 是否可用（这里只把 status=0 当作可用）
 	if inv.Status != dbSrv.InviteStatusUnused {
 		resp := inviteVerifyResponse{
 			OK:     false,
 			Reason: "当前邀请码已经被使用",
 		}
-		s.log.Info().Str("invite_code", code).Msg("invite code invalid")
+		localLog.Info().Msg("invite code invalid")
 		writeJSON(w, http.StatusOK, resp)
 		return
 	}
 
-	resp := inviteVerifyResponse{
-		OK:     true,
-		Reason: "ok_no_record",
+	publicID, dbErr := dbSrv.Instance().NewTestRecord(ctx, req.BusinessType, &req.InviteCode, nil)
+	if dbErr != nil {
+		localLog.Err(dbErr).Msg("failed to create test record")
+		writeError(w, ApiInternalErr("创建测试问卷失败", err))
+		return
 	}
 
-	s.log.Debug().Str("invite_code", code).Msg("invite code found")
+	resp := inviteVerifyResponse{
+		OK:       true,
+		Reason:   "新建试卷成功",
+		PublicId: publicID,
+	}
+
+	localLog.Debug().Msg("invite code found")
 	writeJSON(w, http.StatusOK, resp)
 }

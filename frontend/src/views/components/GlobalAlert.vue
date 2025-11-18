@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 import AlertModal from './AlertModal.vue'
-import { useAlert } from '@/logic/useAlert'
+import { useAlert } from '@/controller/useAlert'
 
 const { visible, title, message, handleConfirm, closeAlert } = useAlert()
 

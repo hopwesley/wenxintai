@@ -55,14 +55,6 @@ export interface CreateAssessmentResponse {
   stage: 'S1' | 'S2' | string
   questions: any
 }
-
-export function createAssessment(body: CreateAssessmentRequest) {
-  return request<CreateAssessmentResponse>('/api/assessments', {
-    method: 'POST',
-    body
-  })
-}
-
 export interface SubmitAnswersResponseStage1 {
   next_question_set_id: string
   stage: 'S2'

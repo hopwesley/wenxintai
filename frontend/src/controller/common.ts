@@ -12,7 +12,14 @@ export const StageMotivation = "motivation"
 export const Mode33 = '3+3'
 export const Mode312 = '3+1+2'
 export type ModeOption = '3+3' | '3+1+2'
-
+type AnswerValue = 1 | 2 | 3 | 4 | 5
+export const scaleOptions = [
+    { value: 1 as AnswerValue, label: '从不' },
+    { value: 2 as AnswerValue, label: '较少' },
+    { value: 3 as AnswerValue, label: '一般' },
+    { value: 4 as AnswerValue, label: '经常' },
+    { value: 5 as AnswerValue, label: '总是' },
+]
 
 export interface CommonResponse {
     ok: boolean
@@ -27,13 +34,16 @@ export interface UseSSEOptions {
     onError?: (event: Error) => void
     onClose?: () => void
     onDone?: (question: string) => void
+
+    // 新增一个可选配置：是否自动在 mounted 时启动
+    autoStart?: boolean
 }
 
 function eventToError(ev: Event, message = '[SSE] connection error'): Error {
     console.log(ev)
     const err = new Error(message)
-    ;(err as any).cause = ev            // 挂在 cause 上，方便调试
-    ;(err as any).rawEvent = ev        // 你也可以自定义属性
+    ;(err as any).cause = ev      // 挂在 cause 上，方便调试
+    ;(err as any).rawEvent = ev   // 你也可以自定义属性
     return err
 }
 
@@ -43,33 +53,36 @@ export function useSubscriptBySSE(
     testType: string,
     options: UseSSEOptions = {},
 ) {
+    const {autoStart = true} = options
     let es: EventSource | null = null
 
-    onMounted(() => {
+    const start = () => {
+        if (es) {
+            return
+        }
+
         const params = new URLSearchParams({
-            business_type:businessType,
-            test_type:testType,
+            business_type: businessType,
+            test_type: testType,
         })
 
         const url = `/api/sub/${eventID}?${params.toString()}`
-
         es = new EventSource(url)
 
-        es.addEventListener('done', (ev) => {
+        es.addEventListener('done', (ev: MessageEvent) => {
             if (options.onDone) {
                 options.onDone(ev.data as string)
             }
             stop()
-        });
+        })
 
-        es.addEventListener('app-error', (ev) => {
-            const msg = ev.data || '服务器返回未知错误'
+        es.addEventListener('app-error', (ev: MessageEvent) => {
+            const msg = (ev.data as string) || '服务器返回未知错误'
             if (options.onError) {
                 options.onError(new Error(msg))
             }
-            stop();
-        });
-
+            stop()
+        })
 
         es.onopen = () => {
             console.log('[SSE] connection opened')
@@ -87,17 +100,14 @@ export function useSubscriptBySSE(
             stop()
         }
 
-        es.onmessage = (e) => {
+        es.onmessage = (e: MessageEvent) => {
+            console.log("------>>>",e.data)
             if (options.onMsg) {
                 options.onMsg(e.data)
             }
         }
+    }
 
-    })
-
-    onBeforeUnmount(() => {
-        stop()
-    })
     const stop = () => {
         if (es) {
             es.close()
@@ -105,5 +115,18 @@ export function useSubscriptBySSE(
         }
     }
 
-    return
+    if (autoStart) {
+        onMounted(() => {
+            start()
+        })
+    }
+
+    onBeforeUnmount(() => {
+        stop()
+    })
+
+    return {
+        start,
+        stop,
+    }
 }

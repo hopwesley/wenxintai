@@ -1,165 +1,111 @@
-import {reactive, watch} from 'vue'
-import type {Variant} from '@/config/testSteps'
-import {ModeOption} from '@/controller/common'
+import { reactive, watch } from 'vue'
+import { ModeOption, TestTypeBasic, TestTypePro, TestTypeSchool } from '@/controller/common'
 
 const STORAGE_KEY = 'wenxintai:test-session'
-const SESSION_ID_KEY = 'session_id'
-
-type AnswerValue = 1 | 2 | 3 | 4 | 5
 
 export interface TestSession {
-    sessionId?: string
+    // 当前测试记录在后端 tests_record 表中的 public_id
     recordPublicID?: string
-    variant: Variant
 
-    testType?: 'basic' | 'pro' | string; // 当前选择的测试类型
-    testRoutes?: { router: string; desc: string }[]; // 整个测试流程的路由表
+    // basic / pro / school 之一，或者未来扩展的字符串
+    businessType?: typeof TestTypeBasic | typeof TestTypePro | typeof TestTypeSchool | string
 
+    // 测试流程的路由列表
+    testRoutes?: { router: string; desc: string }[]
+
+    // BasicInfo / AssessmentBasicInfo 收集到的配置
     mode?: ModeOption
     hobby?: string
     grade?: string
+
+    // 入口信息
     inviteCode?: string
     wechatOpenId?: string
 
-    currentStep: number
-    answersStage1: Record<string, AnswerValue>
-    answersStage2: Record<string, AnswerValue>
+    // 当前步骤（如果不需要持久化，也可以以后删掉）
+    currentStep?: number
 }
 
-function readPersistedSessionId(): string | undefined {
-    if (typeof window === 'undefined') {
-        return undefined
-    }
-    const stored = window.localStorage.getItem(SESSION_ID_KEY)
-    return stored ?? undefined
-}
-
+// 默认值：这里可以按需要补一些默认 businessType 等
 const defaultSession: TestSession = {
-    sessionId: readPersistedSessionId(),
-    variant: 'basic',
-    currentStep: 1,
+    recordPublicID: undefined,
+    businessType: undefined,
+    testRoutes: undefined,
     mode: undefined,
     hobby: undefined,
     grade: undefined,
     inviteCode: undefined,
-    answersStage1: {},
-    answersStage2: {},
+    wechatOpenId: undefined,
+    currentStep: undefined,
 }
 
-type SerializableTestSession = Omit<TestSession, 'answersStage1' | 'answersStage2'> & {
-    answersStage1: Record<string, AnswerValue>
-    answersStage2: Record<string, AnswerValue>
-}
-
+/**
+ * 从 localStorage 读取 TestSession
+ */
 function loadFromStorage(): TestSession {
     if (typeof window === 'undefined') {
-        return {...defaultSession, answersStage1: {}, answersStage2: {}}
+        return { ...defaultSession }
     }
 
-    const raw = window.sessionStorage.getItem(STORAGE_KEY)
+    const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) {
-        return {...defaultSession, answersStage1: {}, answersStage2: {}}
+        return { ...defaultSession }
     }
 
     try {
-        const parsed = JSON.parse(raw) as Partial<SerializableTestSession>
+        const parsed = JSON.parse(raw) as Partial<TestSession>
         return {
             ...defaultSession,
             ...parsed,
-            sessionId: readPersistedSessionId() ?? parsed?.sessionId,
-            answersStage1: parsed?.answersStage1 ?? {},
-            answersStage2: parsed?.answersStage2 ?? {},
         }
     } catch (error) {
-        console.warn('[testSession] Failed to parse session storage', error)
-        return {...defaultSession, answersStage1: {}, answersStage2: {}}
+        console.warn('[testSession] Failed to parse localStorage', error)
+        return { ...defaultSession }
     }
 }
 
-const state = reactive<TestSession>(loadFromStorage())
-
+/**
+ * 持久化到 localStorage
+ */
 function persist(session: TestSession) {
     if (typeof window === 'undefined') return
-    const payload: SerializableTestSession = {
-        ...session,
-        answersStage1: {...session.answersStage1},
-        answersStage2: {...session.answersStage2},
+    try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
+    } catch (error) {
+        console.warn('[testSession] Failed to save localStorage', error)
     }
-    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
 }
 
+/**
+ * 清空会话（例如测试完成 / 主动退出时可以调用）
+ */
+function clearStorage() {
+    if (typeof window === 'undefined') return
+    try {
+        window.localStorage.removeItem(STORAGE_KEY)
+    } catch (error) {
+        console.warn('[testSession] Failed to clear localStorage', error)
+    }
+}
+
+// 全局唯一的 reactive state
+const state = reactive<TestSession>(loadFromStorage())
+
+// 任何字段变化时自动写回 localStorage
 watch(
-    () => ({...state, answersStage1: {...state.answersStage1}, answersStage2: {...state.answersStage2}}),
+    () => ({ ...state }),
     (value) => {
         persist(value as TestSession)
     },
-    {deep: true}
-)
-
-watch<string | undefined>(
-    () => state.sessionId,
-    (value) => {
-        if (typeof window === 'undefined') return
-        const v = (value ?? '').trim()
-        if (v) {
-            window.localStorage.setItem(SESSION_ID_KEY, v)
-        } else {
-            window.localStorage.removeItem(SESSION_ID_KEY)
-        }
-    }
+    { deep: true }
 )
 
 export function useTestSession() {
-    function ensureSessionId() {
-        if (state.sessionId) {
-            return state.sessionId
-        }
-        const persisted = readPersistedSessionId()
-        if (persisted) {
-            state.sessionId = persisted
-            return persisted
-        }
-        throw new Error('NO_SESSION')
-    }
-
-    function getSessionId() {
-        return state.sessionId ?? null
-    }
-
-    function setSessionId(id: string | null | undefined) {
-        state.sessionId = id ?? undefined
-        if (typeof window === 'undefined') {
-            return
-        }
-        if (id && id.trim()) {
-            window.localStorage.setItem(SESSION_ID_KEY, id)
-        } else {
-            window.localStorage.removeItem(SESSION_ID_KEY)
-        }
-    }
-
-    function setVariant(variant: Variant) {
-        if (state.variant !== variant) {
-            state.variant = variant
-            resetForVariant()
-        }
-    }
-
-    function resetForVariant() {
-        state.currentStep = 1
-        state.answersStage1 = {}
-        state.answersStage2 = {}
-        state.mode = undefined
-        state.hobby = undefined
-        state.grade = undefined
-    }
-
     function setCurrentStep(step: number) {
         state.currentStep = step
     }
 
-
-    function setTestConfig(payload: {grade: string; mode: ModeOption; hobby?: string }) {
+    function setTestConfig(payload: { grade: string; mode: ModeOption; hobby?: string }) {
         state.grade = payload.grade
         state.mode = payload.mode
         state.hobby = payload.hobby
@@ -167,48 +113,11 @@ export function useTestSession() {
 
     function setInviteCode(code: string | null | undefined) {
         const normalized = typeof code === 'string' ? code.trim() : ''
-        state.inviteCode = normalized ? normalized : undefined
+        state.inviteCode = normalized || undefined
     }
 
-    function getInviteCode() {
-        return state.inviteCode ?? null
-    }
-
-    function setAnswer(stage: 1 | 2, questionId: string, value: AnswerValue) {
-        const target = stage === 1 ? state.answersStage1 : state.answersStage2
-        target[questionId] = value
-    }
-
-    function getAnswer(stage: 1 | 2, questionId: string) {
-        return (stage === 1 ? state.answersStage1 : state.answersStage2)[questionId]
-    }
-
-    function clearAnswers(stage: 1 | 2) {
-        if (stage === 1) {
-            state.answersStage1 = {}
-        } else {
-            state.answersStage2 = {}
-        }
-    }
-
-    function isPageComplete(stage: 1 | 2, questionIds: string[]): boolean {
-        const answers = stage === 1 ? state.answersStage1 : state.answersStage2
-        return questionIds.every((id) => Boolean(answers[id]))
-    }
-
-    function nextStep(maxStep?: number) {
-        const limit = maxStep ?? Number.MAX_SAFE_INTEGER
-        state.currentStep = Math.min(limit, state.currentStep + 1)
-        return state.currentStep
-    }
-
-    function prevStep() {
-        state.currentStep = Math.max(1, state.currentStep - 1)
-        return state.currentStep
-    }
-
-    function setTestType(type: 'basic' | 'pro' | string) {
-        state.testType = type
+    function setBusinessType(type: typeof TestTypeBasic | typeof TestTypePro | typeof TestTypeSchool | string) {
+        state.businessType = type
     }
 
     function setTestRoutes(routes: { router: string; desc: string }[]) {
@@ -223,41 +132,24 @@ export function useTestSession() {
         return state.recordPublicID
     }
 
-    function toPayload() {
-        return {
-            sessionId: state.sessionId,
-            variant: state.variant,
-            mode: state.mode,
-            hobby: state.hobby,
-            grade: state.grade,
-            inviteCode: state.inviteCode,
-            answersStage1: {...state.answersStage1},
-            answersStage2: {...state.answersStage2},
-        }
+    function resetSession() {
+        // 重置内存里的 state
+        Object.assign(state, { ...defaultSession })
+        // 清理 localStorage
+        clearStorage()
     }
 
     return {
         state,
-        ensureSessionId,
-        getSessionId,
-        setSessionId,
-        setVariant,
+
         setCurrentStep,
         setTestConfig,
         setInviteCode,
-        getInviteCode,
-        setAnswer,
-        getAnswer,
-        clearAnswers,
-        isPageComplete,
-        nextStep,
-        prevStep,
-        toPayload,
-        setTestType,
+        setBusinessType,
         setTestRoutes,
-        getPublicID,
         setPublicID,
+        getPublicID,
+        // 清空会话
+        resetSession,
     }
 }
-
-export type {ModeOption, AnswerValue}

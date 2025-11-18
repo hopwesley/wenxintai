@@ -8,6 +8,11 @@ import (
 	"time"
 )
 
+type QuestionRecord interface {
+	GetQuestions() json.RawMessage
+	GetAnswers() json.RawMessage
+}
+
 type RiasecSession struct {
 	ID           int64           `json:"id"`
 	BusinessType string          `json:"business_type"`
@@ -16,6 +21,14 @@ type RiasecSession struct {
 	Answers      json.RawMessage `json:"answers,omitempty"`
 	CreatedAt    time.Time       `json:"created_at"`
 	CompletedAt  *time.Time      `json:"completed_at,omitempty"`
+}
+
+func (rs *RiasecSession) GetQuestions() json.RawMessage {
+	return rs.Questions
+}
+
+func (rs *RiasecSession) GetAnswers() json.RawMessage {
+	return rs.Answers
 }
 
 func (pdb *psDatabase) FindRiasecSession(
@@ -56,7 +69,6 @@ WHERE business_type = $1 AND public_id = $2
 				Str("business_type", businessType).
 				Str("public_id", publicId).
 				Msg("FindRiasecSession: not found")
-			// 按你要求：没记录时返回 (nil, nil)
 			return nil, nil
 		}
 

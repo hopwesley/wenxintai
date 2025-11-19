@@ -1,6 +1,6 @@
-import {computed, onMounted, ref} from 'vue'
-import { useRoute,useRouter } from 'vue-router'
-import { useTestSession } from '@/store/testSession'
+import {computed, onMounted, ref, watch} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
+import {useTestSession} from '@/store/testSession'
 import {
     CommonResponse,
     StageAsc,
@@ -116,15 +116,6 @@ export function useQuestionsStagePage() {
             }))
     })
 
-
-    const scaleOptions = ref<ScaleOption[]>([
-        {value: 1, label: '从不'},
-        {value: 2, label: '很少'},
-        {value: 3, label: '一般'},
-        {value: 4, label: '经常'},
-        {value: 5, label: '非常多'},
-    ])
-
     const totalCount = computed(() => questions.value.length)
     const totalPages = computed(() =>
         totalCount.value > 0 ? Math.ceil(totalCount.value / pageSize) : 1
@@ -145,9 +136,23 @@ export function useQuestionsStagePage() {
 
     const public_id: string | undefined = getPublicID()
     const routes = state.testRoutes ?? []
-    const {businessType, testStage} = route.params as { businessType: string; testStage: string }
+    const businessType = computed(() =>
+        String(route.params.businessType ?? state.businessType ?? '')
+    )
 
-    console.log('[QuestionsStagePage] apply_test resp:', testStage, businessType, public_id, routes)
+    const testStage = computed(() =>
+        String(route.params.testStage ?? '')
+    )
+
+    watch(
+        () => [businessType.value, testStage.value],
+        () => {
+            initStageForCurrentRoute()
+        },
+        { immediate: true },
+    )
+
+    console.log('[QuestionsStagePage] apply_test resp:', testStage.value, businessType.value, public_id, routes)
 
     const rawMessage = ref('')
 
@@ -168,6 +173,17 @@ export function useQuestionsStagePage() {
             logLines.value.splice(0, logLines.value.length - MAX_LOG_LINES)
         }
         rawMessage.value = ''
+    }
+
+    function resetStageState() {
+        currentPage.value = 1
+        questions.value = []
+        answers.value = {}
+        highlightedQuestions.value = {}
+        errorMessage.value = ''
+        logLines.value = []
+        rawMessage.value = ''
+        isSubmitting.value = false
     }
 
     function handleSseDone(questionStr: string) {
@@ -191,18 +207,21 @@ export function useQuestionsStagePage() {
         }
     }
 
-    // ------- SSE 拉题目 -------
-    onMounted(() => {
+    function initStageForCurrentRoute() {
+        resetStageState()
         errorMessage.value = ''
 
-        if (!public_id || !routes.length || !validateTestStage(testStage)) {
+        const stage = testStage.value
+        const bizType = businessType.value
+
+        if (!public_id || !routes.length || !validateTestStage(stage)) {
             showAlert('测试流程异常，请返回首页重新开始', () => {
                 router.replace('/').then()
             })
             return
         }
 
-        const idx = routes.findIndex(r => r.router === String(testStage || ''))
+        const idx = routes.findIndex(r => r.router === String(stage || ''))
         if (idx === -1) {
             showAlert('测试流程异常，未能识别当前步骤，请返回首页重新开始', () => {
                 router.replace('/').then()
@@ -210,24 +229,23 @@ export function useQuestionsStagePage() {
             return
         }
 
-        let message = ''
-        const sseCtrl = useSubscriptBySSE(public_id, businessType, testStage, {
+        const sseCtrl = useSubscriptBySSE(public_id, bizType, stage, {
             autoStart: false,
-            onOpen:  showAIProcess,
+            onOpen: showLoading,
             onError: handleSseError,
             onMsg: handleSseMsg,
-            onClose: hideAIProcess,
+            onClose: hideLoading,
             onDone: handleSseDone,
         })
 
         sseCtrl.start()
-    })
+    }
 
-    async function submitCurrentStageAnswers(){
+    async function submitCurrentStageAnswers() {
         const payload = {
             public_id,
-            business_type: businessType,
-            test_type: testStage,
+            business_type: businessType.value,
+            test_type: testStage.value,
             answers: answerTriples.value,
         }
         return apiRequest<CommonResponse>('/api/test_submit', {
@@ -235,6 +253,45 @@ export function useQuestionsStagePage() {
             body: payload,
         })
     }
+
+    function gotoNextStageAfterSubmit() {
+        const routes = state.testRoutes ?? []
+        if (!routes.length) {
+            showAlert('测试流程异常，未找到下一步，请返回首页重新开始', () => {
+                router.replace('/').then()
+            })
+            return
+        }
+
+        // 当前阶段（比如 riasec / asc / ocean / motivation）
+        const currentStage = String(testStage.value || '')
+        const idx = routes.findIndex((r) => r.router === currentStage)
+
+        // 找不到自己，或者已经是最后一个步骤了：都算流程错误
+        if (idx < 0 || idx === routes.length - 1) {
+            showAlert('测试流程异常，未找到下一步，请返回首页重新开始', () => {
+                router.replace('/').then()
+            })
+            return
+        }
+
+        const next = routes[idx + 1]
+
+        // businessType 从全局状态优先，退回到当前路由参数
+        const currentBusinessType = state.businessType || businessType
+        if (!currentBusinessType) {
+            showAlert('测试流程异常，未找到测评类型，请返回首页重新开始', () => {
+                router.replace('/').then()
+            })
+            return
+        }
+
+        // 和 AssessmentBasicInfo 一样，直接用路径拼接：
+        //  /assessment/${businessType}/${next.router}
+        // 如果 next.router 是 report，会自动匹配到报告页路由
+        router.push(`/assessment/${currentBusinessType}/${next.router}`).then()
+    }
+
 
     function handlePrev() {
         if (isFirstPage.value || isSubmitting.value) return
@@ -277,13 +334,8 @@ export function useQuestionsStagePage() {
         isSubmitting.value = true
         try {
             showLoading('正在提交答案，请稍候…', 15000)
-            const res = await submitCurrentStageAnswers()
-            if (!res.ok){
-                showAlert("提交答案失败："+res.msg)
-                return
-            }
-            // 提交成功的提示（暂时还不跳转，跳转留到步骤 3）
-            showAlert('本阶段所有题目已成功提交')
+            await submitCurrentStageAnswers()
+            gotoNextStageAfterSubmit()
         } catch (err) {
             console.error('[QuestionsStagePage] 提交失败:', err)
             const msg = err instanceof Error ? err.message : '提交失败，请稍后重试'
@@ -308,7 +360,6 @@ export function useQuestionsStagePage() {
         pageStartIndex,
         pageEndIndex,
         pagedQuestions,
-        scaleOptions,
         answers,
         isFirstPage,
         isLastPage,

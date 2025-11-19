@@ -8,11 +8,16 @@ import (
 	"github.com/hopwesley/wenxintai/server/dbSrv"
 )
 
+type AnswerTriple struct {
+	ID        int    `json:"id"`
+	Dimension string `json:"dimension"`
+	Value     int    `json:"value"`
+}
 type tesSubmitRequest struct {
-	TestPublicID string `json:"public_id"`
-	BusinessType string `json:"business_type"`
-	TestType     string `json:"test_type"`
-	Answers      string `json:"answers"`
+	TestPublicID string         `json:"public_id"`
+	BusinessType string         `json:"business_type"`
+	TestType     string         `json:"test_type"`
+	Answers      []AnswerTriple `json:"answers"`
 }
 
 func (req *tesSubmitRequest) parseObj(r *http.Request) *ApiErr {
@@ -61,7 +66,8 @@ func (s *HttpSrv) handleTestSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := dbSrv.Instance().UpdateQASession(ctx, req.BusinessType, string(aiTestType), req.TestPublicID, json.RawMessage(req.Answers)); err != nil {
+	answersJSON, _ := json.Marshal(req.Answers)
+	if err := dbSrv.Instance().UpdateQASession(ctx, req.BusinessType, string(aiTestType), req.TestPublicID, answersJSON); err != nil {
 		sLog.Err(err).Msg("保存答案失败")
 		writeError(w, ApiInternalErr("无效的试卷类型", err))
 		return

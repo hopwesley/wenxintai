@@ -122,6 +122,7 @@
 import TestLayout from '@/layouts/TestLayout.vue'
 import StepIndicator from '@/views/components/StepIndicator.vue'
 import {useQuestionsStagePage} from '@/controller/AssessmentQuestions'
+import {scaleOptions} from '@/controller/common'
 
 const {
   route,
@@ -135,7 +136,6 @@ const {
   pageStartIndex,
   pageEndIndex,
   pagedQuestions,
-  scaleOptions,
   answers,
   isFirstPage,
   isLastPage,

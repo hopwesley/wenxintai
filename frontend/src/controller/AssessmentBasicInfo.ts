@@ -115,12 +115,18 @@ export function useStartTestConfig() {
             const grade = form.grade.trim()
             const hobby = form.hobby.trim()
 
-            await updateTestBasicInfo({
+           const res = await updateTestBasicInfo({
                 public_id: public_id,
                 grade,
                 mode: selectedMode.value as ModeOption,
                 hobby: hobby || null,
             })
+
+            if (!res.ok){
+                showAlert('更新用户信息失败:'+res.msg)
+                return
+            }
+
             setTestConfig({
                 grade,
                 mode: selectedMode.value as ModeOption,

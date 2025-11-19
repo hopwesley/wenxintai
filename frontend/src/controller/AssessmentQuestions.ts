@@ -1,8 +1,17 @@
 import {computed, onMounted, ref} from 'vue'
 import { useRoute,useRouter } from 'vue-router'
 import { useTestSession } from '@/store/testSession'
-import {StageAsc, StageMotivation, StageOcean, StageRiasec, useSubscriptBySSE} from "@/controller/common";
+import {
+    CommonResponse,
+    StageAsc,
+    StageMotivation,
+    StageOcean,
+    StageRiasec,
+    useSubscriptBySSE
+} from "@/controller/common";
 import {useAlert} from "@/controller/useAlert";
+import {useGlobalLoading} from "@/controller/useGlobalLoading";
+import {apiRequest} from "@/api";
 
 export interface Question {
     id: number;
@@ -15,6 +24,13 @@ export interface ScaleOption {
     label: string;
 }
 
+export interface AnswerTriple {
+    id: number;         // 题目编号
+    dimension: string;  // R / I / A / S / E / C
+    value: number;      // 用户选择的 1~5
+}
+
+
 export function useQuestionsStagePage() {
     const route = useRoute()
     const router = useRouter()
@@ -22,14 +38,16 @@ export function useQuestionsStagePage() {
     const {showAlert} = useAlert()
 
     // ------- 步骤条 & 标题 & loading -------
-    const loading = ref(true)
+    const aiLoading = ref(true)
 
-    function showLoading() {
-        loading.value = true
+    const {showLoading, hideLoading} = useGlobalLoading()
+
+    function showAIProcess() {
+        aiLoading.value = true
     }
 
-    function hideLoading() {
-        loading.value = false
+    function hideAIProcess() {
+        aiLoading.value = false
     }
 
     const stepItems = computed(() => {
@@ -81,12 +99,23 @@ export function useQuestionsStagePage() {
     const highlightedQuestions = ref<Record<number, boolean>>({})
     const errorMessage = ref('')
 
-    const latestMessage = ref('')
     const logLines = ref<string[]>([])
     const MAX_LOG_LINES = 8
     const truncatedLatestMessage = computed(() => logLines.value)
 
     const isSubmitting = ref(false)
+
+    const answerTriples = computed<AnswerTriple[]>(() => {
+        const map = answers.value
+        return questions.value
+            .filter(q => map[q.id] != null)
+            .map(q => ({
+                id: q.id,
+                dimension: q.dimension,
+                value: map[q.id] as number,
+            }))
+    })
+
 
     const scaleOptions = ref<ScaleOption[]>([
         {value: 1, label: '从不'},
@@ -120,6 +149,48 @@ export function useQuestionsStagePage() {
 
     console.log('[QuestionsStagePage] apply_test resp:', testStage, businessType, public_id, routes)
 
+    const rawMessage = ref('')
+
+
+    function handleSseError(err: Error) {
+        console.log('------>>> sse channel error:', err)
+        showAlert('获取测试流程失败，请稍后再试:' + err)
+        hideAIProcess()
+    }
+
+    function handleSseMsg(chunk: string) {
+        rawMessage.value += chunk
+        if (rawMessage.value.length < 20) {
+            return
+        }
+        logLines.value.push(rawMessage.value)
+        if (logLines.value.length > MAX_LOG_LINES) {
+            logLines.value.splice(0, logLines.value.length - MAX_LOG_LINES)
+        }
+        rawMessage.value = ''
+    }
+
+    function handleSseDone(questionStr: string) {
+        console.log('------>>> go questions:', questionStr)
+        try {
+            const parsed = JSON.parse(questionStr) as Question[]
+            if (!Array.isArray(parsed) || parsed.length === 0) {
+                showAlert('获取 AI 题目失败,请刷新页面进行重试')
+                return
+            }
+
+            questions.value = parsed
+            currentPage.value = 1
+            highlightedQuestions.value = {}
+        } catch (e) {
+            console.error('[QuestionsStagePage] 解析题目失败:', e)
+            errorMessage.value = '获取测试题目失败，请稍后再试'
+            showAlert('获取测试题目失败，请稍后再试')
+        } finally {
+            hideAIProcess()
+        }
+    }
+
     // ------- SSE 拉题目 -------
     onMounted(() => {
         errorMessage.value = ''
@@ -140,64 +211,31 @@ export function useQuestionsStagePage() {
         }
 
         let message = ''
-
         const sseCtrl = useSubscriptBySSE(public_id, businessType, testStage, {
             autoStart: false,
-
-            onOpen() {
-                showLoading()
-            },
-
-            onError(err) {
-                console.log('------>>> sse channel error:', err)
-                showAlert('获取测试流程失败，请稍后再试:' + err)
-                hideLoading()
-            },
-
-            onMsg(chunk) {
-                message += chunk
-                if (message.length < 20) {
-                    return
-                }
-                logLines.value.push(message)
-                if (logLines.value.length > MAX_LOG_LINES) {
-                    logLines.value.splice(0, logLines.value.length - MAX_LOG_LINES)
-                }
-                message='';
-            },
-
-            onClose() {
-                console.log('------>>> sse closed:')
-                hideLoading()
-            },
-
-            onDone(questionStr) {
-                const raw = (questionStr && questionStr.trim().length > 0) ? questionStr : message
-                console.log('------>>> go questions:', raw)
-
-                try {
-                    const parsed = JSON.parse(raw) as Question[]
-                    if (!Array.isArray(parsed) || parsed.length === 0) {
-                        throw new Error('empty questions')
-                    }
-
-                    questions.value = parsed
-                    currentPage.value = 1
-                    highlightedQuestions.value = {}
-                } catch (e) {
-                    console.error('[QuestionsStagePage] 解析题目失败:', e)
-                    errorMessage.value = '获取测试题目失败，请稍后再试'
-                    showAlert('获取测试题目失败，请稍后再试')
-                } finally {
-                    hideLoading()
-                }
-            },
+            onOpen:  showAIProcess,
+            onError: handleSseError,
+            onMsg: handleSseMsg,
+            onClose: hideAIProcess,
+            onDone: handleSseDone,
         })
 
         sseCtrl.start()
     })
 
-    // ------- 翻页逻辑 -------
+    async function submitCurrentStageAnswers(){
+        const payload = {
+            public_id,
+            business_type: businessType,
+            test_type: testStage,
+            answers: answerTriples.value,
+        }
+        return apiRequest<CommonResponse>('/api/test_submit', {
+            method: 'POST',
+            body: payload,
+        })
+    }
+
     function handlePrev() {
         if (isFirstPage.value || isSubmitting.value) return
         currentPage.value -= 1
@@ -238,17 +276,28 @@ export function useQuestionsStagePage() {
 
         isSubmitting.value = true
         try {
-            console.log('[QuestionsStagePage] 当前阶段答题结果:', answers.value)
-            showAlert('本阶段所有题目已完成（提交逻辑待接入）')
+            showLoading('正在提交答案，请稍候…', 15000)
+            const res = await submitCurrentStageAnswers()
+            if (!res.ok){
+                showAlert("提交答案失败："+res.msg)
+                return
+            }
+            // 提交成功的提示（暂时还不跳转，跳转留到步骤 3）
+            showAlert('本阶段所有题目已成功提交')
+        } catch (err) {
+            console.error('[QuestionsStagePage] 提交失败:', err)
+            const msg = err instanceof Error ? err.message : '提交失败，请稍后重试'
+            showAlert(msg)
         } finally {
             isSubmitting.value = false
+            hideLoading()
         }
     }
 
     return {
         // 布局 & 步骤条
         route,
-        loading,
+        loading: aiLoading,
         stepItems,
         currentStep,
         currentStepTitle,
@@ -271,5 +320,8 @@ export function useQuestionsStagePage() {
         isQuestionHighlighted,
         handlePrev,
         handleNext,
+
+        // 新增：带 dimension 的答案结构
+        answerTriples,
     }
 }

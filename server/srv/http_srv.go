@@ -20,6 +20,7 @@ const (
 	apiTestFlow      = "/api/test_flow"
 	apiTestBasicInfo = "/api/tests/basic_info"
 	apiSSESubChannel = "/api/sub/"
+	apiSubmitTest    = "/api/test_submit"
 )
 
 var (
@@ -85,6 +86,7 @@ func (s *HttpSrv) initRouter() error {
 	mux.HandleFunc(apiTestFlow, s.handleTestFlow)
 	mux.HandleFunc(apiTestBasicInfo, s.updateBasicInfo)
 	mux.HandleFunc(apiSSESubChannel, s.handleSSEEvent)
+	mux.HandleFunc(apiSubmitTest, s.handleTestSubmit)
 
 	if stat, err := os.Stat(s.cfg.StaticDir); err != nil || !stat.IsDir() {
 		if err == nil {

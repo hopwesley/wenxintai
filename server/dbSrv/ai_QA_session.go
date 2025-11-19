@@ -115,3 +115,11 @@ func (pdb *psDatabase) SaveQASession(
 
 	return nil
 }
+
+func (pdb *psDatabase) UpdateQASession(
+	ctx context.Context,
+	businessType, testType, publicId string,
+	answersJSON []byte,
+) error {
+	return nil
+}

@@ -19,7 +19,6 @@ type DbService interface {
 	NewTestRecord(ctx context.Context, businessType string, inviteCode *string, weChatId *string) (string, error)
 	UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string, status int) error
 	QueryBasicInfo(ctx context.Context, publicId string) (*ai_api.BasicInfo, error)
-	FindRiasecSession(ctx context.Context, businessType, publicId string) (*RiasecSession, error)
-	SaveRiasecSession(ctx context.Context, publicId, businessType string, questionsJSON []byte) error
-	UpdateRiasecAnswers(ctx context.Context, publicId string, answersJSON []byte) error
+	FindQASession(ctx context.Context, businessType, testType, publicId string) (*QASession, error)
+	SaveQASession(ctx context.Context, businessType, testType, publicId string, questionsJSON []byte) error
 }

@@ -103,7 +103,7 @@ export function useSubscriptBySSE(
         }
 
         es.onmessage = (e: MessageEvent) => {
-            console.log("------>>>",e.data)
+            // console.log("------>>>",e.data)
             if (options.onMsg) {
                 options.onMsg(e.data)
             }

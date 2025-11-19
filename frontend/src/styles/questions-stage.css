@@ -1,23 +1,331 @@
-.questions { display: flex; flex-direction: column; gap: 16px; }
-.questions__header { display: flex; align-items: center; justify-content: space-between; }
-.questions__progress { font-size: 14px; color: #64748b; }
-.questions__loading, .questions__error { padding: 24px; text-align: center; color: #475569; }
+/* 外层整块问卷卡片：居中、白底、阴影 */
+.questions {
+    max-width: 960px;
+    margin: 40px auto 64px;
+    padding: 32px 40px;
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
 
-.question { padding: 20px; border-radius: 12px; border: 1px solid rgba(148,163,184,.4); background-color: #f9fafb;
-    display: flex; flex-direction: column; gap: 16px; transition: box-shadow .2s ease; }
-.question--highlight { box-shadow: 0 0 0 4px rgba(239,68,68,.2); }
-.question__text { margin: 0; font-weight: 600; color: #111827; }
-.question__options { display: flex; flex-wrap: wrap; gap: 12px; }
-.question__option { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 999px; background: #fff; }
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
 
-.questions__footer { margin-top: 8px; display: flex; justify-content: space-between; gap: 12px; }
+/* 顶部标题 + 进度 */
+.questions__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
 
-.overlay { position: fixed; inset: 0; background: rgba(15,23,42,.45); backdrop-filter: blur(2px); z-index: 999;
-    display: flex; align-items: center; justify-content: center; }
-.overlay__card { background: #fff; color: #111827; border-radius: 12px; padding: 18px 24px; box-shadow: 0 10px 30px rgba(0,0,0,.1); font-size: 16px; }
+.questions__header h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #111827;
+}
 
+.questions__progress {
+    font-size: 14px;
+    color: #64748b;
+}
+
+/* 加载 / 错误信息 */
+.questions__loading,
+.questions__error {
+    padding: 24px;
+    text-align: center;
+    color: #475569;
+}
+
+/* 单题卡片 */
+.question {
+    padding: 20px 24px;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+/* 未作答高亮态：红色描边 + 柔和阴影 */
+.question--highlight {
+    border-color: #f97373;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
+    background-color: #fff7f7;
+}
+
+.question__text {
+    margin: 0;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.6;
+}
+
+/* 选项区域：一行 5 个，允许窄屏换行 */
+.question__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+/* 单个选项的“胶囊”背景 */
+.question__option {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* 自定义单选圆点外观 */
+.question__option input[type="radio"] {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #d1d5db;
+    background-color: #ffffff;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* 选项文字 */
+.question__option-label {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+/* hover 时稍微突出一点 */
+.question__option:hover {
+    border-color: #cbd5f5;
+    box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.15);
+}
+
+/* 选中状态：圆点变主题色、胶囊边框和文字也跟着变 */
+.question__option input[type="radio"]:checked {
+    border-color: #5b6ff5;
+    background-color: #5b6ff5;
+    box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.3);
+}
+
+.question__option input[type="radio"]:checked + .question__option-label {
+    color: #4f46e5;
+    font-weight: 500;
+}
+
+/* 底部按钮区域 */
+.questions__footer {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+}
+
+/* 底部按钮本身：宽度、圆角等可以继承全局 .btn，只做一点点微调 */
+.questions__nav {
+    min-width: 140px;
+    border-radius: 999px;
+}
+
+/* 提交中的遮罩层 */
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 999;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.overlay__card {
+    background: #ffffff;
+    color: #111827;
+    border-radius: 12px;
+    padding: 18px 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+}
+
+/* 响应式：缩小外边距和内边距，按钮堆叠 */
 @media (max-width: 768px) {
-    .question { padding: 16px; }
-    .questions__footer { flex-direction: column; }
-    .questions__nav { width: 100%; }
+    .questions {
+        margin: 24px 16px 40px;
+        padding: 20px 16px;
+        border-radius: 16px;
+    }
+
+    .question {
+        padding: 16px;
+    }
+
+    .questions__footer {
+        flex-direction: column;
+    }
+
+    .questions__nav {
+        width: 100%;
+    }
+}
+
+/* 通用遮罩层（loading / 提交都会用到） */
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.60);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 通用卡片基样式：提交中的简洁版本会用到 */
+.overlay__card {
+    background: #ffffff;
+    color: #111827;
+    border-radius: 16px;
+    padding: 18px 24px;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.25);
+    font-size: 16px;
+}
+
+.overlay__card--ai {
+    position: relative;
+    background: radial-gradient(circle at top, #1e293b 0, #020617 60%);
+    color: #e5e7eb;
+    border-radius: 20px;
+    padding: 24px 28px;
+    box-shadow: 0 0 40px rgba(56, 189, 248, 0.35);
+    border: 1px solid rgba(129, 140, 248, 0.7);
+    overflow: hidden;
+
+    /* 尺寸放大，让 AI 面板更有存在感 */
+    max-width: 640px;
+    min-width: 460px;
+    min-height: 260px;
+}
+
+/* 卡片外围流动光效 */
+.overlay__card--ai::before {
+    content: "";
+    position: absolute;
+    inset: -40%;
+    background:
+            conic-gradient(from 0deg,
+            rgba(59,130,246,0.2),
+            rgba(56,189,248,0.7),
+            rgba(129,140,248,0.4),
+            rgba(59,130,246,0.2));
+    opacity: 0.35;
+    animation: overlay-ai-spin 18s linear infinite;
+    z-index: -1;
+}
+
+@keyframes overlay-ai-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 标题 + 副标题 */
+.overlay__title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.overlay__subtitle {
+    font-size: 13px;
+    color: #cbd5f5;
+    margin-bottom: 16px;
+}
+
+/* 能量条 / 动画点点 */
+.overlay__pulse {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.overlay__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #38bdf8;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.9);
+    animation: overlay-dot-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes overlay-dot-pulse {
+    0%, 100% { transform: scale(0.85); opacity: 0.6; }
+    50% { transform: scale(1.15); opacity: 1; }
+}
+
+.overlay__bar {
+    flex: 1;
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #38bdf8, #6366f1);
+    opacity: 0.7;
+    position: relative;
+    overflow: hidden;
+}
+
+.overlay__bar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(248, 250, 252, 0.7), transparent);
+    transform: translateX(-100%);
+    animation: overlay-bar-sweep 1.4s ease-in-out infinite;
+}
+
+.overlay__bar--delay::before {
+    animation-delay: 0.4s;
+}
+
+@keyframes overlay-bar-sweep {
+    0% { transform: translateX(-110%); }
+    100% { transform: translateX(110%); }
+}
+
+/* 日志窗口：固定高度，只展示最近几条日志，从底部往上挤 */
+.overlay__log-window {
+    margin-top: 16px;
+    height: 120px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    overflow: hidden;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.overlay__log-text {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #e5e7eb;
+    word-break: break-all;
+    white-space: pre-wrap;
 }

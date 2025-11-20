@@ -31,6 +31,7 @@ export interface CommonResponse {
 }
 
 import {onMounted, onBeforeUnmount, getCurrentInstance, computed, ref} from 'vue'
+import {useRoute} from "vue-router";
 
 export interface UseSSEOptions {
     onMsg?: (data: any) => void
@@ -142,19 +143,14 @@ export function useSubscriptBySSE(
 }
 
 export function useTestCommon() {
-
     const {state} = useTestSession()
     const stepItems = state.testRoutes ?? []
-
-    let currentStepIndex = computed(() => {
-        let index = state.nextRouteId ?? 0
-        if (index < 0) index = 0
-        return index
-    })
+    const route = useRoute()
 
     const currentStepTitle = computed(() => {
         const routes = state.testRoutes ?? []
-        const idx = currentStepIndex.value
+        const stageKey = String(route.params.testStage ?? '')
+        const idx = state.nextRouteItem?.[stageKey] ?? 0
         if (idx >= 0 && idx < routes.length) {
             return routes[idx] || '正在加载…'
         }
@@ -163,7 +159,6 @@ export function useTestCommon() {
 
     return {
         stepItems,
-        currentStepIndex,
         currentStepTitle,
     }
 }

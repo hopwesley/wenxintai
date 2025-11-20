@@ -117,9 +117,12 @@ func (s *HttpSrv) handleSSEEvent(w http.ResponseWriter, r *http.Request) {
 	businessTyp := q.Get("business_type")
 	testType := q.Get("test_type")
 
+	sLog := s.log.With().Str("public_id", publicId).
+		Str("business_type", businessTyp).Str("test_type", testType).Logger()
+
 	aiTestType := parseAITestTyp(testType, businessTyp)
 	if len(aiTestType) == 0 || aiTestType == ai_api.TypUnknown {
-		s.log.Error().Str("channel", publicId).Msg("Invalid scaleKey or testType")
+		sLog.Error().Str("channel", publicId).Msg("Invalid scaleKey or testType")
 		http.Error(w, "需要参数正确的测试类型和测试阶段参数：scaleKey testType", http.StatusBadRequest)
 		return
 	}
@@ -127,11 +130,22 @@ func (s *HttpSrv) handleSSEEvent(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
+	ctx := r.Context()
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		s.log.Err(err).Str("channel", publicId).Msg("SSE channel created error")
+		sLog.Err(err).Msg("SSE channel created error")
 		http.Error(w, "不支持流式数据传输", http.StatusInternalServerError)
+		return
+	}
+
+	if rErr := s.checkTestSequence(ctx, publicId, testType); rErr != nil {
+		sLog.Err(rErr).Msg("find next route error")
+		_ = writeSSE(w, flusher, &SSEMessage{
+			Typ: SSE_MT_ERROR,
+			Msg: "请按照测试顺利进行测试:" + rErr.Error(),
+		}, &s.log)
+
 		return
 	}
 
@@ -140,8 +154,6 @@ func (s *HttpSrv) handleSSEEvent(w http.ResponseWriter, r *http.Request) {
 		Str("business_type", businessTyp).
 		Str("testType", testType).
 		Msg("SSE channel created")
-
-	ctx := r.Context()
 
 	msgCh := make(chan *SSEMessage, 64)
 

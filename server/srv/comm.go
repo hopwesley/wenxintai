@@ -1,12 +1,14 @@
 package srv
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
 
 	"github.com/hopwesley/wenxintai/server/ai_api"
+	"github.com/hopwesley/wenxintai/server/dbSrv"
 )
 
 type CommonRes struct {
@@ -180,4 +182,35 @@ func getTestRoutesDes(testType string) []string {
 	default:
 		return nil
 	}
+}
+
+func parseStatusToRoute(record *dbSrv.TestRecord, routes []string) string {
+	status := int(record.Status)
+	if status >= len(routes) {
+		return StageReport
+	}
+	switch {
+	case record.Status == RecordStatusInit:
+		return StageBasic
+
+	case record.Status >= RecordStatusInTest && record.Status < RecordStatusInReport:
+		return routes[status]
+
+	default:
+		return StageBasic
+	}
+}
+
+func (s *HttpSrv) checkTestSequence(ctx context.Context, publicID, testType string) error {
+	record, dbErr := dbSrv.Instance().FindTestRecordByPublicId(ctx, publicID)
+	if dbErr != nil {
+		return dbErr
+	}
+
+	currentRoute := parseStatusToRoute(record, getTestRoutes(record.BusinessType))
+	if currentRoute != testType {
+		return fmt.Errorf("mismatched route,need:%s but got:%s", testType, currentRoute)
+	}
+
+	return nil
 }

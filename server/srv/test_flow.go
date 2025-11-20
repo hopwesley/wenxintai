@@ -58,32 +58,16 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 		writeError(w, ApiInternalErr("没有测试类型为："+record.BusinessType+"的测试卷", nil))
 		return
 	}
+
 	resp := testFlowResponse{
 		Routes:       routes,
 		TestPublicID: req.TestPublicID,
-		NextRoute:    calculateNextStep(record, getTestRoutes(record.BusinessType)),
+		NextRoute:    parseStatusToRoute(record, getTestRoutes(record.BusinessType)),
 		NextRid:      record.Status,
 	}
 
 	sLog.Debug().Strs("routes", routes).Msg("test record found")
 	writeJSON(w, http.StatusOK, resp)
-}
-
-func calculateNextStep(record *dbSrv.TestRecord, routes []string) string {
-	status := int(record.Status)
-	if status >= len(routes) {
-		return StageReport
-	}
-	switch {
-	case record.Status == RecordStatusInit:
-		return StageBasic
-
-	case record.Status >= RecordStatusInTest && record.Status < RecordStatusInReport:
-		return routes[status]
-
-	default:
-		return StageBasic
-	}
 }
 
 func (s *HttpSrv) updateBasicInfo(w http.ResponseWriter, r *http.Request) {

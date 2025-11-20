@@ -28,8 +28,9 @@ const steps = computed(() =>  state.testRoutes ?? [])
 
 const current = computed(() => {
   const stageKey = String(route.params.testStage ?? '')
-  return state.nextRouteItem?.[stageKey] ?? 0  // 如果没有找到，就默认第 0 步
+  return state.nextRouteItem?.[stageKey] ?? 0
 })
+
 function stepClass(index: number) {
   if (index < current.value) return 'is-complete'
   if (index === current.value) return 'is-current'

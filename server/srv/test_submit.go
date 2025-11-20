@@ -71,10 +71,14 @@ func (s *HttpSrv) handleTestSubmit(w http.ResponseWriter, r *http.Request) {
 		Str("business_type", req.BusinessType).
 		Str("public_id", req.TestPublicID).
 		Int("answer", len(req.Answers)).Logger()
-
-	sLog.Info().Msg("prepare parse answers")
-
 	ctx := r.Context()
+
+	if rErr := s.checkTestSequence(ctx, req.TestPublicID, req.TestType); rErr != nil {
+		writeError(w, ApiInvalidTestSequence(rErr))
+		return
+	}
+
+	sLog.Info().Msg("prepare to parse answers")
 
 	aiTestType := parseAITestTyp(req.TestType, req.BusinessType)
 	if len(aiTestType) == 0 || aiTestType == ai_api.TypUnknown {

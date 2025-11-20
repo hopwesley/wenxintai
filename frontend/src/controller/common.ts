@@ -1,5 +1,3 @@
-import {useTestSession} from "@/store/testSession";
-
 export const TestTypeBasic = "basic"
 export const TestTypePro = "pro"
 export const TestTypeSchool = "school"
@@ -30,8 +28,7 @@ export interface CommonResponse {
     next_route_index: number
 }
 
-import {onMounted, onBeforeUnmount, getCurrentInstance, computed} from 'vue'
-import {useRoute} from "vue-router";
+import {onMounted, onBeforeUnmount, getCurrentInstance} from 'vue'
 
 export interface UseSSEOptions {
     onMsg?: (data: any) => void

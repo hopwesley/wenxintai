@@ -141,24 +141,3 @@ export function useSubscriptBySSE(
         stop,
     }
 }
-
-export function useTestCommon() {
-    const {state} = useTestSession()
-    const stepItems = state.testRoutes ?? []
-    const route = useRoute()
-
-    const currentStepTitle = computed(() => {
-        const routes = state.testRoutes ?? []
-        const stageKey = String(route.params.testStage ?? '')
-        const idx = state.nextRouteItem?.[stageKey] ?? 0
-        if (idx >= 0 && idx < routes.length) {
-            return routes[idx] || '正在加载…'
-        }
-        return '正在加载…'
-    })
-
-    return {
-        stepItems,
-        currentStepTitle,
-    }
-}

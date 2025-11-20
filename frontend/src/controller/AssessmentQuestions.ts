@@ -231,6 +231,10 @@ export function useQuestionsStagePage() {
             throw new Error(resp.msg || '提交失败，请稍后重试')
         }
 
+        if(!resp.next_route){
+            throw new Error(resp.msg || '未找到下一步处理逻辑')
+        }
+
         let next_route_index = resp.next_route_index ?? 0
         if (next_route_index < 0) {
             next_route_index = 0
@@ -377,6 +381,16 @@ export function useQuestionsStagePage() {
         }
     }
 
+    const currentStepTitle = computed(() => {
+        const routes = state.testRoutes ?? []
+        const stageKey = String(route.params.testStage ?? '')
+        const idx = state.nextRouteItem?.[stageKey] ?? 0
+        if (idx >= 0 && idx < routes.length) {
+            return routes[idx] || '正在加载…'
+        }
+        return '正在加载…'
+    })
+
     return {
         // 布局 & 步骤条
         route,
@@ -398,5 +412,6 @@ export function useQuestionsStagePage() {
         isQuestionHighlighted,
         handlePrev,
         handleNext,
+        currentStepTitle,
     }
 }

@@ -141,13 +141,8 @@ const {
   isQuestionHighlighted,
   handlePrev,
   handleNext,
-} = useQuestionsStagePage()
-
-const {
-  stepItems,
-  currentStepIndex,
   currentStepTitle,
-}= useTestCommon()
+} = useQuestionsStagePage()
 
 </script>
 

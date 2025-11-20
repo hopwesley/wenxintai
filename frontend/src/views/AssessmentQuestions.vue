@@ -2,7 +2,7 @@
   <TestLayout :key="route.fullPath">
     <!-- 顶部步骤条 -->
     <template #header>
-      <StepIndicator :steps="stepItems" :current="currentStep"/>
+      <StepIndicator/>
     </template>
 
     <section class="questions">
@@ -122,15 +122,11 @@
 import TestLayout from '@/layouts/TestLayout.vue'
 import StepIndicator from '@/views/components/StepIndicator.vue'
 import {useQuestionsStagePage} from '@/controller/AssessmentQuestions'
-import {scaleOptions} from '@/controller/common'
+import {scaleOptions, useTestCommon} from '@/controller/common'
 
 const {
   route,
   aiLoading,
-  stepItems,
-  currentStep,
-  currentStepTitle,
-
   totalPages,
   totalCount,
   pageStartIndex,
@@ -141,12 +137,18 @@ const {
   isLastPage,
   isSubmitting,
   errorMessage,
-
   truncatedLatestMessage,
   isQuestionHighlighted,
   handlePrev,
   handleNext,
 } = useQuestionsStagePage()
+
+const {
+  stepItems,
+  currentStepIndex,
+  currentStepTitle,
+}= useTestCommon()
+
 </script>
 
 <style scoped src="@/styles/questions-stage.css"></style>

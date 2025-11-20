@@ -276,19 +276,33 @@ func (pdb *psDatabase) NewTestRecordWithWeChat(
 	return publicID, nil
 }
 
-func (pdb *psDatabase) UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string, status int) error {
-	// language=SQL
+func (pdb *psDatabase) UpdateBasicInfo(
+	ctx context.Context,
+	publicId string,
+	grade string,
+	mode string,
+	hobby string,
+	status int,
+) (string, error) {
 	const q = `
         UPDATE app.tests_record
         SET grade = $2,
             mode = $3,
             hobby = NULLIF($4, ''),
-            status=$5,
+            status = $5,
             updated_at = now()
         WHERE public_id = $1
+        RETURNING business_type
     `
-	_, err := pdb.db.ExecContext(ctx, q, publicId, grade, mode, hobby, status)
-	return err
+
+	var businessType string
+	err := pdb.db.QueryRowContext(ctx, q,
+		publicId, grade, mode, hobby, status,
+	).Scan(&businessType)
+	if err != nil {
+		return "", err
+	}
+	return businessType, nil
 }
 
 func (pdb *psDatabase) QueryBasicInfo(ctx context.Context, publicId string) (*ai_api.BasicInfo, error) {

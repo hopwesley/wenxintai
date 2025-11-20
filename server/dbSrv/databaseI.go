@@ -17,9 +17,9 @@ type DbService interface {
 	FindTestRecordByPublicId(ctx context.Context, publicId string) (*TestRecord, error)
 	FindTestRecordByUid(ctx context.Context, inviteCode, weChatID string) (*TestRecord, error)
 	NewTestRecord(ctx context.Context, businessType string, inviteCode *string, weChatId *string) (string, error)
-	UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string, status int) error
+	UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string, status int) (string, error)
 	QueryBasicInfo(ctx context.Context, publicId string) (*ai_api.BasicInfo, error)
 	FindQASession(ctx context.Context, businessType, testType, publicId string) (*QASession, error)
 	SaveQuestion(ctx context.Context, businessType, testType, publicId string, questionsJSON []byte) error
-	SaveAnswer(ctx context.Context, businessType, testType, publicId string, answersJSON []byte) error
+	SaveAnswer(ctx context.Context, businessType, testType, publicId string, answersJSON []byte, status int) error
 }

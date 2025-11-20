@@ -1,17 +1,13 @@
 // 单个测试步骤
 import {apiRequest} from "@/api";
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
-import { useTestSession } from '@/store/testSession'
-import { useAlert } from '@/controller/useAlert'
+import {ref, onMounted, onBeforeUnmount} from 'vue'
+import {useRouter} from 'vue-router'
+import {useTestSession} from '@/store/testSession'
+import {useAlert} from '@/controller/useAlert'
 import {VerifyInviteResponse} from "@/controller/InviteCode";
-import { useAuthStore } from '@/store/auth'
-import {TestTypeBasic, TestTypePro, TestTypeSchool} from "@/controller/common";
+import {useAuthStore} from '@/store/auth'
+import {StageBasic, TestTypeBasic, TestTypePro, TestTypeSchool} from "@/controller/common";
 
-export interface TestRouteDef {
-    router: string; // 英文路由名，例如 'basic-info' | 'riasec' | 'asc' | 'report'
-    desc: string;   // 中文描述，例如 '基本信息' | '兴趣测试' | '能力测试' | '测试报告'
-}
 
 export interface FetchTestFlowRequest {
     public_id: string;
@@ -21,6 +17,7 @@ export interface FetchTestFlowResponse {
     public_id: string;
     routes: TestRouteDef[];
     nextRoute?: string | null;
+    next_route_id?: number
 }
 
 export async function fetchTestFlow(payload: FetchTestFlowRequest) {
@@ -35,17 +32,17 @@ export function useHomeView() {
     type PlanKey = typeof TestTypeBasic | typeof TestTypePro | typeof TestTypeSchool
 
     const tabDefs = [
-        { key: 'start', label: '开始测试', targetId: 'section-start-test' },
-        { key: 'intro', label: '产品介绍', targetId: 'section-product-intro' },
-        { key: 'letter', label: '致家长的一封信', targetId: 'section-parent-letter' },
+        {key: 'start', label: '开始测试', targetId: 'section-start-test'},
+        {key: 'intro', label: '产品介绍', targetId: 'section-product-intro'},
+        {key: 'letter', label: '致家长的一封信', targetId: 'section-parent-letter'},
     ] as const
 
     const activePlan = ref<PlanKey>('basic')
     type TabKey = (typeof tabDefs)[number]['key']
 
-    const { showAlert } = useAlert()
+    const {showAlert} = useAlert()
     const router = useRouter()
-    const { state, setPublicID, setBusinessType, setTestRoutes } = useTestSession()
+    const {state, setPublicID, setBusinessType, setTestRoutes, setNextRouteItem} = useTestSession()
     const authStore = useAuthStore()
     const inviteModalOpen = ref(false)
 
@@ -67,7 +64,7 @@ export function useHomeView() {
 
         const el = document.getElementById(tab.targetId)
         if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            el.scrollIntoView({behavior: 'smooth', block: 'start'})
         }
     }
 
@@ -86,34 +83,40 @@ export function useHomeView() {
     async function handleInviteSuccess(payload: VerifyInviteResponse) {
         const typ = state.businessType || TestTypeBasic
         const req = {
-            public_id:payload.public_id,
+            public_id: payload.public_id,
         }
 
-        let routes: TestRouteDef[] = []
-        let nextRoute: string | null | undefined
-
+        let routes: string[] = []
+        let nextRoute: string
+        let nextRouteId: number
         try {
             const resp = await fetchTestFlow(req)
             routes = resp.routes || []
-            nextRoute = resp.nextRoute ?? null
+            if (routes.length == 0) {
+                showAlert('没有可用的测试流程，请稍后再试或联系管理员')
+                return
+            }
+
+            nextRoute = resp.next_route ?? StageBasic
+            nextRouteId = resp.next_route_id ?? 0
+            if (nextRouteId < 0) nextRouteId = 0
 
             setPublicID(resp.public_id)
             setTestRoutes(routes)
+            setNextRouteItem(nextRoute, nextRouteId)
         } catch (e) {
             console.error('[handleInviteSuccess] fetchTestFlow failed', e)
             showAlert('获取测试流程失败，请稍后再试:' + e)
             return
         }
 
-        const targetRouter =   nextRoute || (routes.length > 0 ? routes[0].router : null)
-
-        if (!targetRouter) {
+        if (routes.length === 0) {
             console.warn('[handleInviteSuccess] no target router found')
             showAlert('测试流程配置异常，请稍后再试或联系管理员')
             return
         }
 
-        await router.push(`/assessment/${typ}/${targetRouter}`)
+        await router.push(`/assessment/${typ}/${nextRoute}`)
     }
 
     return {

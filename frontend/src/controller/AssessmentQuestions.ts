@@ -61,33 +61,10 @@ export function useQuestionsStagePage() {
 
     const route = useRoute()
     const router = useRouter()
-    const {state, getPublicID} = useTestSession()
+    const {state, getPublicID, setNextRouteItem} = useTestSession()
     const {showAlert} = useAlert()
     const aiLoading = ref(true)
     const {showLoading, hideLoading} = useGlobalLoading()
-    const stepItems = computed(() => {
-        const routes = state.testRoutes ?? []
-        return routes.map(r => ({
-            key: r.router,
-            title: r.desc,
-        }))
-    })
-
-    const currentStep = computed(() => {
-        const routes = state.testRoutes ?? []
-        const testStage = String(route.params.testStage ?? '')
-        const idx = routes.findIndex(r => r.router === testStage)
-        return idx >= 0 ? idx + 1 : 0
-    })
-
-    const currentStepTitle = computed(() => {
-        const routes = state.testRoutes ?? []
-        const idx = currentStep.value - 1
-        if (idx >= 0 && idx < routes.length) {
-            return routes[idx].desc || '正在加载…'
-        }
-        return '正在加载…'
-    })
 
     const pageSize = 5
     const currentPage = ref(1)
@@ -218,7 +195,7 @@ export function useQuestionsStagePage() {
 
         const stage = testStage.value
         const bizType = businessType.value
-        
+
         console.log('[QuestionsStagePage] init stage:', stage, 'aiLoading=', aiLoading.value)
 
         if (!public_id || !routes.length || !validateTestStage(stage)) {
@@ -228,13 +205,6 @@ export function useQuestionsStagePage() {
             return
         }
 
-        const idx = routes.findIndex(r => r.router === String(stage || ''))
-        if (idx === -1) {
-            showAlert('测试流程异常，未能识别当前步骤，请返回首页重新开始', () => {
-                router.replace('/').then()
-            })
-            return
-        }
 
         const sseCtrl = useSubscriptBySSE(public_id, bizType, stage, {
             autoStart: false,
@@ -260,29 +230,23 @@ export function useQuestionsStagePage() {
         if (!resp.ok) {
             throw new Error(resp.msg || '提交失败，请稍后重试')
         }
-        return resp
+
+        let next_route_index = resp.next_route_index ?? 0
+        if (next_route_index < 0) {
+            next_route_index = 0
+        }
+
+        setNextRouteItem(resp.next_route, next_route_index)
+        return resp.next_route
     }
 
-    function gotoNextStageAfterSubmit() {
-        const routes = state.testRoutes ?? []
-        if (!routes.length) {
+    function gotoNextStageAfterSubmit(next_route: string | null) {
+        if (!next_route) {
             showAlert('测试流程异常，未找到下一步，请返回首页重新开始', () => {
                 router.replace('/').then()
             })
             return
         }
-
-        const currentStage = String(testStage.value || '')
-        const idx = routes.findIndex((r) => r.router === currentStage)
-
-        if (idx < 0 || idx === routes.length - 1) {
-            showAlert('测试流程异常，未找到下一步，请返回首页重新开始', () => {
-                router.replace('/').then()
-            })
-            return
-        }
-
-        const next = routes[idx + 1]
 
         const currentBusinessType = state.businessType || businessType.value
         if (!currentBusinessType) {
@@ -291,8 +255,7 @@ export function useQuestionsStagePage() {
             })
             return
         }
-
-        router.push(`/assessment/${currentBusinessType}/${next.router}`).then()
+        router.push(`/assessment/${currentBusinessType}/${next_route}`).then()
     }
 
 
@@ -337,8 +300,8 @@ export function useQuestionsStagePage() {
         isSubmitting.value = true
         try {
             showLoading('正在提交答案，请稍候…', 15000)
-            await submitCurrentStageAnswers()
-            gotoNextStageAfterSubmit()
+            const next_route = await submitCurrentStageAnswers()
+            gotoNextStageAfterSubmit(next_route)
         } catch (err) {
             console.error('[QuestionsStagePage] 提交失败:', err)
             const msg = err instanceof Error ? err.message : '提交失败，请稍后重试'
@@ -418,10 +381,6 @@ export function useQuestionsStagePage() {
         // 布局 & 步骤条
         route,
         aiLoading,
-        stepItems,
-        currentStep,
-        currentStepTitle,
-
         // 分页 & 题目 & 答案
         totalCount,
         totalPages,

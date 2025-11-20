@@ -10,8 +10,10 @@ import (
 )
 
 type CommonRes struct {
-	Ok  bool   `json:"ok"`
-	Msg string `json:"msg,omitempty"`
+	Ok        bool   `json:"ok"`
+	Msg       string `json:"msg,omitempty"`
+	NextRoute string `json:"next_route,omitempty"`
+	NextRid   int    `json:"next_route_index,omitempty"`
 }
 
 var publicIDRegex = regexp.MustCompile(`^[a-f0-9]{32}$`)
@@ -23,6 +25,10 @@ func IsValidPublicID(publicID string) bool {
 type BasicInfoReq ai_api.BasicInfo
 
 func (bi *BasicInfoReq) parseObj(r *http.Request) *ApiErr {
+
+	if r.Method != http.MethodPost {
+		return ApiMethodInvalid
+	}
 	if err := json.NewDecoder(r.Body).Decode(bi); err != nil {
 		return ApiInvalidReq("无效的请求体", err)
 	}
@@ -35,6 +41,7 @@ func (bi *BasicInfoReq) parseObj(r *http.Request) *ApiErr {
 	if !bi.Mode.IsValid() {
 		return ApiInvalidReq("模式不合法，只能是：Mode33 或 Mode312", nil)
 	}
+
 	return nil
 }
 
@@ -53,11 +60,16 @@ func writeError(w http.ResponseWriter, err *ApiErr) {
 const (
 	RecordStatusInit   = 0
 	RecordStatusInTest = 1
+
+	RecordStatusInReport = 100
 )
 
 const (
-	StageBasic  = "basic-info"
-	StageReport = "report"
+	StageBasic    = "basic-info"
+	StageBasicDes = "基础信息"
+
+	StageReport    = "report"
+	StageReportDes = "测评报告"
 
 	StageRiasec    = "riasec"
 	StageRiasecDes = "兴趣测试"
@@ -76,50 +88,11 @@ const (
 	TestTypeSchool = "school"
 )
 
-func buildTestRoutes(testType string) []testRouteDef {
-	basic := testRouteDef{Router: StageBasic, Desc: "基本信息"}
-	report := testRouteDef{Router: StageReport, Desc: "测试报告"}
-
-	var middle []testRouteDef
-
-	switch testType {
-	case TestTypeBasic:
-		middle = []testRouteDef{
-			{Router: StageRiasec, Desc: StageRiasecDes},
-			{Router: StageAsc, Desc: StageAscDes},
-		}
-	case TestTypePro:
-		middle = []testRouteDef{
-			{Router: StageRiasec, Desc: StageRiasecDes},
-			{Router: StageAsc, Desc: StageAscDes},
-			{Router: StageOcean, Desc: StageOceanDes},
-			{Router: StageMotivation, Desc: StageMotivationDes},
-		}
-	case TestTypeSchool:
-		middle = []testRouteDef{
-			{Router: StageRiasec, Desc: StageRiasecDes},
-			{Router: StageAsc, Desc: StageAscDes},
-			{Router: StageOcean, Desc: StageOceanDes},
-			{Router: StageMotivation, Desc: StageMotivationDes},
-		}
-
-	default:
-		return nil
-	}
-
-	routes := make([]testRouteDef, 0, len(middle)+2)
-	routes = append(routes, basic)
-	routes = append(routes, middle...)
-	routes = append(routes, report)
-
-	return routes
-}
-
 var testFlowForBasic = []string{StageBasic, StageRiasec, StageAsc, StageReport}
 var testFlowForPro = []string{StageBasic, StageRiasec, StageAsc, StageOcean, StageMotivation, StageReport}
 var testFlowForSchool = []string{StageBasic, StageRiasec, StageAsc, StageOcean, StageMotivation, StageReport}
 
-func nextRoute(businessTyp, curStage string) (string, error) {
+func nextRoute(businessTyp, curStage string) (int, string, error) {
 	var flow []string
 
 	switch businessTyp {
@@ -130,7 +103,11 @@ func nextRoute(businessTyp, curStage string) (string, error) {
 	case TestTypeSchool:
 		flow = testFlowForSchool
 	default:
-		return "", fmt.Errorf("unknown business type: %s", businessTyp)
+		return -1, "", fmt.Errorf("unknown business type: %s", businessTyp)
+	}
+
+	if len(curStage) == 0 {
+		return 0, flow[0], nil
 	}
 
 	// 在对应流程里查找当前阶段
@@ -143,14 +120,64 @@ func nextRoute(businessTyp, curStage string) (string, error) {
 	}
 
 	if idx == -1 {
-		return "", fmt.Errorf("invalid stage %s for business type %s", curStage, businessTyp)
+		return -1, "", fmt.Errorf("invalid stage %s for business type %s", curStage, businessTyp)
 	}
 
 	// 已经是最后一个阶段（通常是 StageReport）——按你的要求返回错误
 	if idx == len(flow)-1 {
-		return "", fmt.Errorf("stage %s is last stage for business type %s", curStage, businessTyp)
+		return -1, "", fmt.Errorf("stage %s is last stage for business type %s", curStage, businessTyp)
 	}
 
-	// 正常返回下一个阶段
-	return flow[idx+1], nil
+	return idx + 1, flow[idx+1], nil
+}
+
+func getTestRoutes(testType string) []string {
+	switch testType {
+	case TestTypeBasic:
+		return testFlowForBasic
+	case TestTypePro:
+		return testFlowForPro
+	case TestTypeSchool:
+		return testFlowForSchool
+	default:
+		return nil
+	}
+}
+
+var testFlowDescForBasic = []string{
+	StageBasicDes,
+	StageRiasecDes,
+	StageAscDes,
+	StageReportDes,
+}
+
+var testFlowDescForPro = []string{
+	StageBasicDes,
+	StageRiasecDes,
+	StageAscDes,
+	StageOceanDes,
+	StageMotivationDes,
+	StageReportDes,
+}
+
+var testFlowDescForSchool = []string{
+	StageBasicDes,
+	StageRiasecDes,
+	StageAscDes,
+	StageOceanDes,
+	StageMotivationDes,
+	StageReportDes,
+}
+
+func getTestRoutesDes(testType string) []string {
+	switch testType {
+	case TestTypeBasic:
+		return testFlowDescForBasic
+	case TestTypePro:
+		return testFlowDescForPro
+	case TestTypeSchool:
+		return testFlowDescForSchool
+	default:
+		return nil
+	}
 }

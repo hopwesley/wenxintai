@@ -3,13 +3,12 @@
     <ol>
       <li
         v-for="(step, index) in steps"
-        :key="step.key"
         :class="stepClass(index)"
       >
         <div class="step-indicator__circle" aria-hidden="true">
           <span>{{ index + 1 }}</span>
         </div>
-        <div class="step-indicator__title">{{ step.title }}</div>
+        <div class="step-indicator__title">{{ step }}</div>
         <div v-if="index < steps.length - 1" class="step-indicator__connector" aria-hidden="true"></div>
       </li>
     </ol>
@@ -17,19 +16,23 @@
 </template>
 
 <script setup lang="ts">
-interface StepItem {
-  key: string
-  title: string
-}
 
-const props = defineProps<{
-  steps: StepItem[]
-  current: number
-}>()
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { useTestSession } from '@/store/testSession'
 
+const route = useRoute()
+const { state } = useTestSession()
+
+const steps = computed(() =>  state.testRoutes ?? [])
+
+const current = computed(() => {
+  const stageKey = String(route.params.testStage ?? '')
+  return state.nextRouteItem?.[stageKey] ?? 0  // 如果没有找到，就默认第 0 步
+})
 function stepClass(index: number) {
-  if (index + 1 < props.current) return 'is-complete'
-  if (index + 1 === props.current) return 'is-current'
+  if (index < current.value) return 'is-complete'
+  if (index === current.value) return 'is-current'
   return 'is-upcoming'
 }
 </script>

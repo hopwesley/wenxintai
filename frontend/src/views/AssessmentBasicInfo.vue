@@ -1,7 +1,7 @@
 <template>
   <TestLayout>
     <template #header>
-      <StepIndicator :steps="stepItems" :current="currentStepIndex"/>
+      <StepIndicator/>
     </template>
     <main class="config-page">
       <section class="config-card">
@@ -58,6 +58,7 @@
 import TestLayout from '@/layouts/TestLayout.vue'
 import StepIndicator from '@/views/components/StepIndicator.vue'
 import { useStartTestConfig } from '@/controller/AssessmentBasicInfo'
+import {useTestCommon} from "@/controller/common";
 
 const {
   inviteCode,
@@ -66,10 +67,14 @@ const {
   submitting,
   errorMessage,
   canSubmit,
-  stepItems,
-  currentStepIndex,
   handleSubmit,
 } = useStartTestConfig()
+
+const {
+  stepItems,
+  currentStepIndex,
+}= useTestCommon()
+
 </script>
 
 <style scoped src="@/styles/assessment-basic-info.css"></style>

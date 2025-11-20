@@ -97,7 +97,6 @@ func (pdb *psDatabase) SaveQuestion(
 		ON CONFLICT (business_type, test_type, public_id)
 		DO UPDATE SET
 			questions = EXCLUDED.questions,
-			-- 保留最初创建时间，只更新题目内容
 			created_at = app.question_answers.created_at
 	`
 
@@ -119,7 +118,7 @@ func (pdb *psDatabase) SaveQuestion(
 func (pdb *psDatabase) SaveAnswer(
 	ctx context.Context,
 	businessType, testType, publicId string,
-	answersJSON []byte,
+	answersJSON []byte, status int,
 ) error {
 	if publicId == "" {
 		return errors.New("publicId must be non-empty")
@@ -133,6 +132,9 @@ func (pdb *psDatabase) SaveAnswer(
 	if len(answersJSON) == 0 {
 		return errors.New("answersJSON must be non-empty")
 	}
+	if status <= 0 {
+		return errors.New("status must be greater than 0")
+	}
 
 	sLog := pdb.log.With().
 		Str("public_id", publicId).
@@ -141,8 +143,8 @@ func (pdb *psDatabase) SaveAnswer(
 		Logger()
 	sLog.Debug().Msg("SaveAnswer: start")
 
-	// 这里直接 UPDATE，假设前面 SaveQuestion 一定已经插入过对应记录
-	const q = `
+	// 1) 更新 app.question_answers.answers / completed_at
+	const updateAnswersSQL = `
 		UPDATE app.question_answers
 		SET
 			answers      = $4::jsonb,
@@ -152,26 +154,67 @@ func (pdb *psDatabase) SaveAnswer(
 		  AND public_id     = $3
 	`
 
-	res, err := pdb.db.ExecContext(ctx, q,
-		businessType,
-		testType,
-		publicId,
-		string(answersJSON),
-	)
-	if err != nil {
-		sLog.Err(err).Msg("SaveAnswer failed")
-		return err
-	}
+	// 2) 更新 app.tests_record.status
+	//    （tests_record 中才有 status 字段）
+	const updateTestRecordSQL = `
+		UPDATE app.tests_record
+		SET 
+		    status = $3,
+		    updated_at =  now()
+		WHERE business_type = $1
+		  AND public_id     = $2
+	`
 
-	rows, err := res.RowsAffected()
+	err := pdb.WithTx(ctx, func(tx *sql.Tx) error {
+		// --- 更新 question_answers ---
+		res1, err := tx.ExecContext(ctx, updateAnswersSQL,
+			businessType,
+			testType,
+			publicId,
+			string(answersJSON),
+		)
+		if err != nil {
+			sLog.Err(err).Msg("SaveAnswer: update question_answers failed")
+			return err
+		}
+
+		rows1, err := res1.RowsAffected()
+		if err != nil {
+			sLog.Err(err).Msg("SaveAnswer: RowsAffected for question_answers failed")
+			return err
+		}
+		if rows1 == 0 {
+			err = errors.New("SaveAnswer: no matching question_answers row")
+			sLog.Err(err).Msg("SaveAnswer: no rows updated in question_answers")
+			return err
+		}
+
+		// --- 更新 tests_record.status ---
+		res2, err := tx.ExecContext(ctx, updateTestRecordSQL,
+			businessType,
+			publicId,
+			status,
+		)
+		if err != nil {
+			sLog.Err(err).Msg("SaveAnswer: update tests_record failed")
+			return err
+		}
+
+		rows2, err := res2.RowsAffected()
+		if err != nil {
+			sLog.Err(err).Msg("SaveAnswer: RowsAffected for tests_record failed")
+			return err
+		}
+		if rows2 == 0 {
+			err = errors.New("SaveAnswer: no matching tests_record row")
+			sLog.Err(err).Msg("SaveAnswer: no rows updated in tests_record")
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		sLog.Err(err).Msg("SaveAnswer: RowsAffected failed")
-		return err
-	}
-	if rows == 0 {
-		// 说明没有找到对应的问题记录（可能 SaveQuestion 没成功）
-		err = errors.New("SaveAnswer: no matching question_answers row")
-		sLog.Err(err).Msg("SaveAnswer: no rows updated")
 		return err
 	}
 

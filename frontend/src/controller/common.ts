@@ -1,3 +1,5 @@
+import {useTestSession} from "@/store/testSession";
+
 export const TestTypeBasic = "basic"
 export const TestTypePro = "pro"
 export const TestTypeSchool = "school"
@@ -14,19 +16,21 @@ export const Mode312 = '3+1+2'
 export type ModeOption = '3+3' | '3+1+2'
 export type AnswerValue = 1 | 2 | 3 | 4 | 5
 export const scaleOptions = [
-    { value: 1 as AnswerValue, label: '从不' },
-    { value: 2 as AnswerValue, label: '较少' },
-    { value: 3 as AnswerValue, label: '一般' },
-    { value: 4 as AnswerValue, label: '经常' },
-    { value: 5 as AnswerValue, label: '总是' },
+    {value: 1 as AnswerValue, label: '从不'},
+    {value: 2 as AnswerValue, label: '较少'},
+    {value: 3 as AnswerValue, label: '一般'},
+    {value: 4 as AnswerValue, label: '经常'},
+    {value: 5 as AnswerValue, label: '总是'},
 ]
 
 export interface CommonResponse {
     ok: boolean
     msg: string | null
+    next_route: string | null
+    next_route_index: number
 }
 
-import {onMounted, onBeforeUnmount,getCurrentInstance} from 'vue'
+import {onMounted, onBeforeUnmount, getCurrentInstance, computed, ref} from 'vue'
 
 export interface UseSSEOptions {
     onMsg?: (data: any) => void
@@ -134,5 +138,32 @@ export function useSubscriptBySSE(
     return {
         start,
         stop,
+    }
+}
+
+export function useTestCommon() {
+
+    const {state} = useTestSession()
+    const stepItems = state.testRoutes ?? []
+
+    let currentStepIndex = computed(() => {
+        let index = state.nextRouteId ?? 0
+        if (index < 0) index = 0
+        return index
+    })
+
+    const currentStepTitle = computed(() => {
+        const routes = state.testRoutes ?? []
+        const idx = currentStepIndex.value
+        if (idx >= 0 && idx < routes.length) {
+            return routes[idx] || '正在加载…'
+        }
+        return '正在加载…'
+    })
+
+    return {
+        stepItems,
+        currentStepIndex,
+        currentStepTitle,
     }
 }

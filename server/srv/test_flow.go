@@ -24,15 +24,11 @@ func (req *testFlowRequest) parseObj(r *http.Request) *ApiErr {
 	return nil
 }
 
-type testRouteDef struct {
-	Router string `json:"router"` // 英文路由名，例如 basic-info / riasec / asc / report
-	Desc   string `json:"desc"`   // 中文描述，例如 基本信息 / 兴趣测试 / 能力测试 / 测试报告
-}
-
 type testFlowResponse struct {
-	TestPublicID string         `json:"public_id"`
-	Routes       []testRouteDef `json:"routes"`
-	NextRoute    string         `json:"nextRoute,omitempty"`
+	TestPublicID string   `json:"public_id"`
+	Routes       []string `json:"routes"`
+	NextRoute    string   `json:"next_route"`
+	NextRid      int16    `json:"next_route_id"`
 }
 
 func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
@@ -47,6 +43,7 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	sLog := s.log.With().Str("public_id", req.TestPublicID).Logger()
+	s.log.Info().Msg("query test flow")
 
 	record, dbErr := dbSrv.Instance().FindTestRecordByPublicId(ctx, req.TestPublicID)
 	if dbErr != nil {
@@ -55,34 +52,34 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	routes := buildTestRoutes(record.BusinessType)
+	routes := getTestRoutesDes(record.BusinessType)
 	if routes == nil {
 		sLog.Err(err).Msgf("failed build test routes")
 		writeError(w, ApiInternalErr("没有测试类型为："+record.BusinessType+"的测试卷", nil))
 		return
 	}
-
-	var nextStep = calculateNextStep(record, routes)
 	resp := testFlowResponse{
 		Routes:       routes,
 		TestPublicID: req.TestPublicID,
-		NextRoute:    nextStep,
+		NextRoute:    calculateNextStep(record, getTestRoutes(record.BusinessType)),
+		NextRid:      record.Status,
 	}
 
-	sLog.Debug().Str("next_step", nextStep).Msg("test record found")
+	sLog.Debug().Strs("routes", routes).Msg("test record found")
 	writeJSON(w, http.StatusOK, resp)
 }
 
-func calculateNextStep(record *dbSrv.TestRecord, routes []testRouteDef) string {
-	if int(record.Status) >= len(routes) {
+func calculateNextStep(record *dbSrv.TestRecord, routes []string) string {
+	status := int(record.Status)
+	if status >= len(routes) {
 		return StageReport
 	}
-
-	switch record.Status {
-	case RecordStatusInit:
+	switch {
+	case record.Status == RecordStatusInit:
 		return StageBasic
-	case RecordStatusInTest:
-		return routes[record.Status].Router
+
+	case record.Status >= RecordStatusInTest && record.Status < RecordStatusInReport:
+		return routes[status]
 
 	default:
 		return StageBasic
@@ -90,10 +87,6 @@ func calculateNextStep(record *dbSrv.TestRecord, routes []testRouteDef) string {
 }
 
 func (s *HttpSrv) updateBasicInfo(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeError(w, ApiMethodInvalid)
-		return
-	}
 
 	var req BasicInfoReq
 	err := req.parseObj(r)
@@ -102,21 +95,38 @@ func (s *HttpSrv) updateBasicInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog := s.log.With().Str("public_id", req.PublicId).Logger()
+	slog.Info().Msg("prepare to update basic info")
+
 	ctx := r.Context()
-	if err := dbSrv.Instance().UpdateBasicInfo(
+	businessTyp, dbErr := dbSrv.Instance().UpdateBasicInfo(
 		ctx,
 		req.PublicId,
 		string(req.Grade),
 		string(req.Mode),
 		req.Hobby,
 		RecordStatusInTest,
-	); err != nil {
+	)
+
+	if dbErr != nil {
+		slog.Err(dbErr).Msg("更新基本信息失败")
 		writeError(w, NewApiError(http.StatusInternalServerError, "db_update_failed", "更新基本信息失败", err))
 		return
 	}
 
+	nri, nextR, rErr := nextRoute(businessTyp, StageBasic)
+	if rErr != nil {
+		slog.Err(rErr).Msg("获取下一级路由失败")
+		writeError(w, NewApiError(http.StatusInternalServerError, "db_update_failed", "未找到一下", err))
+		return
+	}
+
 	writeJSON(w, http.StatusOK, &CommonRes{
-		Ok:  true,
-		Msg: "更新基本信息成功",
+		Ok:        true,
+		Msg:       "更新基本信息成功",
+		NextRoute: nextR,
+		NextRid:   nri,
 	})
+
+	slog.Info().Str("next-route", nextR).Int("next-route-index", nri).Msg("update basic info success")
 }

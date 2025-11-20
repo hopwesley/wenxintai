@@ -11,7 +11,8 @@ export interface TestSession {
     businessType?: typeof TestTypeBasic | typeof TestTypePro | typeof TestTypeSchool | string
 
     // 测试流程的路由列表
-    testRoutes?: { router: string; desc: string }[]
+    testRoutes?: string[]
+    nextRouteItem: Record<string, number>
 
     // BasicInfo / AssessmentBasicInfo 收集到的配置
     mode?: ModeOption
@@ -31,6 +32,7 @@ const defaultSession: TestSession = {
     recordPublicID: undefined,
     businessType: undefined,
     testRoutes: undefined,
+    nextRouteItem: {},
     mode: undefined,
     hobby: undefined,
     grade: undefined,
@@ -120,8 +122,17 @@ export function useTestSession() {
         state.businessType = type
     }
 
-    function setTestRoutes(routes: { router: string; desc: string }[]) {
+    function setTestRoutes(routes: string[]) {
         state.testRoutes = routes
+    }
+
+    function setNextRouteItem(route:string, rid:number){
+        if (!route) return
+
+        if (!state.nextRouteItem) {
+            state.nextRouteItem = {}
+        }
+        state.nextRouteItem[route] =  rid
     }
 
     function setPublicID(pid: string) {
@@ -149,7 +160,6 @@ export function useTestSession() {
         setTestRoutes,
         setPublicID,
         getPublicID,
-        // 清空会话
-        resetSession,
+        setNextRouteItem,
     }
 }

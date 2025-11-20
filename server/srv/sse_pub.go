@@ -184,7 +184,7 @@ func (s *HttpSrv) aiProcess(msgCh chan *SSEMessage, publicId, businessTyp string
 	defer close(msgCh)
 
 	bgCtx := context.Background()
-
+	sLog.Info().Msg("start ai process")
 	dbQuestion, err := dbSrv.Instance().FindQASession(bgCtx, businessTyp, string(aiTestType), publicId)
 	if err != nil {
 		sLog.Err(err).Msg("failed when find questions from database")
@@ -221,6 +221,8 @@ func (s *HttpSrv) aiProcess(msgCh chan *SSEMessage, publicId, businessTyp string
 		sendSafe(msgCh, msg, &s.log)
 		return
 	}
+
+	s.log.Info().Msg("AI generate question success")
 
 	if err := dbSrv.Instance().SaveQuestion(bgCtx, businessTyp, string(aiTestType), publicId, json.RawMessage(testContent)); err != nil {
 		sLog.Err(err).Msg("保存 QA 试卷失败")

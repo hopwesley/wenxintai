@@ -97,18 +97,10 @@ function stepClass(index: number) {
   pointer-events: none;
 }
 
-.step-indicator li.is-complete {
-  color: #3b82f6;
-}
-
 .step-indicator li.is-complete .step-indicator__circle {
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
   border-color: transparent;
   color: white;
-}
-
-.step-indicator li.is-current {
-  color: #111827;
 }
 
 .step-indicator li.is-current .step-indicator__circle {

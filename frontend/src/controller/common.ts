@@ -30,7 +30,7 @@ export interface CommonResponse {
     next_route_index: number
 }
 
-import {onMounted, onBeforeUnmount, getCurrentInstance, computed, ref} from 'vue'
+import {onMounted, onBeforeUnmount, getCurrentInstance, computed} from 'vue'
 import {useRoute} from "vue-router";
 
 export interface UseSSEOptions {

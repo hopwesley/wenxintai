@@ -67,11 +67,12 @@ func (s *HttpSrv) handleTestSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	answersJSON, _ := json.Marshal(req.Answers)
-	if err := dbSrv.Instance().UpdateQASession(ctx, req.BusinessType, string(aiTestType), req.TestPublicID, answersJSON); err != nil {
+	if err := dbSrv.Instance().SaveAnswer(ctx, req.BusinessType, string(aiTestType), req.TestPublicID, answersJSON); err != nil {
 		sLog.Err(err).Msg("保存答案失败")
 		writeError(w, ApiInternalErr("无效的试卷类型", err))
 		return
 	}
 
 	sLog.Info().Msg("save answers success")
+	writeJSON(w, http.StatusOK, &CommonRes{Ok: true, Msg: "保存答案成功"})
 }

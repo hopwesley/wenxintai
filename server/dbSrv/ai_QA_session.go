@@ -69,7 +69,7 @@ WHERE business_type = $1 AND test_type = $2  AND public_id = $3
 	return &sess, nil
 }
 
-func (pdb *psDatabase) SaveQASession(
+func (pdb *psDatabase) SaveQuestion(
 	ctx context.Context,
 	businessType, testType, publicId string,
 	questionsJSON []byte,
@@ -89,7 +89,7 @@ func (pdb *psDatabase) SaveQASession(
 
 	sLog := pdb.log.With().Str("public_id", publicId).Str("test_type", testType).
 		Str("business_type", businessType).Logger()
-	sLog.Debug().Msg("SaveQASession: start")
+	sLog.Debug().Msg("SaveQuestion: start")
 
 	const q = `
 		INSERT INTO app.question_answers (business_type,test_type, public_id, questions)
@@ -107,19 +107,74 @@ func (pdb *psDatabase) SaveQASession(
 		string(questionsJSON),
 	)
 	if err != nil {
-		sLog.Err(err).Msg("SaveQASession failed")
+		sLog.Err(err).Msg("SaveQuestion failed")
 		return err
 	}
 
-	sLog.Debug().Msg("SaveQASession: done")
+	sLog.Debug().Msg("SaveQuestion: done")
 
 	return nil
 }
 
-func (pdb *psDatabase) UpdateQASession(
+func (pdb *psDatabase) SaveAnswer(
 	ctx context.Context,
 	businessType, testType, publicId string,
 	answersJSON []byte,
 ) error {
+	if publicId == "" {
+		return errors.New("publicId must be non-empty")
+	}
+	if businessType == "" {
+		return errors.New("businessType must be non-empty")
+	}
+	if testType == "" {
+		return errors.New("testType must be non-empty")
+	}
+	if len(answersJSON) == 0 {
+		return errors.New("answersJSON must be non-empty")
+	}
+
+	sLog := pdb.log.With().
+		Str("public_id", publicId).
+		Str("test_type", testType).
+		Str("business_type", businessType).
+		Logger()
+	sLog.Debug().Msg("SaveAnswer: start")
+
+	// 这里直接 UPDATE，假设前面 SaveQuestion 一定已经插入过对应记录
+	const q = `
+		UPDATE app.question_answers
+		SET
+			answers      = $4::jsonb,
+			completed_at = now()
+		WHERE business_type = $1
+		  AND test_type     = $2
+		  AND public_id     = $3
+	`
+
+	res, err := pdb.db.ExecContext(ctx, q,
+		businessType,
+		testType,
+		publicId,
+		string(answersJSON),
+	)
+	if err != nil {
+		sLog.Err(err).Msg("SaveAnswer failed")
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		sLog.Err(err).Msg("SaveAnswer: RowsAffected failed")
+		return err
+	}
+	if rows == 0 {
+		// 说明没有找到对应的问题记录（可能 SaveQuestion 没成功）
+		err = errors.New("SaveAnswer: no matching question_answers row")
+		sLog.Err(err).Msg("SaveAnswer: no rows updated")
+		return err
+	}
+
+	sLog.Debug().Msg("SaveAnswer: done")
 	return nil
 }

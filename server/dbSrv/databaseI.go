@@ -20,6 +20,6 @@ type DbService interface {
 	UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string, status int) error
 	QueryBasicInfo(ctx context.Context, publicId string) (*ai_api.BasicInfo, error)
 	FindQASession(ctx context.Context, businessType, testType, publicId string) (*QASession, error)
-	SaveQASession(ctx context.Context, businessType, testType, publicId string, questionsJSON []byte) error
-	UpdateQASession(ctx context.Context, businessType, testType, publicId string, questionsJSON []byte) error
+	SaveQuestion(ctx context.Context, businessType, testType, publicId string, questionsJSON []byte) error
+	SaveAnswer(ctx context.Context, businessType, testType, publicId string, answersJSON []byte) error
 }

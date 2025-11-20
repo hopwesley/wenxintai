@@ -217,14 +217,14 @@ func (s *HttpSrv) aiProcess(msgCh chan *SSEMessage, publicId, businessTyp string
 	testContent, aiErr := ai_api.Instance().GenerateQuestion(bgCtx, bi, aiTestType, callback)
 	if aiErr != nil {
 		sLog.Err(aiErr).Msg("ai generate questions error")
-		msg := &SSEMessage{Msg: "AI 生成 RIASEC 试卷失败：" + aiErr.Error(), Typ: SSE_MT_ERROR}
+		msg := &SSEMessage{Msg: "AI 生成 QA 试卷失败：" + aiErr.Error(), Typ: SSE_MT_ERROR}
 		sendSafe(msgCh, msg, &s.log)
 		return
 	}
 
-	if err := dbSrv.Instance().SaveQASession(bgCtx, businessTyp, string(aiTestType), publicId, json.RawMessage(testContent)); err != nil {
-		sLog.Err(err).Msg("保存 RIASEC 试卷失败")
-		msg := &SSEMessage{Msg: "保存 RIASEC 试卷失败：" + err.Error(), Typ: SSE_MT_ERROR}
+	if err := dbSrv.Instance().SaveQuestion(bgCtx, businessTyp, string(aiTestType), publicId, json.RawMessage(testContent)); err != nil {
+		sLog.Err(err).Msg("保存 QA 试卷失败")
+		msg := &SSEMessage{Msg: "保存 QA 试卷失败：" + err.Error(), Typ: SSE_MT_ERROR}
 		sendSafe(msgCh, msg, &s.log)
 		return
 	}

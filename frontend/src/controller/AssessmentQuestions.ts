@@ -1,7 +1,8 @@
-import {computed, onMounted, ref, watch} from 'vue'
+import {computed, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useTestSession} from '@/store/testSession'
 import {
+    AnswerValue,
     CommonResponse,
     StageAsc,
     StageMotivation,
@@ -14,42 +15,56 @@ import {useGlobalLoading} from "@/controller/useGlobalLoading";
 import {apiRequest} from "@/api";
 
 export interface Question {
-    id: number;
-    text: string;
-    dimension: string;
+    id: number
+    text: string
+
+    // RIASEC 专用
+    dimension?: string
+
+    // ASC 专用
+    subject?: string        // "PHY"
+    subject_label?: string  // "物理"
+    reverse?: boolean
+    subtype?: string        // "Comparison" | "Efficacy" | ...
+
+    // 之后 OCEAN / SDT / MI 也可以继续往这里挂可选字段
 }
 
-export interface ScaleOption {
-    value: number;
-    label: string;
+export interface RiasecAnswerPayload {
+    id: number
+    dimension: string  // R / I / A / S / E / C
+    value: AnswerValue      // 1~5
 }
 
-export interface AnswerTriple {
-    id: number;         // 题目编号
-    dimension: string;  // R / I / A / S / E / C
-    value: number;      // 用户选择的 1~5
+export interface AscAnswerPayload {
+    id: number
+    subject: string        // "PHY"
+    subject_label: string  // "物理"（可选：看你是否真的要存）
+    value: AnswerValue          // 1~5
+    reverse: boolean
+    subtype: string        // "Comparison" | "Efficacy" ...
 }
 
+export interface OceanAnswerPayload {
+    id: number
+    value: AnswerValue      // 1~5
+    dimension: string      // "O" / "C" / "E" / "A" / "N"
+    reverse: boolean
+}
+
+export type AnyAnswerPayload =
+    | RiasecAnswerPayload
+    | AscAnswerPayload
+    | OceanAnswerPayload
 
 export function useQuestionsStagePage() {
+
     const route = useRoute()
     const router = useRouter()
     const {state, getPublicID} = useTestSession()
     const {showAlert} = useAlert()
-
-    // ------- 步骤条 & 标题 & loading -------
     const aiLoading = ref(true)
-
     const {showLoading, hideLoading} = useGlobalLoading()
-
-    function showAIProcess() {
-        aiLoading.value = true
-    }
-
-    function hideAIProcess() {
-        aiLoading.value = false
-    }
-
     const stepItems = computed(() => {
         const routes = state.testRoutes ?? []
         return routes.map(r => ({
@@ -74,6 +89,57 @@ export function useQuestionsStagePage() {
         return '正在加载…'
     })
 
+    const pageSize = 5
+    const currentPage = ref(1)
+    const questions = ref<Question[]>([])
+    const answers = ref<Record<number, AnswerValue>>({})
+    const highlightedQuestions = ref<Record<number, boolean>>({})
+    const errorMessage = ref('')
+    const logLines = ref<string[]>([])
+    const MAX_LOG_LINES = 8
+    const truncatedLatestMessage = computed(() => logLines.value)
+    const isSubmitting = ref(false)
+    const totalCount = computed(() => questions.value.length)
+    const totalPages = computed(() =>
+        totalCount.value > 0 ? Math.ceil(totalCount.value / pageSize) : 1
+    )
+    const pageStartIndex = computed(() => (currentPage.value - 1) * pageSize)
+    const pageEndIndex = computed(() =>
+        Math.min(pageStartIndex.value + pageSize, totalCount.value)
+    )
+    const pagedQuestions = computed(() =>
+        questions.value.slice(pageStartIndex.value, pageEndIndex.value)
+    )
+    const isFirstPage = computed(() => currentPage.value <= 1)
+    const isLastPage = computed(() => currentPage.value >= totalPages.value)
+    const rawMessage = ref('')
+
+    const public_id: string | undefined = getPublicID()
+    const routes = state.testRoutes ?? []
+    const businessType = computed(() =>
+        String(route.params.businessType ?? state.businessType ?? '')
+    )
+
+    const testStage = computed(() =>
+        String(route.params.testStage ?? '')
+    )
+
+    watch(
+        () => [businessType.value, testStage.value],
+        () => {
+            initStageForCurrentRoute()
+        },
+        {immediate: true},
+    )
+
+    function showAIProcess() {
+        aiLoading.value = true
+    }
+
+    function hideAIProcess() {
+        aiLoading.value = false
+    }
+
     function validateTestStage(testStage: string): boolean {
         const validStages = [
             StageRiasec,
@@ -91,71 +157,9 @@ export function useQuestionsStagePage() {
         return true
     }
 
-    // ------- 本页面自己的状态（分页 / 题目 / 日志 / 提交） -------
-    const pageSize = 5
-    const currentPage = ref(1)
-    const questions = ref<Question[]>([])
-    const answers = ref<Record<number, number>>({})
-    const highlightedQuestions = ref<Record<number, boolean>>({})
-    const errorMessage = ref('')
-
-    const logLines = ref<string[]>([])
-    const MAX_LOG_LINES = 8
-    const truncatedLatestMessage = computed(() => logLines.value)
-
-    const isSubmitting = ref(false)
-
-    const answerTriples = computed<AnswerTriple[]>(() => {
-        const map = answers.value
-        return questions.value
-            .filter(q => map[q.id] != null)
-            .map(q => ({
-                id: q.id,
-                dimension: q.dimension,
-                value: map[q.id] as number,
-            }))
-    })
-
-    const totalCount = computed(() => questions.value.length)
-    const totalPages = computed(() =>
-        totalCount.value > 0 ? Math.ceil(totalCount.value / pageSize) : 1
-    )
-    const pageStartIndex = computed(() => (currentPage.value - 1) * pageSize)
-    const pageEndIndex = computed(() =>
-        Math.min(pageStartIndex.value + pageSize, totalCount.value)
-    )
-    const pagedQuestions = computed(() =>
-        questions.value.slice(pageStartIndex.value, pageEndIndex.value)
-    )
-    const isFirstPage = computed(() => currentPage.value <= 1)
-    const isLastPage = computed(() => currentPage.value >= totalPages.value)
-
     function isQuestionHighlighted(id: number): boolean {
         return highlightedQuestions.value[id]
     }
-
-    const public_id: string | undefined = getPublicID()
-    const routes = state.testRoutes ?? []
-    const businessType = computed(() =>
-        String(route.params.businessType ?? state.businessType ?? '')
-    )
-
-    const testStage = computed(() =>
-        String(route.params.testStage ?? '')
-    )
-
-    watch(
-        () => [businessType.value, testStage.value],
-        () => {
-            initStageForCurrentRoute()
-        },
-        { immediate: true },
-    )
-
-    console.log('[QuestionsStagePage] apply_test resp:', testStage.value, businessType.value, public_id, routes)
-
-    const rawMessage = ref('')
-
 
     function handleSseError(err: Error) {
         console.log('------>>> sse channel error:', err)
@@ -210,9 +214,12 @@ export function useQuestionsStagePage() {
     function initStageForCurrentRoute() {
         resetStageState()
         errorMessage.value = ''
+        showAIProcess()
 
         const stage = testStage.value
         const bizType = businessType.value
+        
+        console.log('[QuestionsStagePage] init stage:', stage, 'aiLoading=', aiLoading.value)
 
         if (!public_id || !routes.length || !validateTestStage(stage)) {
             showAlert('测试流程异常，请返回首页重新开始', () => {
@@ -231,10 +238,10 @@ export function useQuestionsStagePage() {
 
         const sseCtrl = useSubscriptBySSE(public_id, bizType, stage, {
             autoStart: false,
-            onOpen: showLoading,
+            onOpen: showAIProcess,
             onError: handleSseError,
             onMsg: handleSseMsg,
-            onClose: hideLoading,
+            onClose: hideAIProcess,
             onDone: handleSseDone,
         })
 
@@ -246,12 +253,14 @@ export function useQuestionsStagePage() {
             public_id,
             business_type: businessType.value,
             test_type: testStage.value,
-            answers: answerTriples.value,
+            answers: buildAnswersPayloadForCurrentStage(),
         }
-        return apiRequest<CommonResponse>('/api/test_submit', {
-            method: 'POST',
-            body: payload,
-        })
+        const resp = await apiRequest<CommonResponse>('/api/test_submit', {method: 'POST', body: payload})
+
+        if (!resp.ok) {
+            throw new Error(resp.msg || '提交失败，请稍后重试')
+        }
+        return resp
     }
 
     function gotoNextStageAfterSubmit() {
@@ -263,11 +272,9 @@ export function useQuestionsStagePage() {
             return
         }
 
-        // 当前阶段（比如 riasec / asc / ocean / motivation）
         const currentStage = String(testStage.value || '')
         const idx = routes.findIndex((r) => r.router === currentStage)
 
-        // 找不到自己，或者已经是最后一个步骤了：都算流程错误
         if (idx < 0 || idx === routes.length - 1) {
             showAlert('测试流程异常，未找到下一步，请返回首页重新开始', () => {
                 router.replace('/').then()
@@ -277,8 +284,7 @@ export function useQuestionsStagePage() {
 
         const next = routes[idx + 1]
 
-        // businessType 从全局状态优先，退回到当前路由参数
-        const currentBusinessType = state.businessType || businessType
+        const currentBusinessType = state.businessType || businessType.value
         if (!currentBusinessType) {
             showAlert('测试流程异常，未找到测评类型，请返回首页重新开始', () => {
                 router.replace('/').then()
@@ -286,9 +292,6 @@ export function useQuestionsStagePage() {
             return
         }
 
-        // 和 AssessmentBasicInfo 一样，直接用路径拼接：
-        //  /assessment/${businessType}/${next.router}
-        // 如果 next.router 是 report，会自动匹配到报告页路由
         router.push(`/assessment/${currentBusinessType}/${next.router}`).then()
     }
 
@@ -346,10 +349,75 @@ export function useQuestionsStagePage() {
         }
     }
 
+    function buildRiasecAnswers(
+        questions: Question[],
+        answersMap: Record<number, number>,
+    ): RiasecAnswerPayload[] {
+        return questions
+            .filter(q => answersMap[q.id] != null && q.dimension)
+            .map(q => ({
+                id: q.id,
+                dimension: q.dimension as string,
+                value: answersMap[q.id] as AnswerValue,
+            }))
+    }
+
+    function buildAscAnswers(
+        questions: Question[],
+        answersMap: Record<number, number>,
+    ): AscAnswerPayload[] {
+        return questions
+            .filter(q => answersMap[q.id] != null && q.subject)
+            .map(q => ({
+                id: q.id,
+                subject: q.subject as string,             // "PHY"
+                subject_label: q.subject_label || '',     // 视需求决定要不要存
+                value: answersMap[q.id] as AnswerValue,        // 1~5
+                reverse: !!q.reverse,
+                subtype: q.subtype || '',
+            }))
+    }
+
+    function buildOceanAnswers(
+        questions: Question[],
+        answersMap: Record<number, number>,
+    ): OceanAnswerPayload[] {
+        return questions
+            .filter(q => answersMap[q.id] != null && q.dimension)
+            .map(q => ({
+                id: q.id,
+                dimension: q.dimension as string,
+                value: answersMap[q.id] as AnswerValue,        // 1~5
+                reverse: !!q.reverse,
+            }))
+    }
+
+    function buildAnswersPayloadForCurrentStage(): AnyAnswerPayload[] {
+        const stage = testStage.value   // RIASEC / ASC / ...
+
+        const map = answers.value
+        const qs = questions.value
+        switch (stage) {
+            case StageRiasec:
+                return buildRiasecAnswers(qs, map)
+            case StageAsc:
+                return buildAscAnswers(qs, map)
+            case StageOcean:
+                return buildOceanAnswers(qs, map)
+            default:
+                return qs
+                    .filter(q => map[q.id] != null)
+                    .map(q => ({
+                        id: q.id,
+                        value: map[q.id] as number,
+                    })) as AnyAnswerPayload[]
+        }
+    }
+
     return {
         // 布局 & 步骤条
         route,
-        loading: aiLoading,
+        aiLoading,
         stepItems,
         currentStep,
         currentStepTitle,
@@ -371,8 +439,5 @@ export function useQuestionsStagePage() {
         isQuestionHighlighted,
         handlePrev,
         handleNext,
-
-        // 新增：带 dimension 的答案结构
-        answerTriples,
     }
 }

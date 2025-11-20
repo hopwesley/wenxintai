@@ -2,6 +2,7 @@ package srv
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"regexp"
 
@@ -112,4 +113,44 @@ func buildTestRoutes(testType string) []testRouteDef {
 	routes = append(routes, report)
 
 	return routes
+}
+
+var testFlowForBasic = []string{StageBasic, StageRiasec, StageAsc, StageReport}
+var testFlowForPro = []string{StageBasic, StageRiasec, StageAsc, StageOcean, StageMotivation, StageReport}
+var testFlowForSchool = []string{StageBasic, StageRiasec, StageAsc, StageOcean, StageMotivation, StageReport}
+
+func nextRoute(businessTyp, curStage string) (string, error) {
+	var flow []string
+
+	switch businessTyp {
+	case TestTypeBasic:
+		flow = testFlowForBasic
+	case TestTypePro:
+		flow = testFlowForPro
+	case TestTypeSchool:
+		flow = testFlowForSchool
+	default:
+		return "", fmt.Errorf("unknown business type: %s", businessTyp)
+	}
+
+	// 在对应流程里查找当前阶段
+	idx := -1
+	for i, s := range flow {
+		if s == curStage {
+			idx = i
+			break
+		}
+	}
+
+	if idx == -1 {
+		return "", fmt.Errorf("invalid stage %s for business type %s", curStage, businessTyp)
+	}
+
+	// 已经是最后一个阶段（通常是 StageReport）——按你的要求返回错误
+	if idx == len(flow)-1 {
+		return "", fmt.Errorf("stage %s is last stage for business type %s", curStage, businessTyp)
+	}
+
+	// 正常返回下一个阶段
+	return flow[idx+1], nil
 }

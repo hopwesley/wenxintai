@@ -12,7 +12,7 @@ export const StageMotivation = "motivation"
 export const Mode33 = '3+3'
 export const Mode312 = '3+1+2'
 export type ModeOption = '3+3' | '3+1+2'
-type AnswerValue = 1 | 2 | 3 | 4 | 5
+export type AnswerValue = 1 | 2 | 3 | 4 | 5
 export const scaleOptions = [
     { value: 1 as AnswerValue, label: '从不' },
     { value: 2 as AnswerValue, label: '较少' },
@@ -26,7 +26,7 @@ export interface CommonResponse {
     msg: string | null
 }
 
-import {onMounted, onBeforeUnmount} from 'vue'
+import {onMounted, onBeforeUnmount,getCurrentInstance} from 'vue'
 
 export interface UseSSEOptions {
     onMsg?: (data: any) => void
@@ -117,15 +117,19 @@ export function useSubscriptBySSE(
         }
     }
 
-    if (autoStart) {
-        onMounted(() => {
-            start()
+    const instance = getCurrentInstance()
+
+    if (instance) {
+        if (autoStart) {
+            onMounted(() => {
+                start()
+            })
+        }
+
+        onBeforeUnmount(() => {
+            stop()
         })
     }
-
-    onBeforeUnmount(() => {
-        stop()
-    })
 
     return {
         start,

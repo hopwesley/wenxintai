@@ -15,7 +15,7 @@
       </header>
 
       <!-- 主区域：根据 loading / error / 正常显示不同内容 -->
-      <div v-if="loading" class="questions__loading">
+      <div v-if="aiLoading" class="questions__loading">
         正在为你准备本阶段的专属题目…
       </div>
       <div v-else-if="errorMessage" class="questions__error">
@@ -83,7 +83,7 @@
     </section>
 
     <!-- 🌌 AI 生成题目中的炫酷遮罩：默认 loading=true 时显示 -->
-    <div v-if="loading" class="overlay overlay--ai">
+    <div v-if="aiLoading" class="overlay overlay--ai">
       <div class="overlay__card overlay__card--ai">
         <div class="overlay__title">AI 正在为你生成专属题目…</div>
         <div class="overlay__subtitle">
@@ -126,7 +126,7 @@ import {scaleOptions} from '@/controller/common'
 
 const {
   route,
-  loading,
+  aiLoading,
   stepItems,
   currentStep,
   currentStepTitle,

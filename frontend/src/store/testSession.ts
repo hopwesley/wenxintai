@@ -1,5 +1,5 @@
 import { reactive, watch } from 'vue'
-import { ModeOption, TestTypeBasic, TestTypePro, TestTypeSchool } from '@/controller/common'
+import {AnswerValue, ModeOption, TestTypeBasic, TestTypePro, TestTypeSchool} from '@/controller/common'
 
 const STORAGE_KEY = 'wenxintai:test-session'
 
@@ -13,6 +13,7 @@ export interface TestSession {
     // 测试流程的路由列表
     testRoutes?: string[]
     nextRouteItem: Record<string, number>
+    stageAnswers: Record<string, Record<number, AnswerValue>>
 
     // BasicInfo / AssessmentBasicInfo 收集到的配置
     mode?: ModeOption
@@ -33,6 +34,7 @@ const defaultSession: TestSession = {
     businessType: undefined,
     testRoutes: undefined,
     nextRouteItem: {},
+    stageAnswers: {},
     mode: undefined,
     hobby: undefined,
     grade: undefined,
@@ -143,7 +145,27 @@ export function useTestSession() {
         return state.recordPublicID
     }
 
+    // 保存某一阶段的答案
+    function saveStageAnswers(stageKey: string, answers: Record<number, AnswerValue>) {
+        if (!stageKey) return
+        if (!state.stageAnswers) {
+            state.stageAnswers = {}
+        }
+        state.stageAnswers[stageKey] = { ...answers }
+    }
+
+    // 读取某一阶段的答案
+    function loadStageAnswers(stageKey: string): Record<number, AnswerValue> | undefined {
+        if (!stageKey || !state.stageAnswers) return undefined
+        return state.stageAnswers[stageKey]
+    }
+
     function resetSession() {
+        state.recordPublicID = undefined
+        state.businessType = undefined
+        state.testRoutes = undefined
+        state.nextRouteItem = {}
+        state.stageAnswers = {}
         // 重置内存里的 state
         Object.assign(state, { ...defaultSession })
         // 清理 localStorage
@@ -161,5 +183,8 @@ export function useTestSession() {
         setPublicID,
         getPublicID,
         setNextRouteItem,
+
+        saveStageAnswers,
+        loadStageAnswers,
     }
 }

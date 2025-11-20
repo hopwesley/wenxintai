@@ -1,0 +1,140 @@
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.60);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+
+.overlay__card--ai {
+    position: relative;
+    background: radial-gradient(circle at top, #1e293b 0, #020617 60%);
+    color: #e5e7eb;
+    border-radius: 20px;
+    padding: 24px 28px;
+    box-shadow: 0 0 40px rgba(56, 189, 248, 0.35);
+    border: 1px solid rgba(129, 140, 248, 0.7);
+    overflow: hidden;
+
+    /* 尺寸放大，让 AI 面板更有存在感 */
+    max-width: 640px;
+    min-width: 460px;
+    min-height: 260px;
+}
+
+/* 卡片外围流动光效 */
+.overlay__card--ai::before {
+    content: "";
+    position: absolute;
+    inset: -40%;
+    background:
+            conic-gradient(from 0deg,
+            rgba(59,130,246,0.2),
+            rgba(56,189,248,0.7),
+            rgba(129,140,248,0.4),
+            rgba(59,130,246,0.2));
+    opacity: 0.35;
+    animation: overlay-ai-spin 18s linear infinite;
+    z-index: -1;
+}
+
+@keyframes overlay-ai-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* 标题 + 副标题 */
+.overlay__title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.overlay__subtitle {
+    font-size: 13px;
+    color: #cbd5f5;
+    margin-bottom: 16px;
+}
+
+/* 能量条 / 动画点点 */
+.overlay__pulse {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.overlay__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #38bdf8;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.9);
+    animation: overlay-dot-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes overlay-dot-pulse {
+    0%, 100% { transform: scale(0.85); opacity: 0.6; }
+    50% { transform: scale(1.15); opacity: 1; }
+}
+
+.overlay__bar {
+    flex: 1;
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #38bdf8, #6366f1);
+    opacity: 0.7;
+    position: relative;
+    overflow: hidden;
+}
+
+.overlay__bar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(248, 250, 252, 0.7), transparent);
+    transform: translateX(-100%);
+    animation: overlay-bar-sweep 1.4s ease-in-out infinite;
+}
+
+.overlay__bar--delay::before {
+    animation-delay: 0.4s;
+}
+
+@keyframes overlay-bar-sweep {
+    0% { transform: translateX(-110%); }
+    100% { transform: translateX(110%); }
+}
+
+/* 日志窗口：固定高度，只展示最近几条日志，从底部往上挤 */
+.overlay__log-window {
+    margin-top: 16px;
+    height: 120px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    overflow: hidden;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.overlay__log-text {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #e5e7eb;
+    word-break: break-all;
+    white-space: pre-wrap;
+}

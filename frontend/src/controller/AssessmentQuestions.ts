@@ -30,6 +30,13 @@ export interface Question {
     // 之后 OCEAN / SDT / MI 也可以继续往这里挂可选字段
 }
 
+interface StageSnapshot {
+    questions: Question[]
+    answers: Record<number, AnswerValue>
+    currentPage: number
+}
+
+
 export interface RiasecAnswerPayload {
     id: number
     dimension: string  // R / I / A / S / E / C
@@ -61,7 +68,7 @@ export function useQuestionsStagePage() {
 
     const route = useRoute()
     const router = useRouter()
-    const {state, getPublicID, setNextRouteItem} = useTestSession()
+    const {state, getPublicID, setNextRouteItem, saveStageAnswers, loadStageAnswers} = useTestSession()
     const {showAlert} = useAlert()
     const aiLoading = ref(true)
     const {showLoading, hideLoading} = useGlobalLoading()
@@ -71,7 +78,6 @@ export function useQuestionsStagePage() {
     const questions = ref<Question[]>([])
     const answers = ref<Record<number, AnswerValue>>({})
     const highlightedQuestions = ref<Record<number, boolean>>({})
-    const errorMessage = ref('')
     const logLines = ref<string[]>([])
     const MAX_LOG_LINES = 8
     const truncatedLatestMessage = computed(() => logLines.value)
@@ -108,6 +114,31 @@ export function useQuestionsStagePage() {
         },
         {immediate: true},
     )
+
+    // 唯一标识当前阶段，用于在 store 中找到对应答案
+    const stageKey = computed(() => {
+        const pid = public_id
+        const stage = testStage.value
+        const biz = businessType.value
+        if (!pid || !stage || !biz) return ''
+        return `qstage:${biz}:${stage}:${pid}`
+    })
+
+    // 只要题目已经加载出来，且答案有变动，就把当前阶段的答案写回 store
+    watch(
+        () => ({
+            key: stageKey.value,
+            answers: answers.value,
+            hasQuestions: questions.value.length > 0,
+        }),
+        ({ key, answers, hasQuestions }) => {
+            if (!key || !hasQuestions) return
+            // 注意：这里不会缓存题目，只把答案 map 写到 store.stageAnswers[key]
+            saveStageAnswers(key, answers)
+        },
+        { deep: true }
+    )
+
 
     function showAIProcess() {
         aiLoading.value = true
@@ -161,7 +192,6 @@ export function useQuestionsStagePage() {
         questions.value = []
         answers.value = {}
         highlightedQuestions.value = {}
-        errorMessage.value = ''
         logLines.value = []
         rawMessage.value = ''
         isSubmitting.value = false
@@ -179,24 +209,74 @@ export function useQuestionsStagePage() {
             questions.value = parsed
             currentPage.value = 1
             highlightedQuestions.value = {}
+            //TODO::applyAnswersForCurrentStage
+
         } catch (e) {
             console.error('[QuestionsStagePage] 解析题目失败:', e)
-            errorMessage.value = '获取测试题目失败，请稍后再试'
             showAlert('获取测试题目失败，请稍后再试')
         } finally {
             hideAIProcess()
         }
     }
 
+    /**
+     * 统一处理“本阶段应该展示哪些答案”
+     * @param rawAnswers 从后端返回的 raw.answers（可能没有、可能是一个对象）
+     *
+     * 优先级：
+     * 1. 如果 rawAnswers 有值，认为是服务器从数据库加载出来的标准答案 → 以它为准
+     * 2. 否则，如果本地有缓存（stageAnswers[stageKey]），用本地缓存
+     * 3. 如果都没有，就保持当前 answers 不变（通常是空）
+     */
+    function applyAnswersForCurrentStage(rawAnswers: unknown) {
+        const key = stageKey.value
+        let finalAnswers: Record<number, AnswerValue> | undefined
+
+        // 1. 优先使用服务器返回的答案（raw.answers）
+        if (rawAnswers && typeof rawAnswers === 'object') {
+            finalAnswers = rawAnswers as Record<number, AnswerValue>
+        } else if (key) {
+            // 2. 没有服务器答案时，尝试用本地缓存
+            const cached = loadStageAnswers(key)
+            if (cached) {
+                finalAnswers = cached
+            }
+        }
+
+        // 3. 有最终确定的答案，就写回本地 state + 缓存
+        if (finalAnswers) {
+            // 更新当前页面上的答案
+            answers.value = { ...finalAnswers }
+
+            // 同步写回全局缓存，保证下次进这个阶段还能恢复
+            if (key) {
+                saveStageAnswers(key, finalAnswers)
+            }
+        }
+    }
+
+
     function initStageForCurrentRoute() {
         resetStageState()
-        errorMessage.value = ''
-        showAIProcess()
+
+        const key = stageKey.value
+        if (key) {
+            const cached = loadStageAnswers(key)
+            if (cached) {
+                answers.value = { ...cached }
+            }
+        }
 
         const stage = testStage.value
         const bizType = businessType.value
 
-        console.log('[QuestionsStagePage] init stage:', stage, 'aiLoading=', aiLoading.value)
+        console.log('[QuestionsStagePage] init stage:', stage, 'aiLoading=', aiLoading.value, 'key=', key)
+
+        // 先尝试恢复本阶段的本地答案（题目仍然交给 SSE 来加载）
+
+
+        // 2. 没有缓存 -> 走原有 AI 拉题逻辑
+        showAIProcess()
 
         if (!public_id || !routes.length || !validateTestStage(stage)) {
             showAlert('测试流程异常，请返回首页重新开始', () => {
@@ -405,7 +485,6 @@ export function useQuestionsStagePage() {
         isFirstPage,
         isLastPage,
         isSubmitting,
-        errorMessage,
 
         // 高亮 & 日志 & 行为
         truncatedLatestMessage,

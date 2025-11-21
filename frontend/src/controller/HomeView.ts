@@ -2,11 +2,18 @@
 import {apiRequest} from "@/api";
 import {ref, onMounted, onBeforeUnmount} from 'vue'
 import {useRouter} from 'vue-router'
-import {useTestSession} from '@/store/testSession'
+import {useTestSession} from '@/controller/testSession'
 import {useAlert} from '@/controller/useAlert'
 import {VerifyInviteResponse} from "@/controller/InviteCode";
-import {useAuthStore} from '@/store/auth'
-import {StageBasic, TestTypeBasic, TestTypePro, TestTypeSchool} from "@/controller/common";
+import {useAuthStore} from '@/controller/wx_auth'
+import {
+    StageBasic,
+    TestTypeBasic,
+    TestTypePro,
+    TestTypeSchool,
+    type TestFlowStep,
+    pushStageRoute,
+} from "@/controller/common";
 
 
 export interface FetchTestFlowRequest {
@@ -14,11 +21,17 @@ export interface FetchTestFlowRequest {
 }
 
 export interface FetchTestFlowResponse {
-    public_id: string;
-    routes: TestRouteDef[];
-    nextRoute?: string | null;
-    next_route_id?: number
+    public_id: string
+    business_type: string
+
+    // 完整流程
+    steps: TestFlowStep[]
+
+    // 当前要进入的阶段（例如 "basic-info" / "riasec"）
+    current_stage: string
+    current_index: number
 }
+
 
 export async function fetchTestFlow(payload: FetchTestFlowRequest) {
     return apiRequest<FetchTestFlowResponse>('/api/test_flow', {
@@ -31,6 +44,15 @@ export function useHomeView() {
 
     type PlanKey = typeof TestTypeBasic | typeof TestTypePro | typeof TestTypeSchool
 
+    const inviteCodeInput = ref('')
+    const inviteStatus = ref<'idle' | 'success' | 'error'>('idle')
+
+    function handleFlowError(msg: string) {
+        console.error('[HomeView] flow error:', msg)
+        inviteStatus.value = 'error'
+        showAlert(msg)
+    }
+
     const tabDefs = [
         {key: 'start', label: '开始测试', targetId: 'section-start-test'},
         {key: 'intro', label: '产品介绍', targetId: 'section-product-intro'},
@@ -42,7 +64,8 @@ export function useHomeView() {
 
     const {showAlert} = useAlert()
     const router = useRouter()
-    const {state, setPublicID, setBusinessType, setTestRoutes, setNextRouteItem} = useTestSession()
+    const {state, setPublicID, setBusinessType, setTestFlow, setNextRouteItem} = useTestSession()
+
     const authStore = useAuthStore()
     const inviteModalOpen = ref(false)
 
@@ -80,43 +103,43 @@ export function useHomeView() {
         window.removeEventListener('scroll', handleScroll)
     })
 
-    async function handleInviteSuccess(payload: VerifyInviteResponse) {
-        const typ = state.businessType || TestTypeBasic
-        const req = {
-            public_id: payload.public_id,
-        }
+    async function handleInviteSuccess(payload: InviteVerifySuccessPayload) {
+        // 当前业务类型（兜底用）
+        const fallbackBusinessType = state.businessType || TestTypeBasic
 
-        let routes: string[] = []
-        let nextRoute: string
-        let nextRouteId: number
+        // 先把 public_id 存一下
+        setPublicID(payload.public_id)
+
+        const req = {public_id: payload.public_id}
+
         try {
             const resp = await fetchTestFlow(req)
-            routes = resp.routes || []
-            if (routes.length == 0) {
-                showAlert('没有可用的测试流程，请稍后再试或联系管理员')
+
+            const steps = resp.steps || []
+            if (!steps.length) {
+                handleFlowError('测试流程异常，未配置任何测试阶段')
                 return
             }
 
-            nextRoute = resp.next_route ?? StageBasic
-            nextRouteId = resp.next_route_id ?? 0
-            if (nextRouteId < 0) nextRouteId = 0
+            const businessType = resp.business_type || fallbackBusinessType
+            if (!businessType) {
+                handleFlowError('测试流程异常，未找到测评类型')
+                return
+            }
 
-            setPublicID(resp.public_id)
-            setTestRoutes(routes)
-            setNextRouteItem(nextRoute, nextRouteId)
-        } catch (e) {
-            console.error('[handleInviteSuccess] fetchTestFlow failed', e)
-            showAlert('获取测试流程失败，请稍后再试:' + e)
-            return
+            const currentStage = resp.current_stage || StageBasic
+            const currentIndex = resp.current_index
+
+            // 同步到全局 store
+            setBusinessType(businessType)
+            setTestFlow(steps)
+            setNextRouteItem(currentStage, currentIndex)
+
+            await pushStageRoute(router, businessType, currentStage)
+        } catch (err) {
+            console.error('fetch test flow failed:', err)
+            handleFlowError('获取测试流程失败，请稍后再试')
         }
-
-        if (routes.length === 0) {
-            console.warn('[handleInviteSuccess] no target router found')
-            showAlert('测试流程配置异常，请稍后再试或联系管理员')
-            return
-        }
-
-        await router.push(`/assessment/${typ}/${nextRoute}`)
     }
 
     return {

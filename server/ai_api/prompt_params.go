@@ -1,35 +1,17 @@
-package core
+package ai_api
 
-// ParamForAIPrompt
-// ===========================================
-// 用于向 AI 提供报告生成的关键参数（非原始算法数据）
-// 由三层组成：
-//  1. Common — 通用部分（兴趣-能力总体特征）
-//  2. Mode33 — 3+3 模式的选科结果与指标
-//  3. Mode312 — 3+1+2 模式的选科结果与指标
-//
-// ===========================================
 type ParamForAIPrompt struct {
 	Common  *CommonSection  `json:"common"`               // 通用部分：兴趣-能力整体特征
 	Mode33  *Mode33Section  `json:"mode_3_3,omitempty"`   // 3+3 模式部分
 	Mode312 *Mode312Section `json:"mode_3_1_2,omitempty"` // 3+1+2 模式部分
 }
 
-// CommonSection
-// ===========================================
-// 表示学生在兴趣-能力层面的总体特征。
-// 来源：BuildScores()
-// 不包含任何语言描述，仅存储可解释性数据。
-// ===========================================
 type CommonSection struct {
 	GlobalCosine float64              `json:"global_cosine"` // 全局方向一致性
 	Subjects     []SubjectProfileData `json:"subjects"`      // 六科详细信息
 	QualityScore float64              `json:"quality_score"`
 }
 
-// SubjectProfileData
-// 表示单个学科在兴趣-能力融合算法中的关键中间结果。
-// 所有值均可直接由 BuildScores 推导，无需额外计算。
 type SubjectProfileData struct {
 	Subject      string  `json:"subject"`       // 学科名，例如 PHY
 	InterestZ    float64 `json:"interest_z"`    // 标准化兴趣（z(Ij)）
@@ -39,18 +21,11 @@ type SubjectProfileData struct {
 	Fit          float64 `json:"fit"`           // 该学科最终匹配度 Fitj
 }
 
-// Mode312Section 3+1+2 模式：主干+辅科组合与阶段性特征
-// ===========================================
-// 3+1+2 模式的核心过程参数（仅记录必要信息）
-// 用于解释算法过程与结果，非展示层。
-// ===========================================
 type Mode312Section struct {
 	AnchorPHY AnchorCoreData `json:"anchor_phy"` // 理科主干（物理组）
 	AnchorHIS AnchorCoreData `json:"anchor_his"` // 文科主干（历史组）
 }
 
-// AnchorCoreData
-// 表示单个主干学科（Anchor）的完整阶段信息
 type AnchorCoreData struct {
 	Subject      string          `json:"subject"`       // 主干学科 ("PHY" / "HIS")
 	Fit          float64         `json:"fit"`           // 匹配度（兴趣-能力契合）
@@ -63,8 +38,6 @@ type AnchorCoreData struct {
 	SFinal       float64         `json:"s_final"`       // 阶段三综合分（用于排序）
 }
 
-// ComboCoreData
-// 属于特定 Anchor 的辅科组合信息
 type ComboCoreData struct {
 	Aux1        string  `json:"aux1"`
 	Aux2        string  `json:"aux2"`
@@ -78,15 +51,10 @@ type ComboCoreData struct {
 	SFinalCombo float64 `json:"s_final_combo"`
 }
 
-// Mode33Section 3+3 模式：组合推荐与匹配核心结果
 type Mode33Section struct {
 	TopCombinations []Combo33CoreData `json:"top_combinations"` // 前5推荐组合
 }
 
-// Combo33CoreData
-// ===========================================
-// 表示单个 3科组合的可解释数据
-// ===========================================
 type Combo33CoreData struct {
 	Subjects    [3]string `json:"subjects"`     // 三科组合
 	AvgFit      float64   `json:"avg_fit"`      // 平均匹配度（原始值）

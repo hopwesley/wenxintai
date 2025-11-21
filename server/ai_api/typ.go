@@ -39,3 +39,17 @@ type BasicInfo struct {
 	Mode     Mode   `json:"mode"`
 	Hobby    string `json:"hobby,omitempty"`
 }
+
+type ASCAnswer struct {
+	ID      int    `json:"id"`
+	Subject string `json:"subject"`
+	Score   int    `json:"score"`   // 1–5
+	Reverse bool   `json:"reverse"` // 与题干一致；此处为“答案分”而非换算分
+	Subtype string `json:"subtype"`
+}
+
+type RIASECAnswer struct {
+	ID        int    `json:"id"`
+	Dimension string `json:"dimension"`
+	Score     int    `json:"score"`
+}

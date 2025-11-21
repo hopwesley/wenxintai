@@ -108,26 +108,6 @@ class StreamClientImpl implements StreamClient {
     }
   }
 
-  private openSSE(): void {
-    if (typeof window === 'undefined') return
-    if (this.eventSource) {
-      this.eventSource.close()
-    }
-    const base = `/api/assessments/${encodeURIComponent(this.assessmentId)}/events`
-    const url = this.lastEventId ? `${base}?last_event_id=${encodeURIComponent(this.lastEventId)}` : base
-    const es = new EventSource(url, { withCredentials: true })
-    this.eventSource = es
-
-    es.onmessage = (evt) => {
-      this.lastEventId = evt.lastEventId || this.lastEventId
-      this.handleMessage(evt.data)
-    }
-
-    es.onerror = () => {
-      this.scheduleReconnect()
-    }
-  }
-
   private openWebSocket(): void {
     if (typeof window === 'undefined') return
     if (this.socket) {

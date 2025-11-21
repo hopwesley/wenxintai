@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import TestLayout from '@/layouts/TestLayout.vue'
+import TestLayout from '@/views/components/TestLayout.vue'
 import StepIndicator from '@/views/components/StepIndicator.vue'
 import { useStartTestConfig } from '@/controller/AssessmentBasicInfo'
 import {useTestCommon} from "@/controller/common";

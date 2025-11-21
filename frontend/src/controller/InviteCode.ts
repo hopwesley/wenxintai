@@ -1,5 +1,5 @@
 import {apiRequest} from "@/api";
-import {useTestSession} from "@/store/testSession";
+import {useTestSession} from "@/controller/testSession";
 
 const api_verify = '/api/invites/verify';
 const api_redeem = '/api/invites/redeem';

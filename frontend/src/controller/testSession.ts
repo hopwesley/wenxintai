@@ -1,30 +1,29 @@
 import { reactive, watch } from 'vue'
-import {AnswerValue, ModeOption, TestTypeBasic, TestTypePro, TestTypeSchool} from '@/controller/common'
+import {
+    ModeOption,
+    TestTypeBasic,
+    TestTypePro,
+    TestTypeSchool,
+    type TestFlowStep,
+} from '@/controller/common'
 
 const STORAGE_KEY = 'wenxintai:test-session'
 
 export interface TestSession {
-    // 当前测试记录在后端 tests_record 表中的 public_id
     recordPublicID?: string
-
-    // basic / pro / school 之一，或者未来扩展的字符串
     businessType?: typeof TestTypeBasic | typeof TestTypePro | typeof TestTypeSchool | string
-
-    // 测试流程的路由列表
+    testFlowSteps?: TestFlowStep[]
     testRoutes?: string[]
     nextRouteItem: Record<string, number>
     stageAnswers: Record<string, Record<number, AnswerValue>>
 
-    // BasicInfo / AssessmentBasicInfo 收集到的配置
     mode?: ModeOption
     hobby?: string
     grade?: string
 
-    // 入口信息
     inviteCode?: string
     wechatOpenId?: string
 
-    // 当前步骤（如果不需要持久化，也可以以后删掉）
     currentStep?: number
 }
 
@@ -32,6 +31,7 @@ export interface TestSession {
 const defaultSession: TestSession = {
     recordPublicID: undefined,
     businessType: undefined,
+    testFlowSteps: undefined,
     testRoutes: undefined,
     nextRouteItem: {},
     stageAnswers: {},
@@ -120,11 +120,23 @@ export function useTestSession() {
         state.inviteCode = normalized || undefined
     }
 
-    function setBusinessType(type: typeof TestTypeBasic | typeof TestTypePro | typeof TestTypeSchool | string) {
-        state.businessType = type
+    function setBusinessType(typ: string | undefined) {
+        if (!typ) return
+        state.businessType = typ
+    }
+
+    function setTestFlow(steps: TestFlowStep[]) {
+        const safeSteps = steps ?? []
+        state.testFlowSteps = safeSteps
+        state.testRoutes = safeSteps.map(step => step.title)
+
+        if (!state.nextRouteItem) {
+            state.nextRouteItem = {}
+        }
     }
 
     function setTestRoutes(routes: string[]) {
+        if (!routes || routes.length === 0) return
         state.testRoutes = routes
     }
 
@@ -179,6 +191,7 @@ export function useTestSession() {
         setTestConfig,
         setInviteCode,
         setBusinessType,
+        setTestFlow,
         setTestRoutes,
         setPublicID,
         getPublicID,

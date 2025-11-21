@@ -1,0 +1,506 @@
+/* 整个报告页面：居中、上下留白 */
+
+.report-page {
+    max-width: 960px;
+    margin: 40px auto 64px;
+    padding: 0 16px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* 通用卡片 */
+
+.report-card {
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+    padding: 28px 32px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.report-card--overview {
+    /* 顶部那张卡片 */
+}
+
+.report-card--recommendation {
+    /* 下半部分那张卡片 */
+}
+
+.report-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.report-card__title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.report-card__title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.report-card__mode-pill {
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #4f46e5;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.report-card__divider {
+    height: 1px;
+    background: #e5e7eb;
+}
+
+/* 统一的分区标题 */
+
+.report-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.report-section__title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+}
+
+/* 个人资料布局 */
+
+.report-section--profile {
+    gap: 20px;
+}
+
+.report-profile {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 40px;
+    row-gap: 8px;
+}
+
+.report-profile__col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.report-profile__col--main {
+    min-width: 160px;
+}
+
+.report-profile--bottom {
+    border-top: 1px dashed #e5e7eb;
+    padding-top: 12px;
+}
+
+.report-field {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 14px;
+}
+
+.report-field--title {
+    margin-bottom: 8px;
+}
+
+.report-field__label {
+    color: #6b7280;
+}
+
+.report-field__value {
+    color: #111827;
+    font-weight: 500;
+}
+
+/* 基础分析：左右两块图表 */
+
+.basic-analysis-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 24px;
+}
+
+.basic-analysis-layout__chart {
+    background: #f9fafb;
+    border-radius: 16px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 图表占位样式（暂时伪装成报表） */
+
+.chart-placeholder {
+    width: 100%;
+    height: 180px;
+    border-radius: 12px;
+    border: 1px dashed #d1d5db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    font-size: 13px;
+}
+
+.chart-placeholder--radar {
+    height: 200px;
+}
+
+/* 基础分析下方两块解读卡片 */
+
+.analysis-interpretation-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.analysis-interpretation {
+    background: #f9fafb;
+    border-radius: 16px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.analysis-interpretation__header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.analysis-interpretation__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.analysis-interpretation__tag {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #4f46e5;
+}
+
+.analysis-interpretation__text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #4b5563;
+}
+
+/* 基础概念 & 报告解读：统一的 AI 文本块 */
+
+.ai-text-block {
+    background: #f9fafb;
+    border-radius: 16px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.ai-text-block__line {
+    font-size: 13px;
+    color: #4b5563;
+    line-height: 1.6;
+}
+
+.ai-text-block__label {
+    font-weight: 600;
+    color: #4f46e5;
+    margin-right: 4px;
+}
+
+.ai-text-block__content {
+    color: #4b5563;
+}
+
+/* 基础参数表格 */
+
+.report-section--parameters {
+    gap: 12px;
+}
+
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.report-table__cell {
+    padding: 8px 10px;
+    border: 1px solid #e5e7eb;
+    text-align: center;
+    color: #4b5563;
+}
+
+.report-table__cell--head {
+    background: #f3f4ff;
+    font-weight: 600;
+    color: #111827;
+}
+
+.report-table__cell--subject {
+    text-align: left;
+    font-weight: 600;
+    background: #f9fafb;
+}
+
+/* 推荐概述：顶部两张图 + 第一档组合条 */
+
+.report-section--recommend-analysis {
+    gap: 16px;
+}
+
+.recommend-analysis-layout {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.recommend-analysis__chart {
+    background: #f9fafb;
+    border-radius: 16px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.recommend-main-strip {
+    margin-top: 8px;
+    background: #4f46e5;
+    border-radius: 999px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #ffffff;
+    font-size: 13px;
+}
+
+.recommend-main-strip__label {
+    font-weight: 600;
+}
+
+.recommend-main-strip__score {
+    opacity: 0.9;
+}
+
+/* 推荐组合列表 */
+
+.report-section--combos {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* 一块“第二名 / 第三名”组合区域 */
+
+.combo-block {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* 上面的彩色条：第二名：xxx   得分：82 */
+
+.combo-rank-strip {
+    border-radius: 999px;
+    padding: 10px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.combo-rank-strip--blue {
+    background: #3b82f6;
+}
+
+.combo-rank-strip--primary {
+    background: #4f46e5; /* 和上面推荐概述用的主紫色保持一致 */
+}
+
+.combo-rank-strip--yellow {
+    background: #fbbf24;
+}
+
+.combo-rank-strip__label {
+    white-space: nowrap;
+}
+
+.combo-rank-strip__score {
+    opacity: 0.95;
+}
+
+/* 下面的白色内容卡片 */
+
+.combo-panel {
+    border-radius: 20px;
+    background: #f9fbff;
+    border: 1px solid #e5e7f0;
+    padding: 16px 18px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.combo-panel__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 10px;
+}
+
+.combo-panel__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+}
+
+/* 指标行：A/B/C/D 四个小块横排 */
+
+.combo-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.combo-metrics__item {
+    min-width: 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.combo-metrics__label {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.combo-metrics__value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+}
+
+/* 下方两个 AI 文本块 */
+
+.combo-panel__section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.combo-panel__subtitle {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.combo-panel__ai-block {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 10px 12px;
+    box-shadow: 0 0 0 1px #edf2ff inset;
+}
+
+.combo-panel__text-line {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #4b5563;
+}
+
+/* 窄屏时稍微收紧一点 */
+
+@media (max-width: 768px) {
+    .combo-panel {
+        padding: 14px 14px 16px;
+    }
+}
+
+.report-section--summary {
+    gap: 14px;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.summary-card {
+    border-radius: 16px;
+    padding: 10px 12px;
+    background: #f9fafb;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #4b5563;
+}
+
+.summary-card:nth-child(1) {
+    background: #eef2ff;
+}
+
+.summary-card:nth-child(2) {
+    background: #ecfdf5;
+}
+
+.summary-card:nth-child(3) {
+    background: #fef3c7;
+}
+
+.summary-card__title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+/* 页面底部按钮 */
+
+.report-page__actions {
+    margin-top: 8px;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+}
+
+.report-page__action {
+    min-width: 120px;
+}
+
+/* 简单的响应式处理：窄屏时改成单列 */
+
+@media (max-width: 768px) {
+    .basic-analysis-layout,
+    .analysis-interpretation-row,
+    .recommend-analysis-layout,
+    .summary-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .report-card {
+        padding: 20px 16px 24px;
+    }
+}

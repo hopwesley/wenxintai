@@ -1,9 +1,16 @@
 import {computed, onMounted, reactive, ref} from 'vue'
 import {useRouter} from 'vue-router'
-import {useTestSession} from '@/store/testSession'
+import {useTestSession} from '@/controller/testSession'
 import {apiRequest, getHobbies} from '@/api'
 import {useAlert} from '@/controller/useAlert'
-import {ModeOption, Mode33, Mode312, TestTypeBasic, CommonResponse} from "@/controller/common";
+import {
+    ModeOption,
+    Mode33,
+    Mode312,
+    TestTypeBasic,
+    CommonResponse,
+    pushStageRoute,
+} from "@/controller/common";
 
 interface TestConfigForm {
     grade: string
@@ -114,7 +121,7 @@ export function useStartTestConfig() {
 
             setNextRouteItem(res.next_route, res.next_route_index)
             const businessType = state.businessType || TestTypeBasic
-            await router.push(`/assessment/${businessType}/${res.next_route}`)
+            await pushStageRoute(router, businessType, res.next_route)
         } catch (err) {
             console.error('[StartTestConfig] handleSubmit error', err)
             handleFlowError(

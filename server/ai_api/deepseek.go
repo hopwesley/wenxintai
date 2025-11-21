@@ -60,14 +60,14 @@ func (dai *DeepSeekApi) Init(cfg *Cfg) error {
 }
 
 func (dai *DeepSeekApi) GenerateQuestion(ctx context.Context, bi *BasicInfo, tt TestTyp, callback TokenHandler) (string, error) {
-	log := dai.log.With().
+	sLog := dai.log.With().
 		Str("ai-test-type", string(tt)).
 		Str("public-id", bi.PublicId).
 		Logger()
 
 	systemPrompt, err := composeSystemPrompt(tt)
 	if err != nil {
-		log.Err(err).Msg("composeSystemPrompt failed")
+		sLog.Err(err).Msg("composeSystemPrompt failed")
 		return "", err
 	}
 
@@ -87,25 +87,29 @@ func (dai *DeepSeekApi) GenerateQuestion(ctx context.Context, bi *BasicInfo, tt 
 		},
 	}
 
+	return dai.validResult(ctx, reqBody, callback, sLog)
+}
+
+func (dai *DeepSeekApi) validResult(ctx context.Context, reqBody interface{}, callback TokenHandler, sLog zerolog.Logger) (string, error) {
 	content, sErr := dai.streamChat(ctx, reqBody, callback)
 	if sErr != nil {
-		log.Err(sErr).Msg("streamChat failed")
+		sLog.Err(sErr).Msg("streamChat failed")
 		return "", sErr
 	}
 
 	raw := strings.TrimSpace(content)
 	if raw == "" {
-		log.Warn().Msg("test content from ai is empty")
-		return "", fmt.Errorf("模型返回空内容 for %s", tt)
+		sLog.Warn().Msg("test content from ai is empty")
+		return "", fmt.Errorf("模型返回空内容 for ")
 	}
 
 	var tmp any
 	if err := json.Unmarshal([]byte(raw), &tmp); err != nil {
-		log.Err(err).Msg("test content is not json")
-		return "", fmt.Errorf("%s 返回内容非合法 JSON: %w", tt, err)
+		sLog.Err(err).Msg("test content is not json")
+		return "", fmt.Errorf("返回内容非合法 JSON: %w", err)
 	}
 
-	log.Info().Msg("generate ai test success")
+	sLog.Info().Msg("generate ai test success")
 	return raw, nil
 }
 
@@ -194,4 +198,37 @@ func (dai *DeepSeekApi) streamChat(ctx context.Context, reqBody interface{}, onT
 
 	dai.log.Info().Msg("DeepSeek stream finished")
 	return fullContent.String(), nil
+}
+
+func (dai *DeepSeekApi) GenerateUnifiedReport(ctx context.Context, tt string, bi *BasicInfo, param ParamForAIPrompt, mode Mode, callback TokenHandler) (string, error) {
+	sLog := dai.log.With().
+		Str("ai-test-type", tt).
+		Str("public-id", bi.PublicId).
+		Logger()
+
+	systemPrompt := systemPromptUnified() + "\n" + systemPromptCommon()
+	if mode == Mode33 {
+		systemPrompt += "\n" + systemPromptMode33()
+	} else {
+		systemPrompt += "\n" + systemPromptMode312()
+	}
+	systemPrompt += "\n" + systemPromptFinal(mode)
+
+	userPrompt := userPromptUnified(param, mode)
+
+	reqBody := map[string]interface{}{
+		"model":       "deepseek-chat",
+		"temperature": 0.4,
+		"max_tokens":  8000,
+		"stream":      true,
+		"response_format": map[string]string{
+			"type": "json_object",
+		},
+		"messages": []map[string]string{
+			{"role": "system", "content": strings.TrimSpace(systemPrompt)},
+			{"role": "user", "content": strings.TrimSpace(userPrompt)},
+		},
+	}
+
+	return dai.validResult(ctx, reqBody, callback, sLog)
 }

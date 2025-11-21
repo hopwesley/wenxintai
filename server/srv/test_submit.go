@@ -73,7 +73,8 @@ func (s *HttpSrv) handleTestSubmit(w http.ResponseWriter, r *http.Request) {
 		Int("answer", len(req.Answers)).Logger()
 	ctx := r.Context()
 
-	if rErr := s.checkTestSequence(ctx, req.TestPublicID, req.TestType); rErr != nil {
+	if _, rErr := s.checkTestSequence(ctx, req.TestPublicID, req.TestType); rErr != nil {
+		sLog.Err(rErr).Msg("invalid test sequence request")
 		writeError(w, ApiInvalidTestSequence(rErr))
 		return
 	}
@@ -87,7 +88,8 @@ func (s *HttpSrv) handleTestSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nextIdx, _, rErr := nextRoute(req.BusinessType, req.TestType)
+	nextIdx, nextR, rErr := nextRoute(req.BusinessType, req.TestType)
+
 	if rErr != nil {
 		s.log.Err(rErr).Msg("failed to find next route ")
 		writeError(w, ApiInternalErr("未找到下一轮状态", rErr))
@@ -102,12 +104,10 @@ func (s *HttpSrv) handleTestSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nri, nextR, rErr := nextRoute(req.BusinessType, req.TestType)
-
 	writeJSON(w, http.StatusOK,
 		&CommonRes{Ok: true, Msg: "保存答案成功",
 			NextRoute: nextR,
-			NextRid:   nri})
+			NextRid:   nextIdx})
 
 	sLog.Info().Int("next-route-id", nextIdx).Str("next-route", nextR).Msg("save answers success")
 }

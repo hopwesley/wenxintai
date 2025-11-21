@@ -48,6 +48,11 @@ func (acm *SSEMessage) SSEMsg() string {
 	return b.String()
 }
 
+type QuestionsPayload struct {
+	Questions json.RawMessage `json:"questions"`
+	Answers   json.RawMessage `json:"answers,omitempty"`
+}
+
 func (s *HttpSrv) initSSE() error {
 	return nil
 }
@@ -70,39 +75,6 @@ func parseTestIDFromPath(path string) (string, error) {
 		return "", fmt.Errorf("无效的问卷编号: %s", path)
 	}
 	return idStr, nil
-}
-
-func parseAITestTyp(testTyp, businessTyp string) ai_api.TestTyp {
-	switch businessTyp {
-	case TestTypeBasic:
-		switch testTyp {
-		case StageRiasec:
-			return ai_api.TypRIASEC
-		case StageAsc:
-			return ai_api.TypSEC
-		}
-	case TestTypePro:
-		switch testTyp {
-		case StageRiasec:
-			return ai_api.TypRIASEC
-		case StageOcean:
-			return ai_api.TypOCEAN
-		case StageAsc:
-			return ai_api.TypSEC
-		}
-
-	case TestTypeSchool:
-		switch testTyp {
-		case StageRiasec:
-			return ai_api.TypRIASEC
-		case StageOcean:
-			return ai_api.TypOCEAN
-		case StageAsc:
-			return ai_api.TypSEC
-		}
-	}
-
-	return ai_api.TypUnknown
 }
 
 func (s *HttpSrv) handleSSEEvent(w http.ResponseWriter, r *http.Request) {
@@ -139,7 +111,7 @@ func (s *HttpSrv) handleSSEEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if rErr := s.checkTestSequence(ctx, publicId, testType); rErr != nil {
+	if _, rErr := s.checkTestSequence(ctx, publicId, testType); rErr != nil {
 		sLog.Err(rErr).Msg("find next route error")
 		_ = writeSSE(w, flusher, &SSEMessage{
 			Typ: SSE_MT_ERROR,
@@ -207,7 +179,12 @@ func (s *HttpSrv) aiProcess(msgCh chan *SSEMessage, publicId, businessTyp string
 
 	if dbQuestion != nil {
 		sLog.Info().Msg("found questions from database")
-		msg := &SSEMessage{Msg: string(dbQuestion.Questions), Typ: SSE_MT_DONE}
+		payload := QuestionsPayload{
+			Questions: dbQuestion.Questions,
+			Answers:   dbQuestion.Answers,
+		}
+		buf, _ := json.Marshal(payload)
+		msg := &SSEMessage{Msg: string(buf), Typ: SSE_MT_DONE}
 		sendSafe(msgCh, msg, &s.log)
 		return
 	}
@@ -243,7 +220,12 @@ func (s *HttpSrv) aiProcess(msgCh chan *SSEMessage, publicId, businessTyp string
 		return
 	}
 
-	msg := &SSEMessage{Msg: testContent, Typ: SSE_MT_DONE}
+	payload := QuestionsPayload{
+		Questions: json.RawMessage(testContent),
+	}
+
+	buf, _ := json.Marshal(payload)
+	msg := &SSEMessage{Msg: string(buf), Typ: SSE_MT_DONE}
 	sendSafe(msgCh, msg, &s.log)
 
 	sLog.Info().Msg("GenerateQuestion finished and saved")

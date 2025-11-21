@@ -22,4 +22,5 @@ type DbService interface {
 	FindQASession(ctx context.Context, businessType, testType, publicId string) (*QASession, error)
 	SaveQuestion(ctx context.Context, businessType, testType, publicId string, questionsJSON []byte) error
 	SaveAnswer(ctx context.Context, businessType, testType, publicId string, answersJSON []byte, status int) error
+	FindQASessionsForReport(ctx context.Context, businessType string, publicId string) ([]*QASession, error)
 }

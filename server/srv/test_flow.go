@@ -24,11 +24,22 @@ func (req *testFlowRequest) parseObj(r *http.Request) *ApiErr {
 	return nil
 }
 
+type TestFlowStep struct {
+	Stage string `json:"stage"` // 路由用的 key，例如 "basic-info" / "riasec" / ...
+	Title string `json:"title"` // 展示给用户的标题，例如 "基础信息" / "兴趣测试"
+}
+
 type testFlowResponse struct {
-	TestPublicID string   `json:"public_id"`
-	Routes       []string `json:"routes"`
-	NextRoute    string   `json:"next_route"`
-	NextRid      int16    `json:"next_route_id"`
+	TestPublicID string `json:"public_id"`
+	BusinessType string `json:"business_type"`
+
+	Steps        []TestFlowStep `json:"steps"`         // 全部阶段（key + title）
+	CurrentStage string         `json:"current_stage"` // 当前阶段的 stage key，比如 "riasec"
+	CurrentIndex int            `json:"current_index"` // 当前阶段在 Steps 里的下标（0-based）
+
+	Routes    []string `json:"routes"`
+	NextRoute string   `json:"next_route"`
+	NextRid   int16    `json:"next_route_id"`
 }
 
 func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
@@ -52,21 +63,51 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	routes := getTestRoutesDes(record.BusinessType)
-	if routes == nil {
-		sLog.Err(err).Msgf("failed build test routes")
+	// 1. 取出完整流程的 stage 列表 & 描述列表
+	stageFlow := getTestRoutes(record.BusinessType)    // e.g. ["basic-info","riasec",...]
+	titleFlow := getTestRoutesDes(record.BusinessType) // e.g. ["基础信息","兴趣测试",...]
+
+	if stageFlow == nil || titleFlow == nil {
+		sLog.Error().Msgf("failed build test routes for business_type=%s", record.BusinessType)
 		writeError(w, ApiInternalErr("没有测试类型为："+record.BusinessType+"的测试卷", nil))
 		return
 	}
 
-	resp := testFlowResponse{
-		Routes:       routes,
-		TestPublicID: req.TestPublicID,
-		NextRoute:    parseStatusToRoute(record, getTestRoutes(record.BusinessType)),
-		NextRid:      record.Status,
+	// 2. 当前应该在哪个阶段（基于 status 计算）
+	currentStage := parseStatusToRoute(record, stageFlow)
+
+	// 3. 在流程中找到当前阶段的 index（0-based）
+	currentIndex := 0
+	for i, sName := range stageFlow {
+		if sName == currentStage {
+			currentIndex = i
+			break
+		}
 	}
 
-	sLog.Debug().Strs("routes", routes).Msg("test record found")
+	// 4. 组装 steps（stage + title）
+	steps := getTestFlowSteps(record.BusinessType)
+
+	resp := testFlowResponse{
+		TestPublicID: req.TestPublicID,
+		BusinessType: record.BusinessType,
+
+		Steps:        steps,
+		CurrentStage: currentStage,
+		CurrentIndex: currentIndex,
+
+		// 兼容旧字段
+		Routes:    titleFlow,
+		NextRoute: currentStage,
+		NextRid:   int16(currentIndex),
+	}
+
+	sLog.Debug().
+		Str("business_type", record.BusinessType).
+		Str("current_stage", currentStage).
+		Int("current_index", currentIndex).
+		Msg("test record found")
+
 	writeJSON(w, http.StatusOK, resp)
 }
 

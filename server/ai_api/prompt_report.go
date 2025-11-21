@@ -1,9 +1,8 @@
-package core
+package ai_api
 
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 )
 
 // ======================================================
@@ -264,7 +263,7 @@ func userPromptUnified(param ParamForAIPrompt, mode Mode) string {
 	}
 
 	// === 3. 构建用户提示 ===
-	modeStr := mode.String()
+	modeStr := mode
 	return fmt.Sprintf(`
 【数据上下文】
 以下 JSON 数据均为系统算法计算结果（非原始测验数据）：
@@ -362,58 +361,4 @@ func fieldDefinition312() string {
 | coverage | 组合专业覆盖率（升学方向灵活度） |
 | mix_penalty | 理↔文跨簇惩罚（思维切换负荷与适应成本） |
 `
-}
-
-// ======================================================
-// GenerateUnifiedReport —— HTTP 场景下的报告生成
-// ======================================================
-func GenerateUnifiedReport(apiKey string, param ParamForAIPrompt, mode Mode) (json.RawMessage, error) {
-	systemPrompt := systemPromptUnified() + "\n" + systemPromptCommon()
-	if mode == Mode33 {
-		systemPrompt += "\n" + systemPromptMode33()
-	} else {
-		systemPrompt += "\n" + systemPromptMode312()
-	}
-	systemPrompt += "\n" + systemPromptFinal(mode)
-
-	userPrompt := userPromptUnified(param, mode)
-
-	reqBody := map[string]interface{}{
-		"model":       "deepseek-chat",
-		"temperature": 0.4,
-		"max_tokens":  8000,
-		"stream":      true,
-		"response_format": map[string]string{
-			"type": "json_object",
-		},
-		"messages": []map[string]string{
-			{"role": "system", "content": strings.TrimSpace(systemPrompt)},
-			{"role": "user", "content": strings.TrimSpace(userPrompt)},
-		},
-	}
-
-	content, err := DeepSeekCaller(apiKey, reqBody)
-	if err != nil {
-		return nil, err
-	}
-
-	raw := strings.TrimSpace(content)
-	if raw == "" {
-		return nil, fmt.Errorf("AI 返回空内容（mode=%s）", mode)
-	}
-
-	if err := validateJSON(raw); err != nil {
-		return nil, fmt.Errorf("AI 返回非合法 JSON：%w", err)
-	}
-
-	return json.RawMessage(raw), nil
-}
-
-func validateJSON(s string) error {
-	var t map[string]interface{}
-	return json.Unmarshal([]byte(s), &t)
-}
-
-func TestUnifiedReport(apiKey string, param ParamForAIPrompt, mode Mode) (json.RawMessage, error) {
-	return GenerateUnifiedReport(apiKey, param, mode)
 }

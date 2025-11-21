@@ -15,6 +15,9 @@ type TestRecord struct {
 	BusinessType string
 	InviteCode   sql.NullString
 	WeChatID     sql.NullString
+	Grade        sql.NullString
+	Mode         sql.NullString
+	Hobby        sql.NullString
 	Status       int16
 	CreatedAt    time.Time
 	CompletedAt  sql.NullTime
@@ -27,12 +30,22 @@ func (pdb *psDatabase) FindTestRecordByPublicId(
 	log.Debug().Msg("FindTestRecordByPublicId")
 
 	const q = `
-            SELECT public_id, business_type, invite_code, status, created_at, completed_at
-            FROM app.tests_record
-            WHERE public_id = $1
-            ORDER BY created_at DESC
-            LIMIT 1
-        `
+        SELECT 
+            public_id,
+            business_type,
+            invite_code,
+            wechat_openid,
+            grade,
+            mode,
+            hobby,
+            status,
+            created_at,
+            completed_at
+        FROM app.tests_record
+        WHERE public_id = $1
+        ORDER BY created_at DESC
+        LIMIT 1
+    `
 
 	row := pdb.db.QueryRowContext(ctx, q, publicId)
 
@@ -41,6 +54,10 @@ func (pdb *psDatabase) FindTestRecordByPublicId(
 		&rec.PublicId,
 		&rec.BusinessType,
 		&rec.InviteCode,
+		&rec.WeChatID,
+		&rec.Grade,
+		&rec.Mode,
+		&rec.Hobby,
 		&rec.Status,
 		&rec.CreatedAt,
 		&rec.CompletedAt,
@@ -78,7 +95,17 @@ func (pdb *psDatabase) FindTestRecordByUid(
 
 	if inviteCode != "" {
 		q = `
-            SELECT public_id, business_type, invite_code, status, created_at, completed_at
+            SELECT 
+                public_id,
+                business_type,
+                invite_code,
+                wechat_openid,
+                grade,
+                mode,
+                hobby,
+                status,
+                created_at,
+                completed_at
             FROM app.tests_record
             WHERE invite_code = $1
             ORDER BY created_at DESC
@@ -87,7 +114,17 @@ func (pdb *psDatabase) FindTestRecordByUid(
 		arg = inviteCode
 	} else {
 		q = `
-            SELECT public_id, business_type, invite_code, status, created_at, completed_at
+            SELECT 
+                public_id,
+                business_type,
+                invite_code,
+                wechat_openid,
+                grade,
+                mode,
+                hobby,
+                status,
+                created_at,
+                completed_at
             FROM app.tests_record
             WHERE wechat_openid = $1
             ORDER BY created_at DESC
@@ -103,6 +140,10 @@ func (pdb *psDatabase) FindTestRecordByUid(
 		&rec.PublicId,
 		&rec.BusinessType,
 		&rec.InviteCode,
+		&rec.WeChatID,
+		&rec.Grade,
+		&rec.Mode,
+		&rec.Hobby,
 		&rec.Status,
 		&rec.CreatedAt,
 		&rec.CompletedAt,

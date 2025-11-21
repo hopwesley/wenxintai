@@ -14,13 +14,14 @@ import (
 )
 
 const (
-	apiHealthy       = "/api/health"
-	apiLoadHobbies   = "/api/hobbies"
-	apiInviteVerify  = "/api/invites/verify"
-	apiTestFlow      = "/api/test_flow"
-	apiTestBasicInfo = "/api/tests/basic_info"
-	apiSSESubChannel = "/api/sub/"
-	apiSubmitTest    = "/api/test_submit"
+	apiHealthy        = "/api/health"
+	apiLoadHobbies    = "/api/hobbies"
+	apiInviteVerify   = "/api/invites/verify"
+	apiTestFlow       = "/api/test_flow"
+	apiTestBasicInfo  = "/api/tests/basic_info"
+	apiSSESubChannel  = "/api/sub/"
+	apiSubmitTest     = "/api/test_submit"
+	apiGenerateReport = "/api/generate_report"
 )
 
 var (
@@ -87,6 +88,7 @@ func (s *HttpSrv) initRouter() error {
 	mux.HandleFunc(apiTestBasicInfo, s.updateBasicInfo)
 	mux.HandleFunc(apiSSESubChannel, s.handleSSEEvent)
 	mux.HandleFunc(apiSubmitTest, s.handleTestSubmit)
+	mux.HandleFunc(apiGenerateReport, s.handleTestReport)
 
 	if stat, err := os.Stat(s.cfg.StaticDir); err != nil || !stat.IsDir() {
 		if err == nil {

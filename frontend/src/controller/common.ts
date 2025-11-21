@@ -9,6 +9,12 @@ export const StageAsc = "asc"
 export const StageOcean = "ocean"
 export const StageMotivation = "motivation"
 
+export interface TestFlowStep {
+    stage: string      // "basic-info" / "riasec" / "asc" / ...
+    title: string      // 展示给用户看的中文文案，如“基础信息”“兴趣测试”
+}
+
+
 export const Mode33 = '3+3'
 export const Mode312 = '3+1+2'
 export type ModeOption = '3+3' | '3+1+2'
@@ -29,6 +35,7 @@ export interface CommonResponse {
 }
 
 import {onMounted, onBeforeUnmount, getCurrentInstance} from 'vue'
+import type { Router } from 'vue-router'
 
 export interface UseSSEOptions {
     onMsg?: (data: any) => void
@@ -136,5 +143,60 @@ export function useSubscriptBySSE(
     return {
         start,
         stop,
+    }
+}
+
+export function pushStageRoute(
+    router: Router,
+    businessType: string,
+    stage: string,
+) {
+    if (!businessType || !stage) return
+
+    // 特殊路由：基础信息
+    if (stage === StageBasic) {
+        return router.push({
+            name: 'test-basic-info',
+            params: { typ: businessType },
+        })
+    }
+
+    // 特殊路由：测评报告
+    if (stage === StageReport) {
+        return router.push({
+            name: 'test-report',
+            params: { typ: businessType },
+        })
+    }
+
+    // 其它阶段：统一走 test-stage
+    return router.push({
+        name: 'test-stage',
+        params: {
+            businessType,
+            testStage: stage,
+        },
+    })
+}
+
+export function useTestCommon() {
+    return {
+        // 业务类型
+        TestTypeBasic,
+        TestTypePro,
+        TestTypeSchool,
+
+        // 各个阶段的路由 key
+        StageBasic,
+        StageReport,
+        StageRiasec,
+        StageAsc,
+        StageOcean,
+        StageMotivation,
+
+        // 模式 & 量表
+        Mode33,
+        Mode312,
+        scaleOptions,
     }
 }

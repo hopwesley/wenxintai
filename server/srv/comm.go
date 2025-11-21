@@ -201,16 +201,129 @@ func parseStatusToRoute(record *dbSrv.TestRecord, routes []string) string {
 	}
 }
 
-func (s *HttpSrv) checkTestSequence(ctx context.Context, publicID, testType string) error {
+func (s *HttpSrv) checkTestSequence(ctx context.Context, publicID, testType string) (*dbSrv.TestRecord, error) {
 	record, dbErr := dbSrv.Instance().FindTestRecordByPublicId(ctx, publicID)
 	if dbErr != nil {
-		return dbErr
+		return nil, dbErr
 	}
 
-	currentRoute := parseStatusToRoute(record, getTestRoutes(record.BusinessType))
-	if currentRoute != testType {
-		return fmt.Errorf("mismatched route,need:%s but got:%s", testType, currentRoute)
+	flow := getTestRoutes(record.BusinessType)
+	if len(flow) == 0 {
+		return nil, fmt.Errorf("no test flow configured for business type %s", record.BusinessType)
 	}
 
-	return nil
+	// 1. 根据当前记录状态解析出“当前阶段”
+	currentStage := parseStatusToRoute(record, flow)
+
+	// 2. 计算当前阶段在流程中的下标
+	currentIdx := -1
+	for i, stage := range flow {
+		if stage == currentStage {
+			currentIdx = i
+			break
+		}
+	}
+	if currentIdx == -1 {
+		return nil, fmt.Errorf("invalid current stage %s for business type %s", currentStage, record.BusinessType)
+	}
+
+	// 3. 计算请求阶段在流程中的下标
+	reqIdx := -1
+	for i, stage := range flow {
+		if stage == testType {
+			reqIdx = i
+			break
+		}
+	}
+	if reqIdx == -1 {
+		return nil, fmt.Errorf("invalid requested stage %s for business type %s", testType, record.BusinessType)
+	}
+
+	// 4. 只允许访问当前阶段及之前的阶段，禁止越级访问未来阶段
+	if reqIdx > currentIdx {
+		return nil, fmt.Errorf(
+			"mismatched route, need stage index <= %d (%s) but got %d (%s)",
+			currentIdx, currentStage, reqIdx, testType,
+		)
+	}
+
+	return record, nil
+}
+
+func getTestFlowSteps(businessType string) []TestFlowStep {
+	var stages []string
+	var titles []string
+
+	switch businessType {
+	case TestTypeBasic:
+		stages = testFlowForBasic
+		titles = testFlowDescForBasic
+	case TestTypePro:
+		stages = testFlowForPro
+		titles = testFlowDescForPro
+	case TestTypeSchool:
+		stages = testFlowForSchool
+		titles = testFlowDescForSchool
+	default:
+		return nil
+	}
+
+	if len(stages) != len(titles) {
+		// 理论上不会发生，如果发生了说明上面的常量维护出了问题
+		// 为了安全起见，取两者较短长度
+		n := len(stages)
+		if len(titles) < n {
+			n = len(titles)
+		}
+		steps := make([]TestFlowStep, 0, n)
+		for i := 0; i < n; i++ {
+			steps = append(steps, TestFlowStep{
+				Stage: stages[i],
+				Title: titles[i],
+			})
+		}
+		return steps
+	}
+
+	steps := make([]TestFlowStep, 0, len(stages))
+	for i := range stages {
+		steps = append(steps, TestFlowStep{
+			Stage: stages[i],
+			Title: titles[i],
+		})
+	}
+	return steps
+}
+
+func parseAITestTyp(testTyp, businessTyp string) ai_api.TestTyp {
+	switch businessTyp {
+	case TestTypeBasic:
+		switch testTyp {
+		case StageRiasec:
+			return ai_api.TypRIASEC
+		case StageAsc:
+			return ai_api.TypSEC
+		}
+	case TestTypePro:
+		switch testTyp {
+		case StageRiasec:
+			return ai_api.TypRIASEC
+		case StageOcean:
+			return ai_api.TypOCEAN
+		case StageAsc:
+			return ai_api.TypSEC
+		}
+
+	case TestTypeSchool:
+		switch testTyp {
+		case StageRiasec:
+			return ai_api.TypRIASEC
+		case StageOcean:
+			return ai_api.TypOCEAN
+		case StageAsc:
+			return ai_api.TypSEC
+		}
+	}
+
+	return ai_api.TypUnknown
 }

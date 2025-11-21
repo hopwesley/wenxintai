@@ -96,7 +96,7 @@
   </TestLayout>
 </template>
 <script setup lang="ts">
-import TestLayout from '@/layouts/TestLayout.vue'
+import TestLayout from '@/views/components/TestLayout.vue'
 import StepIndicator from '@/views/components/StepIndicator.vue'
 import {useQuestionsStagePage} from '@/controller/AssessmentQuestions'
 import {scaleOptions} from '@/controller/common'

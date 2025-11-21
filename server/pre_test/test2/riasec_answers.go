@@ -1,19 +1,16 @@
-package core
+package main
 
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/hopwesley/wenxintai/server/ai_api"
 )
 
-// RIASECAnswer
+// ai_api.RIASECAnswer
 // ========================
 // RIASEC Answer Structure
 // ========================
-type RIASECAnswer struct {
-	ID        int    `json:"id"`
-	Dimension string `json:"dimension"`
-	Score     int    `json:"score"`
-}
 
 // ========================
 // 固定题号与维度分布
@@ -22,7 +19,7 @@ type RIASECAnswer struct {
 
 // RiasecPhyCheBio
 // ----------  理科核心：物理+化学+生物 ----------
-var RiasecPhyCheBio = []RIASECAnswer{
+var RiasecPhyCheBio = []ai_api.RIASECAnswer{
 	// R
 	{1, "R", 5}, {2, "R", 5}, {3, "R", 4}, {4, "R", 5}, {5, "R", 4},
 	// I
@@ -39,7 +36,7 @@ var RiasecPhyCheBio = []RIASECAnswer{
 
 // RiasecPhyCheGeo
 // ---------- 理科应用型：物理+化学+地理 ----------
-var RiasecPhyCheGeo = []RIASECAnswer{
+var RiasecPhyCheGeo = []ai_api.RIASECAnswer{
 	{1, "R", 5}, {2, "R", 5}, {3, "R", 5}, {4, "R", 4}, {5, "R", 5},
 	{6, "I", 4}, {7, "I", 4}, {8, "I", 5}, {9, "I", 4}, {10, "I", 4},
 	{11, "A", 2}, {12, "A", 3}, {13, "A", 2}, {14, "A", 2}, {15, "A", 3},
@@ -50,7 +47,7 @@ var RiasecPhyCheGeo = []RIASECAnswer{
 
 // RiasecCheBioGeo
 // ---------- 自然科学型：化学+生物+地理 ----------
-var RiasecCheBioGeo = []RIASECAnswer{
+var RiasecCheBioGeo = []ai_api.RIASECAnswer{
 	{1, "R", 3}, {2, "R", 4}, {3, "R", 3}, {4, "R", 3}, {5, "R", 4},
 	{6, "I", 5}, {7, "I", 5}, {8, "I", 4}, {9, "I", 5}, {10, "I", 4},
 	{11, "A", 2}, {12, "A", 2}, {13, "A", 3}, {14, "A", 2}, {15, "A", 3},
@@ -61,7 +58,7 @@ var RiasecCheBioGeo = []RIASECAnswer{
 
 // RiasecPhyBioGeo
 // ---------- 理科探究型：物理+生物+地理 ----------
-var RiasecPhyBioGeo = []RIASECAnswer{
+var RiasecPhyBioGeo = []ai_api.RIASECAnswer{
 	{1, "R", 4}, {2, "R", 5}, {3, "R", 4}, {4, "R", 4}, {5, "R", 5},
 	{6, "I", 5}, {7, "I", 4}, {8, "I", 5}, {9, "I", 5}, {10, "I", 5},
 	{11, "A", 2}, {12, "A", 3}, {13, "A", 2}, {14, "A", 2}, {15, "A", 3},
@@ -72,7 +69,7 @@ var RiasecPhyBioGeo = []RIASECAnswer{
 
 // RiasecHisGeoPol
 // ---------- 文科核心：历史+地理+政治 ----------
-var RiasecHisGeoPol = []RIASECAnswer{
+var RiasecHisGeoPol = []ai_api.RIASECAnswer{
 	{1, "R", 2}, {2, "R", 2}, {3, "R", 3}, {4, "R", 2}, {5, "R", 3},
 	{6, "I", 3}, {7, "I", 4}, {8, "I", 3}, {9, "I", 3}, {10, "I", 3},
 	{11, "A", 5}, {12, "A", 4}, {13, "A", 5}, {14, "A", 5}, {15, "A", 4},
@@ -83,7 +80,7 @@ var RiasecHisGeoPol = []RIASECAnswer{
 
 // RiasecHisGeoBio
 // ----------  文理交叉：历史+地理+生物 ----------
-var RiasecHisGeoBio = []RIASECAnswer{
+var RiasecHisGeoBio = []ai_api.RIASECAnswer{
 	{1, "R", 3}, {2, "R", 3}, {3, "R", 4}, {4, "R", 3}, {5, "R", 3},
 	{6, "I", 4}, {7, "I", 4}, {8, "I", 4}, {9, "I", 5}, {10, "I", 4},
 	{11, "A", 4}, {12, "A", 3}, {13, "A", 4}, {14, "A", 4}, {15, "A", 3},
@@ -94,7 +91,7 @@ var RiasecHisGeoBio = []RIASECAnswer{
 
 // RiasecHisPolBio
 // ----------  教育社会：历史+政治+生物 ----------
-var RiasecHisPolBio = []RIASECAnswer{
+var RiasecHisPolBio = []ai_api.RIASECAnswer{
 	{1, "R", 2}, {2, "R", 3}, {3, "R", 2}, {4, "R", 3}, {5, "R", 2},
 	{6, "I", 3}, {7, "I", 4}, {8, "I", 3}, {9, "I", 4}, {10, "I", 3},
 	{11, "A", 4}, {12, "A", 4}, {13, "A", 3}, {14, "A", 4}, {15, "A", 3},
@@ -103,7 +100,7 @@ var RiasecHisPolBio = []RIASECAnswer{
 	{26, "C", 3}, {27, "C", 3}, {28, "C", 4}, {29, "C", 3}, {30, "C", 3},
 }
 
-var RiasecPhyChePol = []RIASECAnswer{
+var RiasecPhyChePol = []ai_api.RIASECAnswer{
 	// R: High due to physics and chemistry (practical, hands-on)
 	{1, "R", 5}, {2, "R", 4}, {3, "R", 5}, {4, "R", 4}, {5, "R", 5},
 	// I: High due to scientific inquiry
@@ -118,7 +115,7 @@ var RiasecPhyChePol = []RIASECAnswer{
 	{26, "C", 4}, {27, "C", 4}, {28, "C", 5}, {29, "C", 4}, {30, "C", 4},
 }
 
-var RiasecPhyBioPol = []RIASECAnswer{
+var RiasecPhyBioPol = []ai_api.RIASECAnswer{
 	// R: High due to physics and biology (hands-on experiments)
 	{1, "R", 4}, {2, "R", 5}, {3, "R", 4}, {4, "R", 5}, {5, "R", 4},
 	// I: High due to scientific inquiry in physics and biology
@@ -133,7 +130,7 @@ var RiasecPhyBioPol = []RIASECAnswer{
 	{26, "C", 4}, {27, "C", 3}, {28, "C", 4}, {29, "C", 4}, {30, "C", 3},
 }
 
-var RiasecPhyGeoPol = []RIASECAnswer{
+var RiasecPhyGeoPol = []ai_api.RIASECAnswer{
 	// R: Moderate to high, physics and geography (fieldwork, practical)
 	{1, "R", 4}, {2, "R", 4}, {3, "R", 5}, {4, "R", 4}, {5, "R", 4},
 	// I: High, physics and geography (scientific analysis)
@@ -148,7 +145,7 @@ var RiasecPhyGeoPol = []RIASECAnswer{
 	{26, "C", 3}, {27, "C", 4}, {28, "C", 3}, {29, "C", 4}, {30, "C", 3},
 }
 
-var RiasecHisCheBio = []RIASECAnswer{
+var RiasecHisCheBio = []ai_api.RIASECAnswer{
 	// R: Moderate, chemistry and biology (lab work)
 	{1, "R", 3}, {2, "R", 4}, {3, "R", 3}, {4, "R", 4}, {5, "R", 3},
 	// I: High, chemistry and biology (scientific inquiry)
@@ -163,7 +160,7 @@ var RiasecHisCheBio = []RIASECAnswer{
 	{26, "C", 4}, {27, "C", 3}, {28, "C", 4}, {29, "C", 4}, {30, "C", 3},
 }
 
-var RiasecHisChePol = []RIASECAnswer{
+var RiasecHisChePol = []ai_api.RIASECAnswer{
 	// R: Moderate, chemistry (practical work)
 	{1, "R", 3}, {2, "R", 3}, {3, "R", 4}, {4, "R", 3}, {5, "R", 3},
 	// I: High, chemistry (scientific inquiry)
@@ -182,23 +179,23 @@ var RiasecHisChePol = []RIASECAnswer{
 // ========================
 // 索引表
 // ========================
-var AllRIASECCombos = map[string][]RIASECAnswer{
-	ComboPHY_CHE_BIO: RiasecPhyCheBio,
-	ComboPHY_CHE_GEO: RiasecPhyCheGeo,
-	ComboCHE_BIO_GEO: RiasecCheBioGeo,
-	ComboPHY_BIO_GEO: RiasecPhyBioGeo,
-	ComboHIS_GEO_POL: RiasecHisGeoPol,
-	ComboHIS_GEO_BIO: RiasecHisGeoBio,
-	ComboHIS_POL_BIO: RiasecHisPolBio,
-	ComboPHY_CHE_POL: RiasecPhyChePol,
-	ComboPHY_BIO_POL: RiasecPhyBioPol,
-	ComboPHY_GEO_POL: RiasecPhyGeoPol,
-	ComboHIS_CHE_BIO: RiasecHisCheBio,
-	ComboHIS_CHE_POL: RiasecHisChePol,
+var AllRIASECCombos = map[string][]ai_api.RIASECAnswer{
+	ai_api.ComboPHY_CHE_BIO: RiasecPhyCheBio,
+	ai_api.ComboPHY_CHE_GEO: RiasecPhyCheGeo,
+	ai_api.ComboCHE_BIO_GEO: RiasecCheBioGeo,
+	ai_api.ComboPHY_BIO_GEO: RiasecPhyBioGeo,
+	ai_api.ComboHIS_GEO_POL: RiasecHisGeoPol,
+	ai_api.ComboHIS_GEO_BIO: RiasecHisGeoBio,
+	ai_api.ComboHIS_POL_BIO: RiasecHisPolBio,
+	ai_api.ComboPHY_CHE_POL: RiasecPhyChePol,
+	ai_api.ComboPHY_BIO_POL: RiasecPhyBioPol,
+	ai_api.ComboPHY_GEO_POL: RiasecPhyGeoPol,
+	ai_api.ComboHIS_CHE_BIO: RiasecHisCheBio,
+	ai_api.ComboHIS_CHE_POL: RiasecHisChePol,
 }
 
 func TestRIASECAnswer() {
-	combo := ComboPHY_CHE_BIO
+	combo := ai_api.ComboPHY_CHE_BIO
 	answers := AllRIASECCombos[combo]
 	data, _ := json.MarshalIndent(answers, "", "  ")
 	fmt.Println(string(data))

@@ -1,14 +1,13 @@
-package core
+package ai_api
 
 import (
 	"math"
 	"strings"
 )
 
-// =======================================
-// score_fusion.go
+// =======================================================
 // 方案 IZ（维度加权平均）+ 方案 C（余弦匹配）的融合计分实现
-// =======================================
+// =======================================================
 // - 兴趣六维 → 维度加权 → W_final 投影到 6 科（Interest 1–5）
 // - 能力：ASC 每科 4 题（含反向题换算）平均（Ability 1–5）
 // - 标准化：z-score（在 6 科内部） & 0–100（用于雷达图）
@@ -113,7 +112,6 @@ func getDim(v riasecMean, d string) float64 {
 	return 0
 }
 
-// ASC 能力平均（含反向题）
 func subjectAbility(asc []ASCAnswer) map[string]float64 {
 	sum := map[string]float64{}
 	cnt := map[string]float64{}
@@ -136,7 +134,6 @@ func subjectAbility(asc []ASCAnswer) map[string]float64 {
 	return out
 }
 
-// 兴趣投影：RIASEC 六维 → 学科六维
 func projectInterest(ria riasecMean, W map[string]map[string]float64, f map[string]float64) map[string]float64 {
 	res := map[string]float64{}
 	for subj, dimW := range W {
@@ -154,7 +151,6 @@ func projectInterest(ria riasecMean, W map[string]map[string]float64, f map[stri
 	return res
 }
 
-// 百分制
 func toPct(x float64) float64 {
 	if x < 1 {
 		x = 1
@@ -165,7 +161,6 @@ func toPct(x float64) float64 {
 	return (x - 1.0) / 4.0 * 100.0
 }
 
-// 六科内 z-score
 func z6(m map[string]float64) map[string]float64 {
 	mean, sd := 0.0, 0.0
 	for _, s := range Subjects {
@@ -186,7 +181,6 @@ func z6(m map[string]float64) map[string]float64 {
 	return out
 }
 
-// 余弦相似度
 func cosineSim(a, b map[string]float64) float64 {
 	var dot, na2, nb2 float64
 	for _, s := range Subjects {
@@ -202,25 +196,6 @@ func cosineSim(a, b map[string]float64) float64 {
 	return dot / (na * nb)
 }
 
-func abilityGate(az, center, steep, floor float64) float64 {
-	// floor 可传 0 表示不用软下限；建议 0.2~0.25
-	x := (az - center) / steep
-	g := 1.0 / (1.0 + math.Exp(-x))
-	if floor > 0 && g < floor {
-		return floor
-	}
-	return g
-}
-
-// BuildScores
-// ===========================================
-// 计算兴趣、能力及综合匹配指标，并生成可解释性结构。
-// 返回：
-//   - SubjectScores: 每科分数
-//   - globalCosine: 全局一致性
-//   - CommonSection: 用于 AI 报告解释的核心参数
-//
-// ===========================================
 func BuildScores(
 	riasecAnswers []RIASECAnswer,
 	ascAnswers []ASCAnswer,
@@ -262,7 +237,6 @@ func BuildScores(
 		shareA[s] = safeDiv(A[s], sumA)
 	}
 
-	// 注意：assessInterestQuality 在这个简化版中不再需要 subjectScores
 	qualityScore := assessInterestQuality(riasecAnswers)
 
 	// 动态调整权重。假设 alpha, beta, gamma 是 BuildScores 的输入参数
@@ -274,14 +248,12 @@ func BuildScores(
 
 		diff := math.Abs(AZ[s] - IZ[s])
 
-		// 分段幂次：中度差距从重惩罚，重度差距仍维持强惩罚
 		p := 1.1
 		if diff >= 1.0 {
 			p = 1.2
 		}
 		zgap := -math.Pow(diff, p)
 
-		// 软门控：低能力科目下调 fit，但不硬过滤
 		gate := 1.0 / (1.0 + math.Exp(-(AZ[s]+1.0)/0.45))
 		share := safeDiv(A[s], sumA)
 
@@ -315,7 +287,6 @@ func BuildScores(
 	}
 	common.Subjects = subjectProfiles
 
-	// ---- 9. 构建 RadarData ----
 	var radar RadarData
 	for _, s := range Subjects {
 		radar.Subjects = append(radar.Subjects, s)
@@ -323,7 +294,6 @@ func BuildScores(
 		radar.AbilityPct = append(radar.AbilityPct, round3(toPct(A[s])))
 	}
 
-	// ---- 10. 构建 FullScoreResult ----
 	result := FullScoreResult{
 		Common: &common,
 		Radar:  &radar,
@@ -365,111 +335,70 @@ func calculateRiskPenalty(minA, avgFit float64) float64 {
 	base := math.Max(0, (MinAThreshold-minA)/(MinAThreshold-1.0))
 	risk := MaxPenalty * base
 
-	// 降低放大系数：负Fit时最多放大30%（原50%）
 	if avgFit < 0 {
-		risk *= 1 + 0.3*math.Abs(avgFit) // 温和放大
+		risk *= 1 + 0.3*math.Abs(avgFit)
 	} else {
-		risk *= 1 - 0.3*avgFit // 保留正向减轻
+		risk *= 1 - 0.3*avgFit
 	}
 
-	// 严格上限 + 最小值
-	risk = math.Min(math.Max(risk, 0), 0.25) // 原0.3 → 0.25
+	risk = math.Min(math.Max(risk, 0), 0.25)
 
 	return risk
 }
 
-// 兴趣质量评估 - 最终推荐版
-
 func assessInterestQuality(riasecAnswers []RIASECAnswer) float64 {
 
-	consistency := checkRIASECConsistency(riasecAnswers) // 内部一致性
+	consistency := checkRIASECConsistency(riasecAnswers)
 
-	pattern := checkResponsePattern(riasecAnswers) // 答题模式
+	pattern := checkResponsePattern(riasecAnswers)
 
-	quality := 0.7*consistency + 0.3*pattern // 加权平均
+	quality := 0.7*consistency + 0.3*pattern
 
-	return math.Max(quality, 0.4) // 保证最低质量
+	return math.Max(quality, 0.4)
 
 }
-
-// 检查内部一致性：分化程度和均值合理性
 
 func checkRIASECConsistency(answers []RIASECAnswer) float64 {
 
-	scores := extractRIASECScores(answers) // 获取六维平均分
-
-	mean, std := calcStats(scores) // 计算均值和标准差
-
-	// 标准差惩罚：std<0.5时渐进惩罚
+	scores := extractRIASECScores(answers)
+	mean, std := calcStats(scores)
 
 	stdPenalty := math.Max(0, 1-std/0.5)
-
-	// 均值惩罚：偏离3.0时渐进惩罚
-
 	meanPenalty := math.Abs(mean-3.0) / 2.0
 
 	return math.Max(0, 1.0-0.5*stdPenalty-0.5*meanPenalty)
-
 }
-
-// 检查答题模式：极端回答比例
 
 func checkResponsePattern(answers []RIASECAnswer) float64 {
 
 	counts := make(map[int]int)
-
 	for _, a := range answers {
 		counts[a.Score]++
 	}
 
 	n := float64(len(answers))
-
 	if n == 0 {
 		return 0.5
-	} // 防除零
-
-	// 计算极端答案比例（1分或5分）
+	}
 
 	extremeRatio := float64(counts[1]+counts[5]) / n
-
-	// 极端比例>0.2时开始线性惩罚
-
 	if extremeRatio <= 0.2 {
 
 		return 1.0
 
 	}
 
-	// 线性惩罚：从0.2到1.0，质量从1.0降到0.0
-
 	return math.Max(0, 1.0-(extremeRatio-0.2)/0.8)
-
 }
-
-// 权重动态调整 - 归一化线性吸收
 
 func adjustWeights(alpha, beta, gamma, quality float64) (float64, float64, float64) {
-
-	// 兴趣权重衰减
-
 	a := alpha * quality
-
 	b := beta * quality
-
-	// 能力权重吸收（吸收50%的释放权重）
-
 	g := gamma + (alpha+beta)*(1-quality)*0.5
-
-	// 归一化
-
 	sum := a + b + g
-
 	return a / sum, b / sum, g / sum
-
 }
 
-// 计算一组float64数据的均值和样本标准差（带Bessel校正）
-// 计算均值与样本标准差（带Bessel校正）
 func calcStats(values []float64) (mean, std float64) {
 	n := float64(len(values))
 	if n == 0 {
@@ -496,8 +425,6 @@ func calcStats(values []float64) (mean, std float64) {
 	return mean, std
 }
 
-// 提取六个RIASEC维度的平均得分
-// 假设 RIASECAnswer 结构体至少包含字段：Dimension string, Score int
 func extractRIASECScores(answers []RIASECAnswer) []float64 {
 	if len(answers) == 0 {
 		return []float64{3, 3, 3, 3, 3, 3} // 返回中性分，防止除零
@@ -512,7 +439,6 @@ func extractRIASECScores(answers []RIASECAnswer) []float64 {
 		dimCount[dim]++
 	}
 
-	// 维度顺序固定：R, I, A, S, E, C
 	dims := []string{"R", "I", "A", "S", "E", "C"}
 	result := make([]float64, 0, 6)
 
@@ -520,8 +446,9 @@ func extractRIASECScores(answers []RIASECAnswer) []float64 {
 		if dimCount[d] > 0 {
 			result = append(result, dimSum[d]/dimCount[d])
 		} else {
-			result = append(result, 3.0) // 缺失维度用中性分补齐
+			result = append(result, 3.0)
 		}
 	}
+
 	return result
 }

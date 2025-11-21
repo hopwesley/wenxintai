@@ -1,6 +1,6 @@
 import {computed, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
-import {useTestSession} from '@/store/testSession'
+import {useTestSession} from '@/controller/testSession'
 import {
     AnswerValue,
     CommonResponse,
@@ -8,8 +8,10 @@ import {
     StageMotivation,
     StageOcean,
     StageRiasec,
-    useSubscriptBySSE
+    useSubscriptBySSE,
+    pushStageRoute,
 } from "@/controller/common";
+
 import {useAlert} from "@/controller/useAlert";
 import {useGlobalLoading} from "@/controller/useGlobalLoading";
 import {apiRequest} from "@/api";
@@ -107,13 +109,6 @@ export function useQuestionsStagePage() {
         String(route.params.testStage ?? '')
     )
 
-    watch(
-        () => [businessType.value, testStage.value],
-        () => {
-            initStageForCurrentRoute()
-        },
-        {immediate: true},
-    )
 
     // 唯一标识当前阶段，用于在 store 中找到对应答案
     const stageKey = computed(() => {
@@ -124,6 +119,13 @@ export function useQuestionsStagePage() {
         return `qstage:${biz}:${stage}:${pid}`
     })
 
+    watch(
+        () => [businessType.value, testStage.value],
+        () => {
+            initStageForCurrentRoute()
+        },
+        {immediate: true},
+    )
     // 只要题目已经加载出来，且答案有变动，就把当前阶段的答案写回 store
     watch(
         () => ({
@@ -197,19 +199,44 @@ export function useQuestionsStagePage() {
         isSubmitting.value = false
     }
 
-    function handleSseDone(questionStr: string) {
-        console.log('------>>> go questions:', questionStr)
+    interface ServerAnswerItem {
+        id: number
+        value: AnswerValue
+        // 其余字段（dimension / subject 等）不影响前端恢复选项
+        [key: string]: any
+    }
+
+    interface SseQuestionsPayload {
+        questions: Question[]
+        answers?: ServerAnswerItem[] | null
+    }
+
+    function handleSseDone(raw: string) {
+        console.log('------>>> go questions:', raw)
         try {
-            const parsed = JSON.parse(questionStr) as Question[]
-            if (!Array.isArray(parsed) || parsed.length === 0) {
-                showAlert('获取 AI 题目失败,请刷新页面进行重试')
+            const parsed = JSON.parse(raw) as SseQuestionsPayload
+
+            // 1. 基本结构校验：必须有 questions 数组
+            if (!parsed || !Array.isArray(parsed.questions)) {
+                console.error('[QuestionsStagePage] invalid SSE payload:', parsed)
+                showAlert('获取测试题目失败，请稍后再试')
                 return
             }
 
-            questions.value = parsed
+            const qs = parsed.questions
+            if (!qs.length) {
+                console.error('[QuestionsStagePage] empty questions in SSE payload')
+                showAlert('获取测试题目失败，请稍后再试')
+                return
+            }
+
+            // 2. 写入题目 & 重置分页 / 高亮
+            questions.value = qs
             currentPage.value = 1
             highlightedQuestions.value = {}
-            //TODO::applyAnswersForCurrentStage
+
+            // 3. 根据本阶段的 server answers + 本地缓存恢复答案
+            applyAnswersForCurrentStage(parsed.answers ?? undefined)
 
         } catch (e) {
             console.error('[QuestionsStagePage] 解析题目失败:', e)
@@ -221,34 +248,45 @@ export function useQuestionsStagePage() {
 
     /**
      * 统一处理“本阶段应该展示哪些答案”
-     * @param rawAnswers 从后端返回的 raw.answers（可能没有、可能是一个对象）
      *
      * 优先级：
-     * 1. 如果 rawAnswers 有值，认为是服务器从数据库加载出来的标准答案 → 以它为准
+     * 1. 如果 rawAnswers（来自 SSE）是数组：认为是服务器从数据库加载出来的标准答案 → 以它为准
      * 2. 否则，如果本地有缓存（stageAnswers[stageKey]），用本地缓存
      * 3. 如果都没有，就保持当前 answers 不变（通常是空）
      */
-    function applyAnswersForCurrentStage(rawAnswers: unknown) {
+    function applyAnswersForCurrentStage(rawAnswers?: ServerAnswerItem[] | null) {
         const key = stageKey.value
         let finalAnswers: Record<number, AnswerValue> | undefined
 
-        // 1. 优先使用服务器返回的答案（raw.answers）
-        if (rawAnswers && typeof rawAnswers === 'object') {
-            finalAnswers = rawAnswers as Record<number, AnswerValue>
+        // 1) 后端返回的是数组 [{id, value, ...}]
+        if (Array.isArray(rawAnswers) && rawAnswers.length > 0) {
+            const map: Record<number, AnswerValue> = {}
+
+            for (const item of rawAnswers) {
+                if (!item) continue
+                const id = item.id
+                const value = item.value
+                if (typeof id === 'number' && typeof value === 'number') {
+                    // 这里强转为 AnswerValue，前提是后端保证 1~5
+                    map[id] = value as AnswerValue
+                }
+            }
+
+            if (Object.keys(map).length > 0) {
+                finalAnswers = map
+            }
         } else if (key) {
-            // 2. 没有服务器答案时，尝试用本地缓存
+            // 2) 没有后端答案时，尝试使用本地缓存
             const cached = loadStageAnswers(key)
             if (cached) {
                 finalAnswers = cached
             }
         }
 
-        // 3. 有最终确定的答案，就写回本地 state + 缓存
+        // 3) 有最终确定的答案，就写回本地 state + 缓存
         if (finalAnswers) {
-            // 更新当前页面上的答案
             answers.value = { ...finalAnswers }
 
-            // 同步写回全局缓存，保证下次进这个阶段还能恢复
             if (key) {
                 saveStageAnswers(key, finalAnswers)
             }
@@ -339,9 +377,9 @@ export function useQuestionsStagePage() {
             })
             return
         }
-        router.push(`/assessment/${currentBusinessType}/${next_route}`).then()
-    }
 
+        pushStageRoute(router, currentBusinessType, next_route)
+    }
 
     function handlePrev() {
         if (isFirstPage.value || isSubmitting.value) return

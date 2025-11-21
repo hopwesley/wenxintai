@@ -159,7 +159,7 @@ func (pdb *psDatabase) SaveAnswer(
 	const updateTestRecordSQL = `
 		UPDATE app.tests_record
 		SET 
-		    status = $3,
+		    status = GREATEST(status, $3),
 		    updated_at =  now()
 		WHERE business_type = $1
 		  AND public_id     = $2
@@ -220,4 +220,78 @@ func (pdb *psDatabase) SaveAnswer(
 
 	sLog.Debug().Msg("SaveAnswer: done")
 	return nil
+}
+
+// FindQASessionsForReport 按 business_type + public_id 查出该用户本次测试下所有阶段的题目与答案
+func (pdb *psDatabase) FindQASessionsForReport(
+	ctx context.Context,
+	businessType string,
+	publicId string,
+) ([]*QASession, error) {
+	if businessType == "" || publicId == "" {
+		return nil, errors.New("businessType and publicId must be non-empty")
+	}
+
+	sLog := pdb.log.With().
+		Str("business_type", businessType).
+		Str("public_id", publicId).
+		Logger()
+
+	sLog.Debug().Msg("FindQASessionsForReport: start")
+
+	const q = `
+SELECT 
+    id,
+    business_type,
+    test_type,
+    public_id,
+    questions,
+    COALESCE(answers, 'null'::jsonb) AS answers,
+    created_at,
+    completed_at
+FROM app.question_answers
+WHERE business_type = $1
+  AND public_id    = $2
+ORDER BY test_type, created_at
+`
+
+	rows, err := pdb.db.QueryContext(ctx, q, businessType, publicId)
+	if err != nil {
+		sLog.Err(err).Msg("FindQASessionsForReport: query failed")
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []*QASession
+
+	for rows.Next() {
+		var sess QASession
+		if err := rows.Scan(
+			&sess.ID,
+			&sess.BusinessType,
+			&sess.TestType,
+			&sess.PublicId,
+			&sess.Questions,
+			&sess.Answers,
+			&sess.CreatedAt,
+			&sess.CompletedAt,
+		); err != nil {
+			sLog.Err(err).Msg("FindQASessionsForReport: scan failed")
+			return nil, err
+		}
+		result = append(result, &sess)
+	}
+
+	if err := rows.Err(); err != nil {
+		sLog.Err(err).Msg("FindQASessionsForReport: rows error")
+		return nil, err
+	}
+
+	if len(result) == 0 {
+		sLog.Info().Msg("FindQASessionsForReport: not found")
+		return nil, nil
+	}
+
+	sLog.Debug().Int("count", len(result)).Msg("FindQASessionsForReport: done")
+	return result, nil
 }

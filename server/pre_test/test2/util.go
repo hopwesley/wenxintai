@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/hopwesley/wenxintai/server/core"
+	core "github.com/hopwesley/wenxintai/server/ai_api"
 	"github.com/sashabaranov/go-openai"
 )
 

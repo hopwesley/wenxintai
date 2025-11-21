@@ -9,7 +9,7 @@
 import GlobalAlert from '@/views/components/GlobalAlert.vue'
 import GlobalLoading from '@/views/components/GlobalLoading.vue'
 import WeChatLoginDialog from '@/views/components/WeChatLoginDialog.vue'
-import { useAuthStore } from '@/store/auth'
+import { useAuthStore } from '@/controller/wx_auth'
 import { storeToRefs } from 'pinia'
 
 const authStore = useAuthStore()

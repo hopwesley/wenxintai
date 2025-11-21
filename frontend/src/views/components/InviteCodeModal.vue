@@ -37,7 +37,7 @@
 <script setup lang="ts">
 import {computed, nextTick, ref, watch} from 'vue'
 import {VerifyInviteResponse, verifyInviteWithMessage} from '@/controller/InviteCode'
-import {useTestSession} from '@/store/testSession'
+import {useTestSession} from '@/controller/testSession'
 
 const {setInviteCode} = useTestSession()
 

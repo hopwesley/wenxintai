@@ -77,7 +77,7 @@ func parseTestIDFromPath(path string) (string, error) {
 	return idStr, nil
 }
 
-func (s *HttpSrv) handleSSEEvent(w http.ResponseWriter, r *http.Request) {
+func (s *HttpSrv) handleQuestionSSEEvent(w http.ResponseWriter, r *http.Request) {
 	publicId, err := parseTestIDFromPath(r.URL.Path)
 	if err != nil {
 		s.log.Err(err).Msg("SSE channel parse failed")
@@ -92,13 +92,6 @@ func (s *HttpSrv) handleSSEEvent(w http.ResponseWriter, r *http.Request) {
 	sLog := s.log.With().Str("public_id", publicId).
 		Str("business_type", businessTyp).Str("test_type", testType).Logger()
 
-	aiTestType := parseAITestTyp(testType, businessTyp)
-	if len(aiTestType) == 0 || aiTestType == ai_api.TypUnknown {
-		sLog.Error().Str("channel", publicId).Msg("Invalid scaleKey or testType")
-		http.Error(w, "需要参数正确的测试类型和测试阶段参数：scaleKey testType", http.StatusBadRequest)
-		return
-	}
-
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -108,6 +101,16 @@ func (s *HttpSrv) handleSSEEvent(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		sLog.Err(err).Msg("SSE channel created error")
 		http.Error(w, "不支持流式数据传输", http.StatusInternalServerError)
+		return
+	}
+
+	aiTestType := parseAITestTyp(testType, businessTyp)
+	if len(aiTestType) == 0 || aiTestType == ai_api.TypUnknown {
+		sLog.Error().Str("channel", publicId).Msg("Invalid scaleKey or testType")
+		_ = writeSSE(w, flusher, &SSEMessage{
+			Typ: SSE_MT_ERROR,
+			Msg: "需要正确的测试类型和测试阶段参数",
+		}, &s.log)
 		return
 	}
 
@@ -129,24 +132,39 @@ func (s *HttpSrv) handleSSEEvent(w http.ResponseWriter, r *http.Request) {
 
 	msgCh := make(chan *SSEMessage, 64)
 
-	go s.aiProcess(msgCh, publicId, businessTyp, aiTestType)
+	go s.aiQuestionProcess(msgCh, publicId, businessTyp, aiTestType)
 
+	s.streamSSE(ctx, publicId, msgCh, w, flusher)
+}
+
+// streamSSE 会从 msgCh 读取消息，通过 writeSSE 持续写到客户端，直到：
+// 1) ctx 取消；或 2) msgCh 关闭；或 3) 写入出错。
+func (s *HttpSrv) streamSSE(
+	ctx context.Context,
+	channelID string,
+	msgCh <-chan *SSEMessage,
+	w http.ResponseWriter,
+	flusher http.Flusher,
+) {
 	for {
 		select {
 		case <-ctx.Done():
 			s.log.Info().
-				Str("channel", publicId).
+				Str("channel", channelID).
 				Msg("SSE channel closed by client")
 			return
 
 		case msg, ok := <-msgCh:
 			if !ok {
 				s.log.Info().
-					Str("channel", publicId).
+					Str("channel", channelID).
 					Msg("SSE channel closed: msgCh closed")
 				return
 			}
 			if err := writeSSE(w, flusher, msg, &s.log); err != nil {
+				s.log.Err(err).
+					Str("channel", channelID).
+					Msg("writeSSE failed, stop streaming")
 				return
 			}
 		}
@@ -162,7 +180,7 @@ func writeSSE(w http.ResponseWriter, flusher http.Flusher, msg *SSEMessage, log 
 	return nil
 }
 
-func (s *HttpSrv) aiProcess(msgCh chan *SSEMessage, publicId, businessTyp string, aiTestType ai_api.TestTyp) {
+func (s *HttpSrv) aiQuestionProcess(msgCh chan *SSEMessage, publicId, businessTyp string, aiTestType ai_api.TestTyp) {
 
 	sLog := s.log.With().Str("channel", publicId).Str("business_type", businessTyp).Str("ai_Type", string(aiTestType)).Logger()
 	defer close(msgCh)
@@ -239,4 +257,124 @@ func sendSafe(ch chan *SSEMessage, msg *SSEMessage, log *zerolog.Logger) {
 	default:
 		log.Debug().Msg("client is close when generating ai questions")
 	}
+}
+
+const (
+	ReportStatusInit = iota
+	ReportStatusSuccess
+)
+
+func (s *HttpSrv) handleReportSSEEvent(w http.ResponseWriter, r *http.Request) {
+	publicId, err := parseTestIDFromPath(r.URL.Path)
+	if err != nil {
+		s.log.Err(err).Msg("SSE channel parse failed")
+		http.Error(w, "无效的问卷编号:"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	sLog := s.log.With().Str("channel", publicId).Logger()
+
+	ctx := r.Context()
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		sLog.Err(err).Msg("SSE channel created error")
+		http.Error(w, "不支持流式数据传输", http.StatusInternalServerError)
+		return
+	}
+
+	msgCh := make(chan *SSEMessage, 64)
+
+	go s.aiReportProcess(msgCh, publicId, sLog)
+	s.streamSSE(ctx, publicId, msgCh, w, flusher)
+}
+
+func (s *HttpSrv) aiReportProcess(msgCh chan *SSEMessage, publicId string, sLog zerolog.Logger) {
+	bgCtx := context.Background()
+
+	report, dbErr := dbSrv.Instance().FindTestReportByPublicId(bgCtx, publicId)
+	if dbErr != nil || report == nil {
+		sLog.Err(dbErr).Msg("FindTestReportByPublicId failed")
+		sendSafe(msgCh, &SSEMessage{
+			Typ: SSE_MT_ERROR,
+			Msg: "查询报告数据库记录失败:",
+		}, &s.log)
+		return
+	}
+
+	if report.Status == ReportStatusSuccess {
+		if report.AIContent == nil {
+			sLog.Error().Msg("AIContent is nil")
+			sendSafe(msgCh, &SSEMessage{Typ: SSE_MT_ERROR, Msg: "AI报告内容丢失:"}, &s.log)
+			return
+		}
+		sendSafe(msgCh, &SSEMessage{Typ: SSE_MT_DONE, Msg: string(report.AIContent)}, &s.log)
+		sLog.Info().Msg("get generated success")
+		return
+	}
+
+	if report.ModeParam == nil {
+		sLog.Error().Msg("ModeParam is nil")
+		sendSafe(msgCh, &SSEMessage{Typ: SSE_MT_ERROR, Msg: "AI报告需要的选科参数缺失:"}, &s.log)
+		return
+	}
+
+	var common ai_api.FullScoreResult
+	if err := json.Unmarshal(report.CommonScore, &common); err != nil {
+		sLog.Err(err).Msg("failed to unmarshal CommonScore")
+		sendSafe(msgCh, &SSEMessage{Typ: SSE_MT_ERROR, Msg: "AI报告需要的基础参数缺失:"}, &s.log)
+		return
+	}
+
+	callback := func(token string) error {
+		msg := &SSEMessage{Msg: token, Typ: SSE_MT_DATA}
+		sendSafe(msgCh, msg, &s.log)
+		return nil
+	}
+
+	var aiStr json.RawMessage
+	var paramMode interface{} = nil
+	switch ai_api.Mode(report.Mode) {
+	case ai_api.Mode33:
+		var param ai_api.Mode33Section
+		if jErr := json.Unmarshal(report.ModeParam, &param); jErr != nil {
+			sLog.Err(jErr).Msg("failed to unmarshal ModeParam 3+3 data")
+			sendSafe(msgCh, &SSEMessage{Typ: SSE_MT_ERROR, Msg: "解析AI报告(3+3)需要的参数失败:" + jErr.Error()}, &s.log)
+			return
+		}
+		paramMode = &param
+	case ai_api.Mode312:
+		var param ai_api.Mode312Section
+		if jErr := json.Unmarshal(report.ModeParam, &param); jErr != nil {
+			sLog.Err(jErr).Msg("failed to unmarshal ModeParam 3+1+2 data")
+			sendSafe(msgCh, &SSEMessage{Typ: SSE_MT_ERROR, Msg: "解析AI报告(3+1+2)需要的参数失败:" + jErr.Error()}, &s.log)
+			return
+		}
+		paramMode = &param
+	default:
+		sLog.Error().Msg("param mode is invalid:" + report.Mode)
+		sendSafe(msgCh, &SSEMessage{Typ: SSE_MT_ERROR, Msg: "无效的选科模式参数:" + report.Mode}, &s.log)
+		return
+	}
+
+	aiContent, err := ai_api.Instance().GenerateUnifiedReport(bgCtx, common.Common, paramMode, ai_api.Mode(report.Mode), callback)
+	if err != nil {
+		sLog.Err(err).Msg("GenerateReportMod33 failed")
+		sendSafe(msgCh, &SSEMessage{Typ: SSE_MT_ERROR, Msg: "生成报告(3+3)失败:" + err.Error()}, &s.log)
+		return
+	}
+	aiStr, _ = json.Marshal(aiContent)
+
+	dbErr = dbSrv.Instance().UpdateTestReportAIContent(bgCtx, publicId, aiStr)
+	if dbErr != nil {
+		sLog.Err(dbErr).Msg("UpdateTestReportAIContent failed")
+		sendSafe(msgCh, &SSEMessage{Typ: SSE_MT_ERROR, Msg: "保存报告数据失败:" + dbErr.Error()}, &s.log)
+		return
+	}
+
+	sLog.Info().Msg("get ai-generated report success")
 }

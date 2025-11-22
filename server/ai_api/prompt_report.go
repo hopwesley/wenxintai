@@ -234,23 +234,17 @@ func systemPromptFinal(mode Mode) string {
 // ======================================================
 // userPromptUnified —— 精简，仅保留任务说明与数据展示
 // ======================================================
-func userPromptUnified(param ParamForAIPrompt, mode Mode) string {
+func userPromptUnified(common *CommonSection, modeParam interface{}, mode Mode) string {
 	// === 1. 保证结构命名与 systemPromptFinal 对齐 ===
 	commonSection := map[string]interface{}{
-		"common_section": param.Common, // ✅ 必须包装
+		"common_section": common, // ✅ 必须包装
 	}
 	dataCommon, _ := json.MarshalIndent(commonSection, "", "  ")
 
-	var modeSection map[string]interface{}
-	if mode == Mode33 {
-		modeSection = map[string]interface{}{
-			"mode_section": param.Mode33, // ✅ 添加mode_section包装
-		}
-	} else {
-		modeSection = map[string]interface{}{
-			"mode_section": param.Mode312, // ✅ 添加mode_section包装
-		}
+	var modeSection = map[string]interface{}{
+		"mode_section": modeParam, // ✅ 添加mode_section包装
 	}
+
 	dataMode, _ := json.MarshalIndent(modeSection, "", "  ")
 
 	// === 2. 字段定义 ===

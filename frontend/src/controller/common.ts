@@ -57,9 +57,7 @@ function eventToError(ev: Event, message = '[SSE] connection error'): Error {
 }
 
 export function useSubscriptBySSE(
-    eventID: string,
-    businessType: string,
-    testType: string,
+    url: string,
     options: UseSSEOptions = {},
 ) {
     const {autoStart = true} = options
@@ -70,12 +68,6 @@ export function useSubscriptBySSE(
             return
         }
 
-        const params = new URLSearchParams({
-            business_type: businessType,
-            test_type: testType,
-        })
-
-        const url = `/api/sub/${eventID}?${params.toString()}`
         es = new EventSource(url)
 
         es.addEventListener('done', (ev: MessageEvent) => {

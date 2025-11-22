@@ -323,8 +323,13 @@ export function useQuestionsStagePage() {
             return
         }
 
+        const params = new URLSearchParams({
+            business_type: bizType,
+            test_type: stage,
+        })
+        const url = `/api/sub/question/${public_id}?${params.toString()}`
 
-        const sseCtrl = useSubscriptBySSE(public_id, bizType, stage, {
+        const sseCtrl = useSubscriptBySSE(url, {
             autoStart: false,
             onOpen: showAIProcess,
             onError: handleSseError,

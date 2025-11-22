@@ -2,7 +2,7 @@
   <TestLayout :key="route.fullPath">
     <!-- 顶部步骤条 -->
     <template #header>
-      <StepIndicator />
+      <StepIndicator/>
     </template>
 
     <!-- 报告主体 -->
@@ -13,7 +13,7 @@
         <header class="report-card__header">
           <div class="report-card__title-row">
             <h1 class="report-card__title">问心台选课报告</h1>
-            <span class="report-card__mode-pill">3+3</span>
+            <span class="report-card__mode-pill">{{ overview.mode || '—' }}</span>
           </div>
         </header>
 
@@ -32,33 +32,33 @@
               <!-- 第一行 -->
               <div class="report-field">
                 <span class="report-field__label">模式</span>
-                <span class="report-field__value">3+3</span>
+                <span class="report-field__value">{{ overview.mode || '—' }}</span>
               </div>
               <div class="report-field">
                 <span class="report-field__label">学生所在地</span>
-                <span class="report-field__value">北京市</span>
+                <span class="report-field__value">{{ overview.studentLocation || '—' }}</span>
               </div>
               <div class="report-field">
-                <span class="report-field__label">报告日志</span>
-                <span class="report-field__value">2025-12-23</span>
+                <span class="report-field__label">报告日期</span>
+                <span class="report-field__value">{{ overview.generateDate || '—' }}</span>
               </div>
               <div class="report-field">
-                <span class="report-field__label">失效日</span>
-                <span class="report-field__value">6 个月</span>
+                <span class="report-field__label">失效日期</span>
+                <span class="report-field__value">{{ overview.expireDate || '—' }}</span>
               </div>
 
               <!-- 第二行 -->
               <div class="report-field">
                 <span class="report-field__label">学生号</span>
-                <span class="report-field__value">11223444505009</span>
+                <span class="report-field__value">{{ overview.studentNo || '—' }}</span>
               </div>
               <div class="report-field">
                 <span class="report-field__label">学校名称</span>
-                <span class="report-field__value">附属中学</span>
+                <span class="report-field__value">{{ overview.schoolName || '—' }}</span>
               </div>
               <div class="report-field">
                 <span class="report-field__label">问心台账号</span>
-                <span class="report-field__value">wangmoumou</span>
+                <span class="report-field__value">{{ overview.account || '—' }}</span>
               </div>
               <!-- 右下角留空，对齐设计稿 -->
               <div class="report-field report-field--placeholder"></div>
@@ -329,10 +329,11 @@
 import StepIndicator from '@/views/components/StepIndicator.vue'
 import TestLayout from '@/views/components/TestLayout.vue'
 import AiGeneratingOverlay from '@/views/components/AiGeneratingOverlay.vue'
-import { useReportPage } from '@/controller/AssessmentReport'
+import {useReportPage} from '@/controller/AssessmentReport'
 
 const {
   route,
+  overview,
   aiLoading,
   truncatedLatestMessage,
   recommendedCombos,

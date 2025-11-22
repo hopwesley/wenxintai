@@ -119,7 +119,7 @@ const ReportInvalidDuration = 6 * 30 * 24 * time.Hour
 type CombinedReport struct {
 	*UserProfile
 	Mode        string    `json:"mode"`
-	GeneratedAt time.Time `json:"Generate_at"`
+	GeneratedAt time.Time `json:"generate_at"`
 	ExpiredAt   time.Time `json:"expired_at"`
 	*ai_api.EngineResult
 }

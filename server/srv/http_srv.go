@@ -19,7 +19,8 @@ const (
 	apiInviteVerify   = "/api/invites/verify"
 	apiTestFlow       = "/api/test_flow"
 	apiTestBasicInfo  = "/api/tests/basic_info"
-	apiSSESubChannel  = "/api/sub/"
+	apiSSEQuestionSub = "/api/sub/question/"
+	apiSSEReportSub   = "/api/sub/report/"
 	apiSubmitTest     = "/api/test_submit"
 	apiGenerateReport = "/api/generate_report"
 )
@@ -86,7 +87,8 @@ func (s *HttpSrv) initRouter() error {
 	mux.HandleFunc(apiInviteVerify, s.handleInviteVerify)
 	mux.HandleFunc(apiTestFlow, s.handleTestFlow)
 	mux.HandleFunc(apiTestBasicInfo, s.updateBasicInfo)
-	mux.HandleFunc(apiSSESubChannel, s.handleSSEEvent)
+	mux.HandleFunc(apiSSEQuestionSub, s.handleQuestionSSEEvent)
+	mux.HandleFunc(apiSSEReportSub, s.handleReportSSEEvent)
 	mux.HandleFunc(apiSubmitTest, s.handleTestSubmit)
 	mux.HandleFunc(apiGenerateReport, s.handleTestReport)
 

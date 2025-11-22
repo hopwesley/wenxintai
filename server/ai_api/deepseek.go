@@ -200,11 +200,8 @@ func (dai *DeepSeekApi) streamChat(ctx context.Context, reqBody interface{}, onT
 	return fullContent.String(), nil
 }
 
-func (dai *DeepSeekApi) GenerateUnifiedReport(ctx context.Context, tt string, bi *BasicInfo, param ParamForAIPrompt, mode Mode, callback TokenHandler) (string, error) {
-	sLog := dai.log.With().
-		Str("ai-test-type", tt).
-		Str("public-id", bi.PublicId).
-		Logger()
+func (dai *DeepSeekApi) GenerateUnifiedReport(ctx context.Context, common *CommonSection, modeParam interface{}, mode Mode, callback TokenHandler) (string, error) {
+	sLog := dai.log.With().Str("mode", string(mode)).Logger()
 
 	systemPrompt := systemPromptUnified() + "\n" + systemPromptCommon()
 	if mode == Mode33 {
@@ -214,12 +211,12 @@ func (dai *DeepSeekApi) GenerateUnifiedReport(ctx context.Context, tt string, bi
 	}
 	systemPrompt += "\n" + systemPromptFinal(mode)
 
-	userPrompt := userPromptUnified(param, mode)
+	userPrompt := userPromptUnified(common, modeParam, mode)
 
 	reqBody := map[string]interface{}{
 		"model":       "deepseek-chat",
-		"temperature": 0.4,
-		"max_tokens":  8000,
+		"temperature": dai.cfg.ReportTemperature,
+		"max_tokens":  dai.cfg.RMaxToken,
 		"stream":      true,
 		"response_format": map[string]string{
 			"type": "json_object",
@@ -229,6 +226,9 @@ func (dai *DeepSeekApi) GenerateUnifiedReport(ctx context.Context, tt string, bi
 			{"role": "user", "content": strings.TrimSpace(userPrompt)},
 		},
 	}
+
+	fmt.Println(systemPrompt)
+	fmt.Println(userPrompt)
 
 	return dai.validResult(ctx, reqBody, callback, sLog)
 }

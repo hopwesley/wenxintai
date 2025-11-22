@@ -5,20 +5,6 @@ import (
 	"strings"
 )
 
-// =======================================================
-// 方案 IZ（维度加权平均）+ 方案 C（余弦匹配）的融合计分实现
-// =======================================================
-// - 兴趣六维 → 维度加权 → W_final 投影到 6 科（Interest 1–5）
-// - 能力：ASC 每科 4 题（含反向题换算）平均（Ability 1–5）
-// - 标准化：z-score（在 6 科内部） & 0–100（用于雷达图）
-// - 余弦相似度：衡量兴趣与能力在“学科空间”的方向一致性
-// - Fit = α·(zA - zI) + β·cos(AZ, IZ) + γ·AbilityShare
-//   （默认 α=0.4, β=0.4, γ=0.2；可按省/校样本校准）
-
-// SubjectScores
-// ---------------------------------------
-// 固定变量与类型定义
-// ---------------------------------------
 type SubjectScores struct {
 	Subject string  `json:"subject"`
 	I       float64 `json:"interest"`   // 原始兴趣值1-5
@@ -27,28 +13,6 @@ type SubjectScores struct {
 	AZ      float64 `json:"ability_z"`  // 能力Z-Score
 	Fit     float64 `json:"fit"`        // 匹配度
 }
-
-// DimCalib
-// ---------------------------------------
-// 参数配置
-// ---------------------------------------
-var DimCalib = map[string]float64{
-	"R": 0.82, "I": 0.87, "A": 0.78, "S": 0.80, "E": 0.75, "C": 0.72,
-}
-
-// Wfinal 兴趣→学科权重矩阵（最终版）
-var Wfinal = map[string]map[string]float64{
-	"PHY": {"R": 0.30, "I": 0.35, "C": 0.15, "E": 0.10, "S": 0.05, "A": 0.05},
-	"CHE": {"R": 0.25, "I": 0.35, "C": 0.20, "E": 0.10, "S": 0.05, "A": 0.05},
-	"BIO": {"R": 0.20, "I": 0.35, "S": 0.15, "C": 0.15, "A": 0.10, "E": 0.05},
-	"GEO": {"R": 0.25, "I": 0.25, "C": 0.15, "S": 0.15, "E": 0.10, "A": 0.10},
-	"HIS": {"A": 0.30, "S": 0.25, "E": 0.15, "I": 0.15, "C": 0.10, "R": 0.05},
-	"POL": {"E": 0.30, "S": 0.25, "A": 0.15, "I": 0.15, "C": 0.10, "R": 0.05},
-}
-
-// ---------------------------------------
-// 数据结构与基础运算
-// ---------------------------------------
 
 type riasecMean struct{ R, I, A, S, E, C float64 }
 
@@ -201,7 +165,7 @@ func BuildScores(
 	ascAnswers []ASCAnswer,
 	W map[string]map[string]float64,
 	f map[string]float64,
-	alpha, beta, gamma float64,
+	subWeight SubjectWeight,
 ) ([]SubjectScores, *FullScoreResult) {
 
 	var common CommonSection
@@ -240,7 +204,7 @@ func BuildScores(
 	qualityScore := assessInterestQuality(riasecAnswers)
 
 	// 动态调整权重。假设 alpha, beta, gamma 是 BuildScores 的输入参数
-	alpha, beta, gamma = adjustWeights(alpha, beta, gamma, qualityScore)
+	newSW := subWeight.adjustWeights(qualityScore)
 	common.QualityScore = round3(qualityScore)
 	// ---- 7. 每科 Fit ----
 	out := make([]SubjectScores, 0, len(Subjects))
@@ -257,11 +221,11 @@ func BuildScores(
 		gate := 1.0 / (1.0 + math.Exp(-(AZ[s]+1.0)/0.45))
 		share := safeDiv(A[s], sumA)
 
-		alphaAdj := alpha
+		alphaAdj := newSW.alpha
 		if AZ[s] > IZ[s] {
 			alphaAdj *= 0.5
 		}
-		fit := gate * (alphaAdj*zgap + beta*cos + gamma*share)
+		fit := gate * (alphaAdj*zgap + newSW.beta*cos + newSW.gamma*share)
 
 		out = append(out, SubjectScores{
 			Subject: s,
@@ -389,14 +353,6 @@ func checkResponsePattern(answers []RIASECAnswer) float64 {
 	}
 
 	return math.Max(0, 1.0-(extremeRatio-0.2)/0.8)
-}
-
-func adjustWeights(alpha, beta, gamma, quality float64) (float64, float64, float64) {
-	a := alpha * quality
-	b := beta * quality
-	g := gamma + (alpha+beta)*(1-quality)*0.5
-	sum := a + b + g
-	return a / sum, b / sum, g / sum
 }
 
 func calcStats(values []float64) (mean, std float64) {

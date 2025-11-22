@@ -8,8 +8,8 @@ type ParamForAIPrompt struct {
 
 type CommonSection struct {
 	GlobalCosine float64              `json:"global_cosine"` // 全局方向一致性
-	Subjects     []SubjectProfileData `json:"subjects"`      // 六科详细信息
 	QualityScore float64              `json:"quality_score"`
+	Subjects     []SubjectProfileData `json:"subjects"` // 六科详细信息
 }
 
 type SubjectProfileData struct {

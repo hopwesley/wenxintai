@@ -33,6 +33,15 @@ func (g Grade) IsValid() bool {
 	}
 }
 
+type TestTyp string
+
+const (
+	TypUnknown TestTyp = "Unknown"
+	TypRIASEC  TestTyp = "RIASEC"
+	TypOCEAN   TestTyp = "OCEAN"
+	TypASC     TestTyp = "ASC"
+)
+
 type BasicInfo struct {
 	PublicId string `json:"public_id"`
 	Grade    Grade  `json:"grade"`
@@ -52,4 +61,33 @@ type RIASECAnswer struct {
 	ID        int    `json:"id"`
 	Dimension string `json:"dimension"`
 	Score     int    `json:"score"`
+}
+
+type OCEANCAnswer struct {
+	ID        int    `json:"id"`
+	Dimension string `json:"dimension"`
+	Score     int    `json:"score"`
+	Reverse   bool   `json:"reverse"`
+}
+
+// SubjectWeight 科目基础计算
+type SubjectWeight struct{ alpha, beta, gamma float64 }
+
+func (sw *SubjectWeight) adjustWeights(quality float64) *SubjectWeight {
+	a := sw.alpha * quality
+	b := sw.beta * quality
+	g := sw.gamma + (sw.alpha+sw.beta)*(1-quality)*0.5
+	sum := a + b + g
+	return &SubjectWeight{
+		a / sum, b / sum, g / sum,
+	}
+}
+
+// Weights33 组合打分
+type Weights33 struct{ W1, W2, W3, W4, W5 float64 }
+
+type EngineResult struct {
+	CommonScore  *FullScoreResult `json:"common_score"`
+	Recommend33  *Mode33Section   `json:"recommend_33"`
+	Recommend312 *Mode312Section  `json:"recommend_312"`
 }

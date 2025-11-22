@@ -17,24 +17,68 @@
   </nav>
 </template>
 
-
 <script setup lang="ts">
-import {computed} from 'vue'
-import {useRoute, useRouter} from 'vue-router'
-import {useTestSession} from "@/controller/testSession";
-import {pushStageRoute} from "@/controller/common";
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useTestSession } from '@/controller/testSession'
+import { pushStageRoute, StageBasic, StageReport } from '@/controller/common'
 
 const route = useRoute()
 const router = useRouter()
-const {state} = useTestSession()
+const { state } = useTestSession()
 
-// 展示用的标题列表（"基础信息" / "兴趣测试" / ...）
-const steps = computed(() => state.testRoutes ?? [])
+// 展示用的标题列表：优先用 testFlowSteps（带 stage+title），兜底 testRoutes（老的 string[]）
+const steps = computed(() => {
+  const flow = state.testFlowSteps ?? []
+  if (flow.length) {
+    return flow.map(step => step.title)
+  }
+  return state.testRoutes ?? []
+})
 
-// 当前所在步骤的下标（还是沿用 nextRouteItem 的逻辑）
+/**
+ * 根据当前路由，推导“所在阶段”的 stage key
+ * - /assessment/:typ/basic-info       -> StageBasic
+ * - /assessment/:typ/report           -> StageReport
+ * - /assessment/:businessType/:testStage -> route.params.testStage
+ */
+function getStageFromRoute(): string {
+  const name = route.name
+
+  if (name === 'test-basic-info') {
+    return StageBasic
+  }
+  if (name === 'test-report') {
+    return StageReport
+  }
+
+  // 题目阶段：/assessment/:businessType/:testStage
+  return String(route.params.testStage ?? '')
+}
+
+// 当前所在步骤 index
 const current = computed(() => {
-  const stageKey = String(route.params.testStage ?? '')
-  return state.nextRouteItem?.[stageKey] ?? 0
+  const stage = getStageFromRoute()
+  const flow = state.testFlowSteps ?? []
+
+  // 1) 优先用 nextRouteItem 中记录的 index（这是我们在每次跳转时设进去的）
+  if (stage) {
+    const idxFromMap = state.nextRouteItem?.[stage]
+    if (typeof idxFromMap === 'number') {
+      return idxFromMap
+    }
+  }
+
+  // 2) 没有 nextRouteItem 时，在 flow 里按 stage 查找
+  if (flow.length && stage) {
+    const idx = flow.findIndex(it => it.stage === stage)
+    if (idx >= 0) {
+      return idx
+    }
+  }
+
+  // 3) 兜底：0（通常是“基础信息”）
+  return 0
 })
 
 function stepClass(index: number) {
@@ -45,24 +89,24 @@ function stepClass(index: number) {
 
 /**
  * 点击步骤：
- * - 只允许点击“已完成步骤 + 当前步骤”
- * - 根据 index 在 testFlowSteps 里找到对应的 stage
- * - 使用 pushStageRoute 跳转
+ * - 只允许点击“已完成步骤 + 当前步骤”（index <= current）
+ * - 按 index 从 testFlowSteps 里找到目标 stage
+ * - 根据当前路由取出 businessType，然后 pushStageRoute 跳转
  */
 function handleStepClick(index: number) {
   const currentIndex = current.value
-
-  // 不允许点未来的步骤
-  if (index > currentIndex) {
-    return
-  }
+  if (index > currentIndex) return // 禁止点未来步骤
 
   const flow = state.testFlowSteps ?? []
   const target = flow[index]
   if (!target) return
 
+  // businessType 可能来自两种路由形式：
+  // - /assessment/:businessType/:testStage    (questions)
+  // - /assessment/:typ/basic-info / report    (basic + report)
   const biz =
       (route.params.businessType as string | undefined) ||
+      (route.params.typ as string | undefined) ||
       state.businessType ||
       ''
 

@@ -23,4 +23,7 @@ type DbService interface {
 	SaveQuestion(ctx context.Context, businessType, testType, publicId string, questionsJSON []byte) error
 	SaveAnswer(ctx context.Context, businessType, testType, publicId string, answersJSON []byte, status int) error
 	FindQASessionsForReport(ctx context.Context, businessType string, publicId string) ([]*QASession, error)
+	SaveTestReportCore(ctx context.Context, publicId, businessType, mode string, commonScoreJSON []byte, modeParamJSON []byte) error
+	UpdateTestReportAIContent(ctx context.Context, publicId string, aiContentJSON []byte) error
+	FindTestReportByPublicId(ctx context.Context, publicId string) (*TestReport, error)
 }

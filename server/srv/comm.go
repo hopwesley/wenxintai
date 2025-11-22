@@ -302,7 +302,7 @@ func parseAITestTyp(testTyp, businessTyp string) ai_api.TestTyp {
 		case StageRiasec:
 			return ai_api.TypRIASEC
 		case StageAsc:
-			return ai_api.TypSEC
+			return ai_api.TypASC
 		}
 	case TestTypePro:
 		switch testTyp {
@@ -311,7 +311,7 @@ func parseAITestTyp(testTyp, businessTyp string) ai_api.TestTyp {
 		case StageOcean:
 			return ai_api.TypOCEAN
 		case StageAsc:
-			return ai_api.TypSEC
+			return ai_api.TypASC
 		}
 
 	case TestTypeSchool:
@@ -321,7 +321,7 @@ func parseAITestTyp(testTyp, businessTyp string) ai_api.TestTyp {
 		case StageOcean:
 			return ai_api.TypOCEAN
 		case StageAsc:
-			return ai_api.TypSEC
+			return ai_api.TypASC
 		}
 	}
 

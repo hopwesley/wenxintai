@@ -5,23 +5,6 @@ import (
 	"strings"
 )
 
-//TODO:优化提示词的使用和管理。
-
-type TestTyp string
-
-const (
-	TypUnknown TestTyp = "Unknown"
-	TypRIASEC  TestTyp = "RIASEC"
-	TypOCEAN   TestTyp = "OCEAN"
-	TypSEC     TestTyp = "ASC"
-
-	DefaultModel  = "deepseek-chat"
-	DefaultApiUrl = "https://api.deepseek.com"
-
-	DefaultMaxQToken = 8000
-	DefaultMaxRToken = 4000
-)
-
 func genUserPrompt(bi *BasicInfo) string {
 	return fmt.Sprintf("请以 json 对象数组返回，仅输出合法 json：\n"+
 		"request_id: %s\n"+
@@ -48,7 +31,7 @@ func getTemperature(module TestTyp) float64 {
 		return 0.8 // 稍高，鼓励创意和多样性
 	case TypRIASEC:
 		return 0.7 // 中等，平衡稳定与多样性
-	case TypSEC:
+	case TypASC:
 		return 0.6 // 稍低，确保结构准确性和一致性
 	default:
 		return 0.75 // 默认值
@@ -232,7 +215,7 @@ func composeSystemPrompt(module TestTyp) (string, error) {
 		modulePrompt = systemPromptOCEAN
 	case TypRIASEC:
 		modulePrompt = systemPromptRIASEC
-	case TypSEC:
+	case TypASC:
 		modulePrompt = systemPromptASC
 	default:
 		return "", fmt.Errorf("未知模块: %s", module)

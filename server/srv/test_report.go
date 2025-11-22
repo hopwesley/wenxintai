@@ -2,8 +2,10 @@ package srv
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/hopwesley/wenxintai/server/ai_api"
 	"github.com/hopwesley/wenxintai/server/dbSrv"
@@ -12,7 +14,6 @@ import (
 type tesReportRequest struct {
 	TestPublicID string `json:"public_id"`
 	BusinessType string `json:"business_type"`
-	TestType     string `json:"test_type"`
 }
 
 func (req *tesReportRequest) parseObj(r *http.Request) *ApiErr {
@@ -24,9 +25,6 @@ func (req *tesReportRequest) parseObj(r *http.Request) *ApiErr {
 	}
 	if !IsValidPublicID(req.TestPublicID) {
 		return ApiInvalidReq("无效的问卷编号", nil)
-	}
-	if (req.TestType) != StageReport {
-		return ApiInvalidReq("当前请求不是测试报告阶段", nil)
 	}
 	if len(req.BusinessType) == 0 {
 		return ApiInvalidReq("无效的试卷类型", nil)
@@ -48,6 +46,13 @@ type rawAsc struct {
 	Value        int    `json:"value"`
 	Reverse      bool   `json:"reverse"`
 	Subtype      string `json:"subtype"`
+}
+
+type rawOcean struct {
+	ID        int    `json:"id"`
+	Value     int    `json:"value"`
+	Dimension string `json:"dimension"`
+	Reverse   bool   `json:"reverse"`
 }
 
 // 从 QASession.Answers 解析并转换
@@ -88,6 +93,37 @@ func convertASC(rawJSON []byte) ([]ai_api.ASCAnswer, error) {
 	return out, nil
 }
 
+func convertOcean(rawJSON []byte) ([]ai_api.OCEANCAnswer, error) {
+	if rawJSON == nil {
+		return nil, nil
+	}
+	var raws []rawOcean
+	if err := json.Unmarshal(rawJSON, &raws); err != nil {
+		return nil, err
+	}
+
+	out := make([]ai_api.OCEANCAnswer, 0, len(raws))
+	for _, r := range raws {
+		out = append(out, ai_api.OCEANCAnswer{
+			ID:        r.ID,
+			Score:     r.Value, // 👈 关键：value -> Score
+			Dimension: r.Dimension,
+			Reverse:   r.Reverse,
+		})
+	}
+	return out, nil
+}
+
+const ReportInvalidDuration = 6 * 30 * 24 * time.Hour
+
+type CombinedReport struct {
+	*UserProfile
+	Mode        string    `json:"mode"`
+	GeneratedAt time.Time `json:"Generate_at"`
+	ExpiredAt   time.Time `json:"expired_at"`
+	*ai_api.EngineResult
+}
+
 func (s *HttpSrv) handleTestReport(w http.ResponseWriter, r *http.Request) {
 
 	var req tesReportRequest
@@ -98,90 +134,108 @@ func (s *HttpSrv) handleTestReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sLog := s.log.With().Str("test_type", req.TestType).
+	sLog := s.log.With().
 		Str("business_type", req.BusinessType).
 		Str("public_id", req.TestPublicID).Logger()
 
 	ctx := r.Context()
 
-	record, cErr := s.checkTestSequence(ctx, req.TestPublicID, req.TestType)
+	record, cErr := s.checkTestSequence(ctx, req.TestPublicID, StageReport)
 	if cErr != nil {
 		sLog.Err(cErr).Msg("invalid test sequence request")
 		writeError(w, ApiInvalidTestSequence(cErr))
 		return
 	}
 
-	// 2️⃣ 获取所有阶段问卷答案
 	sessions, dbErr := dbSrv.Instance().FindQASessionsForReport(ctx, record.BusinessType, req.TestPublicID)
-	if dbErr != nil {
+	if dbErr != nil || len(sessions) == 0 {
 		sLog.Err(dbErr).Msg("FindQASessionsForReport failed")
 		writeError(w, ApiInternalErr("未找到问卷测试的题目与答案", dbErr))
 		return
 	}
-	if len(sessions) == 0 {
-		sLog.Err(dbErr).Msg("no question_answers found for this test")
-		writeError(w, ApiInternalErr("未找到问卷测试的题目与答案", nil))
-		return
-	}
 
-	// 3️⃣ 取出不同阶段的数据
-	var riasecJSON, ascJSON []byte
+	var riasecJSON, ascJSON, oceanJSON []byte
 	for _, s := range sessions {
-		switch strings.ToUpper(s.TestType) {
-		case "RIASEC":
+		if len(s.Answers) == 0 {
+			sLog.Err(dbErr).Msg("no valid answer data for:" + s.TestType)
+			writeError(w, ApiInternalErr("问卷没有有效答案", nil))
+			return
+		}
+		switch ai_api.TestTyp(s.TestType) {
+		case ai_api.TypRIASEC:
 			riasecJSON = s.Answers
-		case "ASC":
+		case ai_api.TypASC:
 			ascJSON = s.Answers
+		case ai_api.TypOCEAN:
+			oceanJSON = s.Answers
 		}
 	}
 
-	if len(riasecJSON) == 0 || len(ascJSON) == 0 {
-		sLog.Err(dbErr).Msg("missing required test stages")
-		writeError(w, ApiInternalErr("未找到兴趣问卷或者能力问卷", nil))
+	riaAnswers, rErr := convertRIASEC(riasecJSON)
+	ascAnswers, aErr := convertASC(ascJSON)
+	oceanAnswers, oErr := convertOcean(oceanJSON)
+	if rErr != nil || aErr != nil || oErr != nil {
+		cErr := fmt.Errorf(" riasec"+
+			" err:%s asc err:%s ocean err:%s", rErr, aErr, oErr)
+		sLog.Err(cErr).Msg("parse answer to ai param failed")
+		writeError(w, ApiInternalErr("解析问卷答案为 AI 参数失败", cErr))
 		return
 	}
 
-	// 4️⃣ 解析并转换为算法输入结构
-	riaAnswers, _ := convertRIASEC(riasecJSON)
-	ascAnswers, _ := convertASC(ascJSON)
+	answersMap := map[ai_api.TestTyp]any{
+		ai_api.TypRIASEC: riaAnswers,
+		ai_api.TypASC:    ascAnswers,
+		ai_api.TypOCEAN:  oceanAnswers,
+	}
 
-	// 5️⃣ 按业务类型 & 模式调用不同算法逻辑
-	var (
-		param  *ai_api.ParamForAIPrompt
-		result *ai_api.FullScoreResult
-		scores []ai_api.SubjectScores
-	)
-
+	var resp *ai_api.EngineResult
+	var aiErr error
 	switch strings.ToLower(record.BusinessType) {
-	case "basic":
-		// 默认教育测评逻辑：兴趣+能力 -> 3+1+2 / 3+3 双模分析
-		param, result, scores = ai_api.BuildFullParam(riaAnswers, ascAnswers, 0.4, 0.4, 0.2)
-
-	case "pro":
-		// 专业版逻辑，可加入额外计算或权重调整
-		param, result, scores = ai_api.BuildFullParam(riaAnswers, ascAnswers, 0.5, 0.3, 0.2)
-
-	case "school":
-		// 校园版：可能只输出 AnchorPHY/HIS，不生成组合
-		param, result, scores = ai_api.BuildFullParam(riaAnswers, ascAnswers, 0.3, 0.4, 0.3)
-
+	case TestTypeBasic:
+		resp, aiErr = ai_api.BasicBuildReportParam(ai_api.Mode(record.Mode.String), answersMap)
+	case TestTypePro:
+		resp, aiErr = ai_api.ProBuildReportParam(ai_api.Mode(record.Mode.String), answersMap)
+	case TestTypeSchool:
+		resp, aiErr = ai_api.SchoolBuildReportParam(ai_api.Mode(record.Mode.String), answersMap)
 	default:
-		param, result, scores = ai_api.BuildFullParam(riaAnswers, ascAnswers, 0.4, 0.4, 0.2)
+		sLog.Warn().Msg("unknown business type when building report param")
+		writeError(w, ApiInternalErr("未知的测试类型", aiErr))
+		return
 	}
 
-	// 6️⃣ 按 Mode 输出不同内容
-	switch strings.ToLower(record.Mode.String) {
-	case "3+3":
-		param.Mode312 = nil
-	case "3+1+2":
-		param.Mode33 = nil
+	if aiErr != nil || resp == nil {
+		sLog.Err(dbErr).Msg("failed to build report param")
+		writeError(w, ApiInternalErr("生成 AI 报告需要的参数失败", aiErr))
+		return
 	}
 
-	resp := map[string]any{
-		"report": param,
-		"scores": scores,
-		"common": result.Common,
+	var aiParamForMode []byte
+	commonScore, _ := json.Marshal(resp.CommonScore)
+	if resp.Recommend33 != nil {
+		aiParamForMode, _ = json.Marshal(resp.Recommend33)
+	} else {
+		aiParamForMode, _ = json.Marshal(resp.Recommend312)
 	}
 
-	writeJSON(w, http.StatusOK, resp)
+	dbErr = dbSrv.Instance().SaveTestReportCore(ctx, req.TestPublicID, record.BusinessType, record.Mode.String, commonScore, aiParamForMode)
+	if dbErr != nil {
+		sLog.Err(dbErr).Msg("failed to save report param")
+		writeError(w, ApiInternalErr("保存 AI 报告需要的参数失败", aiErr))
+		return
+	}
+
+	sLog.Info().Msg("build param of report success")
+
+	combinedResult := &CombinedReport{
+		UserProfile: &UserProfile{
+			Uid: record.InviteCode.String,
+		},
+		Mode:         record.Mode.String,
+		GeneratedAt:  time.Now(),
+		EngineResult: resp,
+	}
+
+	combinedResult.ExpiredAt = combinedResult.GeneratedAt.Add(ReportInvalidDuration)
+
+	writeJSON(w, http.StatusOK, combinedResult)
 }

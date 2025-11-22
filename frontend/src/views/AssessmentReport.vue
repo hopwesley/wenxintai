@@ -2,11 +2,7 @@
   <TestLayout :key="route.fullPath">
     <!-- 顶部步骤条 -->
     <template #header>
-      <StepIndicator
-          :steps="stepItems"
-          :current="currentStepIndex"
-          @step-click="handleStepClick"
-      />
+      <StepIndicator />
     </template>
 
     <!-- 报告主体 -->
@@ -26,47 +22,46 @@
         <!-- 个人资料 -->
         <section class="report-section report-section--profile">
           <div class="report-profile">
-            <div class="report-profile__col report-profile__col--main">
-              <div class="report-field report-field--title">
-                <span class="report-field__label">个人资料</span>
-              </div>
+            <!-- 左侧标题，单独一行 -->
+            <div class="report-field report-field--title">
+              <span class="report-field__label">个人资料</span>
+            </div>
+
+            <!-- 右侧 4×2 网格区域 -->
+            <div class="report-profile-grid">
+              <!-- 第一行 -->
               <div class="report-field">
                 <span class="report-field__label">模式</span>
                 <span class="report-field__value">3+3</span>
               </div>
-            </div>
-
-            <div class="report-profile__col">
               <div class="report-field">
                 <span class="report-field__label">学生所在地</span>
                 <span class="report-field__value">北京市</span>
               </div>
               <div class="report-field">
-                <span class="report-field__label">出生日期</span>
+                <span class="report-field__label">报告日志</span>
                 <span class="report-field__value">2025-12-23</span>
               </div>
-            </div>
-
-            <div class="report-profile__col">
               <div class="report-field">
-                <span class="report-field__label">有效期</span>
+                <span class="report-field__label">失效日</span>
                 <span class="report-field__value">6 个月</span>
               </div>
-            </div>
-          </div>
 
-          <div class="report-profile report-profile--bottom">
-            <div class="report-field">
-              <span class="report-field__label">学生号</span>
-              <span class="report-field__value">11223444505009</span>
-            </div>
-            <div class="report-field">
-              <span class="report-field__label">学校名称</span>
-              <span class="report-field__value">附属中学</span>
-            </div>
-            <div class="report-field">
-              <span class="report-field__label">问心台账号</span>
-              <span class="report-field__value">wangmoumou</span>
+              <!-- 第二行 -->
+              <div class="report-field">
+                <span class="report-field__label">学生号</span>
+                <span class="report-field__value">11223444505009</span>
+              </div>
+              <div class="report-field">
+                <span class="report-field__label">学校名称</span>
+                <span class="report-field__value">附属中学</span>
+              </div>
+              <div class="report-field">
+                <span class="report-field__label">问心台账号</span>
+                <span class="report-field__value">wangmoumou</span>
+              </div>
+              <!-- 右下角留空，对齐设计稿 -->
+              <div class="report-field report-field--placeholder"></div>
             </div>
           </div>
         </section>
@@ -338,17 +333,11 @@ import { useReportPage } from '@/controller/AssessmentReport'
 
 const {
   route,
-  // 步骤条
-  stepItems,
-  currentStepIndex,
-  handleStepClick,
-  // 报告内容
   aiLoading,
   truncatedLatestMessage,
   recommendedCombos,
   summaryCards,
 } = useReportPage()
 </script>
-
 
 <style scoped src="@/styles/assessment-report.css"></style>

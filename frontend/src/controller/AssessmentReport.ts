@@ -1,20 +1,15 @@
-import { ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useGlobalLoading } from '@/controller/useGlobalLoading'
-import { useTestSession } from '@/controller/testSession'
-import { StageReport, pushStageRoute } from '@/controller/common'
+import {ref, computed, onMounted} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
+import {useGlobalLoading} from '@/controller/useGlobalLoading'
+import {useTestSession} from '@/controller/testSession'
+import {apiRequest} from "@/api";
+import {useAlert} from "@/controller/useAlert";
 
-/**
- * 推荐组合中单个指标，如 A 维度 / B 维度 等
- */
 export interface ComboMetric {
     label: string
     value: number
 }
 
-/**
- * 报告里的一档 / 二档 / 三档组合
- */
 export interface ReportCombo {
     rankLabel: string
     name: string
@@ -25,85 +20,131 @@ export interface ReportCombo {
     recommendExplain: string[]
 }
 
-/**
- * 底部总结卡片
- */
 export interface SummaryCard {
     title: string
     content: string
 }
 
+// 整体返回结构，对应 Go: EngineResult
+export interface ReportResponse {
+    sub_basic: CommonSection | null;
+    radar: RadarData | null;
+    recommend_33: Mode33Section | null;
+    recommend_312: Mode312Section | null;
+}
+
+// ====== 通用部分：兴趣-能力整体特征 ======
+
+export interface CommonSection {
+    global_cosine: number;
+    quality_score: number;
+    subjects: SubjectProfileData[];
+}
+
+export interface SubjectProfileData {
+    subject: string;        // "PHY" | "CHE" | "BIO" | "GEO" | "HIS" | "POL" ...
+    interest_z: number;
+    ability_z: number;
+    zgap: number;
+    ability_share: number;
+    fit: number;
+}
+
+// ====== 雷达图数据 ======
+
+export interface RadarData {
+    subjects: string[];      // ["PHY","CHE","BIO","GEO","HIS","POL"]
+    interest_pct: number[];  // [61, 60, 58, 55, 40, 39]
+    ability_pct: number[];   // [100, 100, 100, 50, 44, 44]
+}
+
+// ====== 3+3 推荐部分 ======
+
+export interface Mode33Section {
+    top_combinations: Combo33CoreData[];
+}
+
+export interface Combo33CoreData {
+    subjects: string[];   // 实际长度为 3
+    avg_fit: number;
+    min_ability: number;
+    rarity: number;
+    risk_penalty: number;
+    score: number;
+    combo_cosine: number;
+}
+
+// ====== 3+1+2 推荐部分 ======
+
+export interface Mode312Section {
+    anchor_phy: AnchorCoreData;
+    anchor_his: AnchorCoreData;
+}
+
+export interface AnchorCoreData {
+    subject: string;      // "PHY" 或 "HIS"
+    fit: number;
+    ability_norm: number;
+    term_fit: number;
+    term_ability: number;
+    term_coverage: number;
+    s1: number;
+    combos: ComboCoreData[];
+    s_final: number;
+}
+
+export interface ComboCoreData {
+    aux1: string;
+    aux2: string;
+    avg_fit: number;
+    min_fit: number;
+    combo_cos: number;
+    auxAbility: number;   // 注意：后端 JSON 字段是 "auxAbility"
+    coverage: number;
+    mix_penalty: number;
+    s23: number;
+    s_final_combo: number;
+}
+
+
+function getAiReportParam(publicID: string, businessTyp: string) {
+    return apiRequest<ReportResponse>('/api/generate_report', {
+        method: 'POST',
+        body: {
+            public_id: publicID,
+            business_type: businessTyp
+        },
+    })
+}
+
+
 export function useReportPage() {
-    const { showLoading, hideLoading } = useGlobalLoading()
-
+    const {showLoading, hideLoading} = useGlobalLoading()
     const route = useRoute()
+    const {state} = useTestSession()
+    const {showAlert} = useAlert()
     const router = useRouter()
-    const { state } = useTestSession()
 
-    // 当前业务类型：优先用路由 :typ，其次用全局 store
+    // 备用：当前业务类型（暂时模板里没用，将来如果需要接后端可以直接用）
     const businessType = computed(() => {
         return String(route.params.typ ?? state.businessType ?? '')
     })
 
-    // 步骤条：文案列表（“基础信息 / 兴趣测试 / 能力测试 / 报告”）
-    const stepItems = computed(() => {
-        const flow = state.testRoutes ?? []
-        return flow.map(step => step.title)
-    })
-
-    // 当前步骤在流程中的 index（report 所在的位置）
-    const currentStepIndex = computed(() => {
-        const flow = state.testRoutes ?? []
-        const idx = flow.findIndex(step => step.stage === StageReport)
-        return idx >= 0 ? idx : 0
-    })
-
-    /**
-     * 点击步骤条的某一步时的行为：
-     * - 只允许回退（targetIndex <= currentStepIndex）
-     * - 当前已经是报告页，再点“报告”就不动
-     * - 其它阶段统一用 pushStageRoute 跳转
-     */
-    function handleStepClick(targetIndex: number) {
-        const flow = state.testRoutes ?? []
-        if (!flow.length) return
-
-        const curIdx = currentStepIndex.value
-        // 不允许点到还没解锁的未来步骤
-        if (targetIndex > curIdx) return
-
-        const target = flow[targetIndex]
-        if (!target) return
-
-        // 已经在报告页，再点“报告”就不跳了
-        if (target.stage === StageReport) {
-            return
-        }
-
-        const biz = businessType.value
-        if (!biz) return
-
-        pushStageRoute(router, biz, target.stage)
-    }
-
     // 之后接入后端 / SSE 时再开启，这里先保持为 false
     const aiLoading = ref(false)
-
-    // AI 生成过程中的日志（当前主要给覆盖层占位用）
     const truncatedLatestMessage = ref<string[]>([])
 
-    // 临时静态数据：推荐组合
     const recommendedCombos = ref<ReportCombo[]>([
         {
             rankLabel: '第一档',
             name: '物理 + 化学 + 生物',
             score: '89',
-            theme: 'primary', // 第一档：紫色
+            theme: 'primary',
             metrics: [
-                { label: 'A 维度', value: 33 },
-                { label: 'B 维度', value: 22 },
-                { label: 'C 维度', value: 2 },
-                { label: 'D 维度', value: 44 },
+                {label: 'A 维度', value: 33},
+                {label: 'B 维度', value: 22},
+                {label: 'C 维度', value: 2},
+                {label: 'D 维度', value: 44},
             ],
             factorExplain: [
                 '2gap 表示兴趣与能力之间的差异。',
@@ -121,10 +162,10 @@ export function useReportPage() {
             score: '82',
             theme: 'blue',
             metrics: [
-                { label: 'A 维度', value: 33 },
-                { label: 'B 维度', value: 22 },
-                { label: 'C 维度', value: 2 },
-                { label: 'D 维度', value: 44 },
+                {label: 'A 维度', value: 33},
+                {label: 'B 维度', value: 22},
+                {label: 'C 维度', value: 2},
+                {label: 'D 维度', value: 44},
             ],
             factorExplain: [
                 '2gap 表示兴趣与能力之间的差异。',
@@ -142,10 +183,10 @@ export function useReportPage() {
             score: '78',
             theme: 'yellow',
             metrics: [
-                { label: 'A 维度', value: 30 },
-                { label: 'B 维度', value: 20 },
-                { label: 'C 维度', value: 5 },
-                { label: 'D 维度', value: 40 },
+                {label: 'A 维度', value: 30},
+                {label: 'B 维度', value: 20},
+                {label: 'C 维度', value: 5},
+                {label: 'D 维度', value: 40},
             ],
             factorExplain: [
                 '2gap 稍大，说明兴趣与能力之间存在一定差异。',
@@ -155,7 +196,6 @@ export function useReportPage() {
         },
     ])
 
-    // 临时静态数据：报告总结卡片
     const summaryCards = ref<SummaryCard[]>([
         {
             title: 'report_validity_1',
@@ -174,18 +214,30 @@ export function useReportPage() {
         },
     ])
 
-    return {
-        // 路由 & 步骤条
-        route,
-        stepItems,
-        currentStepIndex,
-        handleStepClick,
+    onMounted(async () => {
+        showLoading("正在准备智能分析参数", 20_000)
+        const public_id = state.recordPublicID
+        if (!public_id) {
+            showAlert('未找到试卷编号', () => {
+                router.replace('/').then()
+            })
+            return
+        }
+        try {
+            const resp = await getAiReportParam(public_id, businessType.value)
+            console.log("------>>>resp data:", resp)
+        } catch (e) {
+            showAlert("生成 AI 参数失败:"+e);
+        } finally {
+            hideLoading();
+        }
+    })
 
-        // AI 加载状态（暂时占位）
+    return {
+        route,
+        businessType,
         aiLoading,
         truncatedLatestMessage,
-
-        // 报告内容
         recommendedCombos,
         summaryCards,
     }

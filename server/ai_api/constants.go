@@ -1,8 +1,5 @@
 package ai_api
 
-// =======================================
-// 组合常量定义（3+3 + 3+1+2 模式通用修正版）
-// =======================================
 const (
 	ComboPHY_CHE_BIO = "PHY_CHE_BIO"
 	ComboPHY_CHE_GEO = "PHY_CHE_GEO"
@@ -54,8 +51,6 @@ var AllCombos33 = []string{
 	ComboHIS_POL_BIO,
 	ComboHIS_CHE_BIO, // ← 添加
 }
-
-// Aux pools for Mode 3+1+2
 
 var AuxPoolPHY = []string{ // 物理主干下的辅科池
 	SubjectCHE, SubjectBIO, SubjectGEO, SubjectPOL,

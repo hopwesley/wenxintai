@@ -2,6 +2,14 @@ package ai_api
 
 import "fmt"
 
+const (
+	DefaultModel  = "deepseek-chat"
+	DefaultApiUrl = "https://api.deepseek.com"
+
+	DefaultMaxQToken = 8000
+	DefaultMaxRToken = 4000
+)
+
 type Cfg struct {
 	ApiKey    string `json:"api_key"`
 	Model     string `json:"model"`

@@ -58,7 +58,6 @@
 import TestLayout from '@/views/components/TestLayout.vue'
 import StepIndicator from '@/views/components/StepIndicator.vue'
 import { useStartTestConfig } from '@/controller/AssessmentBasicInfo'
-import {useTestCommon} from "@/controller/common";
 
 const {
   inviteCode,
@@ -70,12 +69,6 @@ const {
   handleSubmit,
 } = useStartTestConfig()
 
-const {
-  stepItems,
-  currentStepIndex,
-}= useTestCommon()
-
 </script>
 
-<style scoped src="@/styles/assessment-basic-info.css"></style>
-
+<style scoped src="@/styles/assessment-basicInfo.css"></style>

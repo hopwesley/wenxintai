@@ -9,14 +9,20 @@ import (
 	"strings"
 )
 
-// Weights 组合打分
-type Weights struct{ W1, W2, W3, W4, W5 float64 }
-
 // ScoreCombos33
 // ------------------------
 // 组合打分逻辑
 // ------------------------
-func ScoreCombos33(scores []SubjectScores, w Weights) *Mode33Section {
+
+var factorWeight33 = Weights33{
+	W1: 0.45,
+	W2: 0.10,
+	W3: 0.25,
+	W4: 0.20,
+	W5: 0.25,
+}
+
+func ScoreCombos33(scores []SubjectScores) *Mode33Section {
 	m := map[string]SubjectScores{}
 	for _, s := range scores {
 		m[s.Subject] = s
@@ -49,11 +55,11 @@ func ScoreCombos33(scores []SubjectScores, w Weights) *Mode33Section {
 		comboCos := calcComboCos([]SubjectScores{sc1, sc2, sc3})
 
 		// 计算组合最终分
-		score := w.W1*avgFit -
-			w.W2*rarity/10.0 +
-			w.W3*comboCos +
-			w.W4*minA/5.0 -
-			w.W5*risk
+		score := factorWeight33.W1*avgFit -
+			factorWeight33.W2*rarity/10.0 +
+			factorWeight33.W3*comboCos +
+			factorWeight33.W4*minA/5.0 -
+			factorWeight33.W5*risk
 
 		combos = append(combos, Combo33CoreData{
 			Subjects:    [3]string{s1, s2, s3},
@@ -112,19 +118,11 @@ func BuildFullParam(riasecAnswers []RIASECAnswer, ascAnswers []ASCAnswer, alpha,
 		alpha, beta, gamma = 0.4, 0.4, 0.2
 	}
 
-	scores, result := BuildScores(riasecAnswers, ascAnswers, Wfinal, DimCalib, alpha, beta, gamma)
-
-	ws := Weights{
-		W1: 0.45,
-		W2: 0.10,
-		W3: 0.25,
-		W4: 0.20,
-		W5: 0.25,
-	}
+	scores, result := BuildScores(riasecAnswers, ascAnswers, iToAWeight, dimWeight, subWeight)
 
 	param := &ParamForAIPrompt{
 		Common:  result.Common,
-		Mode33:  ScoreCombos33(scores, ws),
+		Mode33:  ScoreCombos33(scores),
 		Mode312: ScoreCombos312(scores),
 	}
 

@@ -172,13 +172,13 @@ export interface FinalAIReport {
 }
 
 // 整个 AI 报告 payload
-export interface AssessmentReportPayload {
+export interface AIReportPayload {
     common_section: CommonSection
     mode_section: ModeSection
     final_report: FinalAIReport
 }
 
-export const reportData = ref<AssessmentReportPayload | null>(null)
+export const aiReportData = ref<AIReportPayload | null>(null)
 
 export function useReportPage() {
     const {showLoading, hideLoading} = useGlobalLoading()
@@ -187,9 +187,9 @@ export function useReportPage() {
     const {showAlert} = useAlert()
     const router = useRouter()
 
-    const report = ref<ReportRawData | null>(null)
+    const rawReportData = ref<ReportRawData | null>(null)
     const subjectRadar = computed<ReportRadarBlock | null>(() => {
-        const r = report.value?.common_score?.radar
+        const r = rawReportData.value?.common_score?.radar
         if (!r || !r.subjects || !r.subjects.length) return null
         return r
     })
@@ -317,10 +317,15 @@ export function useReportPage() {
 
     function handleSseDone(raw: string) {
         try {
-            console.log('------>>> raw string:', raw)
-            const parsed = JSON.parse(raw) as AssessmentReportPayload
+            let parsed = JSON.parse(raw) as AIReportPayload
+            if (typeof parsed === 'string') {
+                parsed = JSON.parse(parsed) as AIReportPayload
+            }
             console.log('------>>> parsed object:', parsed)
-            reportData.value = parsed
+            aiReportData.value = parsed
+            console.log("------>>>",parsed.common_section.report_validity_text)
+            console.log("------>>>",aiReportData.value.common_section.report_validity_text)
+
         } catch (e) {
             showAlert('获取测试题目失败，请稍后再试' + e)
         } finally {
@@ -355,8 +360,8 @@ export function useReportPage() {
 
         try {
             const resp = await getAiReportParam(public_id, businessType.value)
-            report.value = resp;
-            console.log("------>>>resp data:", report)
+            rawReportData.value = resp;
+            console.log("------>>>resp data:", rawReportData)
             applyReportOverview(resp);
             sseCtrl.start()
         } catch (e) {
@@ -376,7 +381,7 @@ export function useReportPage() {
         truncatedLatestMessage,
         recommendedCombos,
         summaryCards,
-        report,
+        rawReportData,
         subjectRadar
     }
 }

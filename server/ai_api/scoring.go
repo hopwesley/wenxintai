@@ -219,7 +219,8 @@ func BuildScores(
 		zgap := -math.Pow(diff, p)
 
 		gate := 1.0 / (1.0 + math.Exp(-(AZ[s]+1.0)/0.45))
-		share := safeDiv(A[s], sumA)
+		//share := safeDiv(A[s], sumA)
+		share := shareA[s]
 
 		alphaAdj := newSW.alpha
 		if AZ[s] > IZ[s] {

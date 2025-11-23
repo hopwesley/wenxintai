@@ -1,5 +1,10 @@
 <template>
   <div class="subject-radar-wrapper">
+    <div>
+      <span>整体兴趣 / 能力概览</span>
+      <br>
+      <span>雷达图的数值代表你在每一门科目的兴趣/能力强度</span>
+    </div>
     <VChart
         v-if="option"
         class="subject-radar-chart"

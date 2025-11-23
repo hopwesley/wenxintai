@@ -321,7 +321,6 @@
         <!-- 6. 分档组合列表（使用现有的 recommendedCombos 占位） -->
         <section class="report-section report-section--combos">
           <h3 class="report-section__title">分档组合详情</h3>
-
           <div
               v-for="combo in recommendedCombos"
               :key="combo.rankLabel + combo.name"
@@ -426,7 +425,7 @@
         subtitle="正在分析你的测试各项参数，为您全面展示智能分析结果"
         :log-lines="truncatedLatestMessage"
         :meta="{
-    mode: state.mode || '',
+    mode: rawReportData?.mode || '',
     grade: state.grade || '',
     stage: '选科报告'
   }"

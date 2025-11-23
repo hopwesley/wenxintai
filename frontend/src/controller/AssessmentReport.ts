@@ -323,8 +323,6 @@ export function useReportPage() {
             }
             console.log('------>>> parsed object:', parsed)
             aiReportData.value = parsed
-            console.log("------>>>",parsed.common_section.report_validity_text)
-            console.log("------>>>",aiReportData.value.common_section.report_validity_text)
 
         } catch (e) {
             showAlert('获取测试题目失败，请稍后再试' + e)
@@ -349,16 +347,14 @@ export function useReportPage() {
 
     onMounted(async () => {
         showLoading("正在准备智能分析参数", 20_000)
-
-        const public_id = state.recordPublicID
-        if (!public_id) {
-            showAlert('未找到试卷编号', () => {
-                router.replace('/').then()
-            })
-            return
-        }
-
         try {
+            const public_id = state.recordPublicID
+            if (!public_id) {
+                showAlert('未找到试卷编号', () => {
+                    router.replace('/').then()
+                })
+                return
+            }
             const resp = await getAiReportParam(public_id, businessType.value)
             rawReportData.value = resp;
             console.log("------>>>resp data:", rawReportData)

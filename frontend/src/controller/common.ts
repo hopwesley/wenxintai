@@ -26,6 +26,15 @@ export const scaleOptions = [
     {value: 4 as AnswerValue, label: '经常'},
     {value: 5 as AnswerValue, label: '总是'},
 ]
+
+export const subjectLabelMap: Record<string, string> = {
+    PHY: '物理',
+    CHE: '化学',
+    BIO: '生物',
+    GEO: '地理',
+    HIS: '历史',
+    POL: '政治',
+}
 export interface CommonResponse {
     ok: boolean
     msg: string | null

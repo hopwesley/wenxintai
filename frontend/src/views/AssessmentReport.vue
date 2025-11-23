@@ -277,6 +277,7 @@
 
       </section>
       <!-- 下半部分：选科组合推荐卡片 -->
+
       <section class="report-card report-card--recommendation">
         <header class="report-card__header">
           <div class="report-card__title-row">
@@ -286,111 +287,357 @@
 
         <div class="report-card__divider"></div>
 
-        <!-- 5. 推荐概览（将来可以放两张小图：物理组 / 历史组） -->
-        <section class="report-section report-section--recommend-analysis">
-          <h3 class="report-section__title">整体推荐概览</h3>
+        <!-- ===================== 3+3 模式：沿用现有结构 ===================== -->
+        <div v-if="isMode33">
+          <!-- 5. 推荐概览（将来可以放两张小图） -->
+          <section class="report-section report-section--recommend-analysis">
+            <h3 class="report-section__title">整体推荐概览（3+3 模式）</h3>
 
-          <div class="recommend-analysis-layout">
-            <div class="recommend-analysis__chart">
-              <!-- TODO：未来接 anchor_phy 相关指标的小图 -->
-              <div class="chart-placeholder">
-                物理组概览图（占位）
+            <div class="recommend-analysis-layout">
+              <!-- 左侧：三种组合综合得分柱状图（用 VChart） -->
+              <div class="recommend-analysis__chart">
+                <ComboScoreChart
+                    v-if="mode33View && mode33View.chartCombos.length"
+                    :combos="mode33View.chartCombos"
+                />
+                <div v-else class="chart-placeholder">
+                  推荐组合整体分布概览暂无数据
+                </div>
+              </div>
+
+              <div class="recommend-analysis__chart">
+                <!-- TODO：未来接 3+3 模式下的风险 / 稀有度小图 -->
+                <div class="chart-placeholder">
+                  稀有度 &amp; 风险概览（占位）
+                </div>
               </div>
             </div>
-            <div class="recommend-analysis__chart">
-              <!-- TODO：未来接 anchor_his 相关指标的小图 -->
-              <div class="chart-placeholder">
-                历史组概览图（占位）
-              </div>
-            </div>
-          </div>
 
-          <div class="recommend-main-strip">
-          <span class="recommend-main-strip__label">
-            <!-- TODO：替换为最优组合名称 + 总体策略（final_report.mode_strategy） -->
-            示例：当前首选方向为历史组，稳健性更高，但专业覆盖略窄
-          </span>
-            <span class="recommend-main-strip__score">
-            <!-- TODO：可以挂一个综合得分 / 档位提示 -->
-            综合得分：示例 0.23
-          </span>
-          </div>
-        </section>
-
-        <!-- 6. 分档组合列表（使用现有的 recommendedCombos 占位） -->
-        <section class="report-section report-section--combos">
-          <h3 class="report-section__title">分档组合详情</h3>
-          <div
-              v-for="combo in recommendedCombos"
-              :key="combo.rankLabel + combo.name"
-              class="combo-block"
-          >
             <div
-                class="combo-rank-strip"
-                :class="{
+                v-if="mode33View && mode33View.overviewText"
+                class="recommend-main-strip"
+            >
+  <span class="recommend-main-strip__label">
+    {{ mode33View.overviewText }}
+  </span>
+            </div>
+
+
+          </section>
+
+          <!-- 6. 分档组合列表（3+3：仍然用原来的 recommendedCombos） -->
+          <section class="report-section report-section--combos">
+            <h3 class="report-section__title">分档组合详情（3+3 模式）</h3>
+            <div
+                v-for="combo in recommendedCombos"
+                :key="combo.rankLabel + combo.name"
+                class="combo-block"
+            >
+              <div
+                  class="combo-rank-strip"
+                  :class="{
+            'combo-rank-strip--primary': combo.theme === 'primary',
+            'combo-rank-strip--blue': combo.theme === 'blue',
+            'combo-rank-strip--yellow': combo.theme === 'yellow',
+          }"
+              >
+          <span class="combo-rank-strip__label">
+            {{ combo.rankLabel }}：{{ combo.name }}
+          </span>
+                <span class="combo-rank-strip__score">
+            得分：{{ combo.score }}
+          </span>
+              </div>
+
+              <div class="combo-panel">
+                <header class="combo-panel__header">
+                  <h4 class="combo-panel__title">结构指标概览</h4>
+                </header>
+
+                <div class="combo-metrics">
+                  <div
+                      v-for="metric in combo.metrics"
+                      :key="metric.label"
+                      class="combo-metrics__item"
+                  >
+              <span class="combo-metrics__label">
+                {{ metric.label }}
+              </span>
+                    <span class="combo-metrics__value">
+                {{ metric.value }}
+              </span>
+                  </div>
+                </div>
+
+                <section class="combo-panel__section">
+                  <h5 class="combo-panel__subtitle">影响因素解读</h5>
+                  <div class="combo-panel__ai-block">
+                    <p
+                        v-for="(line, idx) in combo.factorExplain"
+                        :key="idx"
+                        class="combo-panel__text-line"
+                    >
+                      {{ line }}
+                    </p>
+                  </div>
+                </section>
+
+                <section class="combo-panel__section">
+                  <h5 class="combo-panel__subtitle">AI 选科建议</h5>
+                  <div class="combo-panel__ai-block">
+                    <p
+                        v-for="(line, idx) in combo.recommendExplain"
+                        :key="idx"
+                        class="combo-panel__text-line"
+                    >
+                      {{ line }}
+                    </p>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ===================== 3+1+2 模式：物理组 + 历史组 ===================== -->
+        <div v-else-if="isMode312">
+          <!-- 全局说明：为什么不直接替你选物理 / 历史 -->
+          <section class="report-section report-section--mode312-intro">
+            <h3 class="report-section__title">物理 / 历史方向说明</h3>
+            <p class="mode312-intro__text">
+              在当前 3+1+2 模式下，全国范围内理工类专业及招生计划数量通常多于文史类专业，
+              因此从长期升学机会和专业选择空间来看，选择物理往往会获得更宽的专业覆盖范围。
+            </p>
+            <p class="mode312-intro__text mode312-intro__text--secondary">
+              为了避免把「选物理还是选历史」这个关键决策完全交给算法，本系统的做法是：
+              <strong>不直接替你做出文理方向的决定</strong>，
+              而是分别给出以物理为主、以历史为主的 3 个代表性组合，
+              由你和家长结合兴趣、目标专业和学校情况做最终选择。
+            </p>
+          </section>
+
+          <!-- ===================== 3+1+2 · 物理组 ===================== -->
+          <section class="report-section report-section--mode312-group">
+            <!-- 物理组标题 + 概述 -->
+            <header class="recommend-312-group__header">
+              <h4 class="recommend-312-group__title">以物理为主的 3+1+2 组合</h4>
+              <p class="recommend-312-group__overview">
+                示例：物理组主干扎实，辅科协同性强，整体专业覆盖更广，
+                更适合理科倾向明显、希望保留更多工科与理学专业选择空间的学生。
+              </p>
+            </header>
+
+            <!-- 物理组：2 张图表占位，展示 3 个组合的得分情况 -->
+            <section
+                class="report-section report-section--recommend-analysis report-section--mode312-analysis"
+            >
+              <h5 class="report-section__subtitle">物理组整体推荐概览</h5>
+              <div class="recommend-analysis-layout">
+                <div class="recommend-analysis__chart">
+                  <div class="chart-placeholder">
+                    物理组 3 个科目组合的综合得分对比（占位图）
+                  </div>
+                </div>
+                <div class="recommend-analysis__chart">
+                  <div class="chart-placeholder">
+                    物理组 3 个科目组合的覆盖率 / 风险对比（占位图）
+                  </div>
+                </div>
+              </div>
+
+              <div  v-if="mode312OverviewStrips"  class="recommend-main-strip"  >
+                <span class="recommend-main-strip__label">  {{ mode312OverviewStrips.phyOverviewText }}</span>
+              </div>
+
+            </section>
+
+            <!-- 物理组：3 个组合卡片，复用原来的 combo-block 结构 -->
+            <section class="report-section report-section--combos report-section--mode312-combos">
+              <h5 class="report-section__subtitle">以物理为主的分档组合详情</h5>
+
+              <div
+                  v-for="combo in combos312Phy"
+                  :key="'PHY-' + combo.rankLabel + combo.name"
+                  class="combo-block"
+              >
+                <div
+                    class="combo-rank-strip"
+                    :class="{
               'combo-rank-strip--primary': combo.theme === 'primary',
               'combo-rank-strip--blue': combo.theme === 'blue',
-              'combo-rank-strip--yellow': combo.theme === 'yellow'
+              'combo-rank-strip--yellow': combo.theme === 'yellow',
             }"
-            >
+                >
             <span class="combo-rank-strip__label">
               {{ combo.rankLabel }}：{{ combo.name }}
             </span>
-              <span class="combo-rank-strip__score">
+                  <span class="combo-rank-strip__score">
               得分：{{ combo.score }}
             </span>
-            </div>
+                </div>
 
-            <div class="combo-panel">
-              <header class="combo-panel__header">
-                <h4 class="combo-panel__title">结构指标概览</h4>
-              </header>
+                <div class="combo-panel">
+                  <header class="combo-panel__header">
+                    <h4 class="combo-panel__title">结构指标概览</h4>
+                  </header>
 
-              <div class="combo-metrics">
-                <div
-                    v-for="metric in combo.metrics"
-                    :key="metric.label"
-                    class="combo-metrics__item"
-                >
+                  <div class="combo-metrics">
+                    <div
+                        v-for="metric in combo.metrics"
+                        :key="metric.label"
+                        class="combo-metrics__item"
+                    >
                 <span class="combo-metrics__label">
                   {{ metric.label }}
                 </span>
-                  <span class="combo-metrics__value">
+                      <span class="combo-metrics__value">
                   {{ metric.value }}
                 </span>
+                    </div>
+                  </div>
+
+                  <section class="combo-panel__section">
+                    <h5 class="combo-panel__subtitle">影响因素解读</h5>
+                    <div class="combo-panel__ai-block">
+                      <p
+                          v-for="(line, idx) in combo.factorExplain"
+                          :key="idx"
+                          class="combo-panel__text-line"
+                      >
+                        {{ line }}
+                      </p>
+                    </div>
+                  </section>
+
+                  <section class="combo-panel__section">
+                    <h5 class="combo-panel__subtitle">AI 选科建议</h5>
+                    <div class="combo-panel__ai-block">
+                      <p
+                          v-for="(line, idx) in combo.recommendExplain"
+                          :key="idx"
+                          class="combo-panel__text-line"
+                      >
+                        {{ line }}
+                      </p>
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </section>
+          </section>
+
+          <!-- ===================== 3+1+2 · 历史组 ===================== -->
+          <section class="report-section report-section--mode312-group">
+            <!-- 历史组标题 + 概述 -->
+            <header class="recommend-312-group__header">
+              <h4 class="recommend-312-group__title">以历史为主的 3+1+2 组合</h4>
+              <p class="recommend-312-group__overview">
+                示例：历史组专业覆盖相对较窄，但在人文社科、法学等方向协同性更高，
+                更适合文科兴趣更强、未来希望深耕人文方向的学生。
+              </p>
+            </header>
+
+            <!-- 历史组：2 张图表占位 -->
+            <section
+                class="report-section report-section--recommend-analysis report-section--mode312-analysis"
+            >
+              <h5 class="report-section__subtitle">历史组整体推荐概览</h5>
+              <div class="recommend-analysis-layout">
+                <div class="recommend-analysis__chart">
+                  <div class="chart-placeholder">
+                    历史组 3 个科目组合的综合得分对比（占位图）
+                  </div>
+                </div>
+                <div class="recommend-analysis__chart">
+                  <div class="chart-placeholder">
+                    历史组 3 个科目组合的覆盖率 / 风险对比（占位图）
+                  </div>
                 </div>
               </div>
 
-              <section class="combo-panel__section">
-                <h5 class="combo-panel__subtitle">影响因素解读</h5>
-                <div class="combo-panel__ai-block">
-                  <p
-                      v-for="(line, idx) in combo.factorExplain"
-                      :key="idx"
-                      class="combo-panel__text-line"
-                  >
-                    {{ line }}
-                  </p>
-                </div>
-              </section>
+              <div  v-if="mode312OverviewStrips"  class="recommend-main-strip"  >
+                <span class="recommend-main-strip__label"> {{ mode312OverviewStrips.hisOverviewText  }} </span>
+              </div>
 
-              <section class="combo-panel__section">
-                <h5 class="combo-panel__subtitle">AI 选科建议</h5>
-                <div class="combo-panel__ai-block">
-                  <p
-                      v-for="(line, idx) in combo.recommendExplain"
-                      :key="idx"
-                      class="combo-panel__text-line"
-                  >
-                    {{ line }}
-                  </p>
-                </div>
-              </section>
-            </div>
-          </div>
-        </section>
+            </section>
 
-        <!-- 7. 底部总结卡片（后面可以映射 final_report.* 几个字段） -->
+            <!-- 历史组：3 个组合卡片 -->
+            <section class="report-section report-section--combos report-section--mode312-combos">
+              <h5 class="report-section__subtitle">以历史为主的分档组合详情</h5>
+
+              <div
+                  v-for="combo in combos312His"
+                  :key="'HIS-' + combo.rankLabel + combo.name"
+                  class="combo-block"
+              >
+                <div
+                    class="combo-rank-strip"
+                    :class="{
+              'combo-rank-strip--primary': combo.theme === 'primary',
+              'combo-rank-strip--blue': combo.theme === 'blue',
+              'combo-rank-strip--yellow': combo.theme === 'yellow',
+            }"
+                >
+            <span class="combo-rank-strip__label">
+              {{ combo.rankLabel }}：{{ combo.name }}
+            </span>
+                  <span class="combo-rank-strip__score">
+              得分：{{ combo.score }}
+            </span>
+                </div>
+
+                <div class="combo-panel">
+                  <header class="combo-panel__header">
+                    <h4 class="combo-panel__title">结构指标概览</h4>
+                  </header>
+
+                  <div class="combo-metrics">
+                    <div
+                        v-for="metric in combo.metrics"
+                        :key="metric.label"
+                        class="combo-metrics__item"
+                    >
+                <span class="combo-metrics__label">
+                  {{ metric.label }}
+                </span>
+                      <span class="combo-metrics__value">
+                  {{ metric.value }}
+                </span>
+                    </div>
+                  </div>
+
+                  <section class="combo-panel__section">
+                    <h5 class="combo-panel__subtitle">影响因素解读</h5>
+                    <div class="combo-panel__ai-block">
+                      <p
+                          v-for="(line, idx) in combo.factorExplain"
+                          :key="idx"
+                          class="combo-panel__text-line"
+                      >
+                        {{ line }}
+                      </p>
+                    </div>
+                  </section>
+
+                  <section class="combo-panel__section">
+                    <h5 class="combo-panel__subtitle">AI 选科建议</h5>
+                    <div class="combo-panel__ai-block">
+                      <p
+                          v-for="(line, idx) in combo.recommendExplain"
+                          :key="idx"
+                          class="combo-panel__text-line"
+                      >
+                        {{ line }}
+                      </p>
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </section>
+          </section>
+        </div>
+
+        <!-- ===================== Summary：两种模式共用 ===================== -->
         <section class="report-section report-section--summary">
           <h3 class="report-section__title">报告摘要</h3>
 
@@ -417,6 +664,7 @@
           </button>
         </div>
       </section>
+
     </main>
     <AiGeneratingOverlay
         v-if="aiLoading"
@@ -424,7 +672,7 @@
         subtitle="正在分析你的测试各项参数，为您全面展示智能分析结果"
         :log-lines="truncatedLatestMessage"
         :meta="{
-    mode: rawReportData?.mode || '',
+    mode: overview.mode || '',
     grade: state.grade || '',
     stage: '选科报告'
   }"
@@ -439,7 +687,9 @@ import AiGeneratingOverlay from '@/views/components/AiGeneratingOverlay.vue'
 import {useReportPage} from '@/controller/AssessmentReport'
 import SubjectRadarChart from "@/views/components/SubjectRadarChart.vue";
 import SubjectAbilityBarChart from '@/views/components/SubjectAbilityBarChart.vue'
+import ComboScoreChart from '@/views/components/ComboScoreChart.vue'
 import {aiReportData} from '@/controller/AssessmentReport'
+import {subjectLabelMap} from "@/controller/common";
 
 const {
   state,
@@ -451,18 +701,14 @@ const {
   summaryCards,
   subjectRadar,
   rawReportData,
+  isMode33,
+  isMode312,
+  combos312Phy,
+  combos312His,
+  mode33View,
+  mode312OverviewStrips,
 } = useReportPage()
 
-
-// 学科编码 -> 中文标签
-const subjectLabelMap: Record<string, string> = {
-  PHY: '物理',
-  CHE: '化学',
-  BIO: '生物',
-  GEO: '地理',
-  HIS: '历史',
-  POL: '政治',
-}
 
 // z 值格式化：保留 2 位小数，空值显示 --
 function formatZ(v: number | null | undefined): string {

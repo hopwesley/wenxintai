@@ -280,18 +280,17 @@
     padding: 8px 16px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     color: #ffffff;
     font-size: 13px;
 }
 
 .recommend-main-strip__label {
-    font-weight: 600;
+    font-weight: 500;
+    ine-height: 1.6;
+    white-space: pre-line;
 }
 
-.recommend-main-strip__score {
-    opacity: 0.9;
-}
 
 /* 推荐组合列表 */
 
@@ -422,11 +421,78 @@
     color: #4b5563;
 }
 
+/* 3+1+2 模式：物理 / 历史说明块 */
+.report-section--mode312-intro {
+    background: #f9fafb;
+    border-radius: 16px;
+    padding: 12px 14px;
+    border: 1px solid #e5e7eb;
+    margin-bottom: 12px;
+}
+
+.mode312-intro__text {
+    font-size: 13px;
+    color: #4b5563;
+    line-height: 1.7;
+    margin: 4px 0;
+}
+
+.mode312-intro__text--secondary {
+    color: #6b7280;
+}
+
+/* 3+1+2 模式：每个方向（物理 / 历史）作为一块 group 展示 */
+.report-section--mode312-group {
+    border-radius: 18px;
+    border: 1px solid #e5e7eb;
+    padding: 12px 14px 14px;
+    background: #fdfdff;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.report-section--mode312-group + .report-section--mode312-group {
+    margin-top: 12px;
+}
+
+/* group 顶部的小标题说明 */
+.recommend-312-group__header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.recommend-312-group__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.recommend-312-group__overview {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+/* 3+1+2 模式下的推荐概览小节，字号稍微弱一点 */
+.report-section--mode312-analysis .report-section__subtitle {
+    font-size: 13px;
+    color: #4b5563;
+}
+
+/* 3+1+2 下的主条稍微收紧一点间距 */
+.recommend-main-strip--mode312 {
+    margin-top: 10px;
+}
+
 /* 窄屏时稍微收紧一点 */
 
 @media (max-width: 768px) {
     .combo-panel {
         padding: 14px 14px 16px;
+    }
+    .recommend-312-layout {
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 
@@ -594,5 +660,4 @@
     color: #b45309;
 }
 
-/* 如果将来有“高”的情况，再加一个 badge--high */
 

@@ -276,7 +276,6 @@
         </section>
 
       </section>
-
       <!-- 下半部分：选科组合推荐卡片 -->
       <section class="report-card report-card--recommendation">
         <header class="report-card__header">

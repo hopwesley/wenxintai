@@ -4,6 +4,7 @@ import {useGlobalLoading} from '@/controller/useGlobalLoading'
 import {useTestSession} from '@/controller/testSession'
 import {apiRequest} from "@/api";
 import {useAlert} from "@/controller/useAlert";
+import {useSseLogs, useSubscriptBySSE} from "@/controller/common";
 
 export interface ComboMetric {
     label: string
@@ -156,10 +157,8 @@ export function useReportPage() {
     const businessType = computed(() => {
         return String(route.params.typ ?? state.businessType ?? '')
     })
-
     // 之后接入后端 / SSE 时再开启，这里先保持为 false
     const aiLoading = ref(false)
-    const truncatedLatestMessage = ref<string[]>([])
 
     const recommendedCombos = ref<ReportCombo[]>([
         {
@@ -243,7 +242,7 @@ export function useReportPage() {
 
     function applyReportOverview(data: ReportResponse) {
         overview.mode = data.mode || ''
-        overview.account = data.uid||''
+        overview.account = data.uid || ''
 
         overview.generateDate = formatDate(data.generate_at)
         overview.expireDate = formatDate(data.expired_at)
@@ -253,8 +252,45 @@ export function useReportPage() {
         overview.schoolName = ''
     }
 
+    function handleSseError(err: Error) {
+        console.log('------>>> sse channel error:', err)
+        showAlert('获取测试报告失败，请稍后再试:' + err)
+        aiLoading.value = false
+    }
+
+
+    const {
+        truncatedLatestMessage,
+        handleSseMsg,
+    } = useSseLogs(8, 20)
+
+    function handleSseDone(raw: string) {
+        try {
+            console.log('------>>> go questions:', raw)
+        } catch (e) {
+            showAlert('获取测试题目失败，请稍后再试'+e)
+        } finally {
+            aiLoading.value = false;
+        }
+    }
+
+    const sseCtrl = useSubscriptBySSE(`/api/sub/report/${state.recordPublicID!}`, {
+        autoStart: false,
+        onOpen: () => {
+            aiLoading.value = true
+        },
+        onError: handleSseError,
+        onMsg: handleSseMsg,
+        onClose: () => {
+            aiLoading.value = false
+        },
+        onDone: handleSseDone,
+    })
+
+
     onMounted(async () => {
         showLoading("正在准备智能分析参数", 20_000)
+
         const public_id = state.recordPublicID
         if (!public_id) {
             showAlert('未找到试卷编号', () => {
@@ -262,19 +298,24 @@ export function useReportPage() {
             })
             return
         }
+
         try {
             const resp = await getAiReportParam(public_id, businessType.value)
             applyReportOverview(resp)
             console.log("------>>>resp data:", resp)
-            applyReportOverview(resp)
+            applyReportOverview(resp);
+
+            sseCtrl.start()
         } catch (e) {
-            showAlert("生成 AI 参数失败:"+e);
+            showAlert("生成 AI 参数失败:" + e);
         } finally {
             hideLoading();
         }
     })
 
+
     return {
+        state,
         route,
         overview,
         businessType,

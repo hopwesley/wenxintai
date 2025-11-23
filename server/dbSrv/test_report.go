@@ -9,6 +9,10 @@ import (
 	"time"
 )
 
+const (
+	CurrentEngineVersin = "v1.0.0"
+)
+
 type TestReport struct {
 	ID            int64           `json:"id"`
 	PublicId      string          `json:"public_id"`
@@ -58,18 +62,15 @@ func (pdb *psDatabase) SaveTestReportCore(
 
 	const q = `
         INSERT INTO app.test_reports (
-            public_id,
-            business_type,
-            mode,
-            common_score,
-            mode_param
+            public_id, business_type,  mode, common_score,  mode_param, engine_version
         )
-        VALUES ($1, $2, $3, $4::jsonb, $5::jsonb)
+        VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6)
         ON CONFLICT (public_id)
         DO UPDATE SET
             mode        = EXCLUDED.mode,
             common_score = EXCLUDED.common_score,
             mode_param   = EXCLUDED.mode_param,
+            engine_version = EXCLUDED.engine_version,
             updated_at   = now()
     `
 
@@ -79,6 +80,7 @@ func (pdb *psDatabase) SaveTestReportCore(
 		mode,
 		commonScoreJSON,
 		modeParamJSON,
+		CurrentEngineVersin,
 	)
 	if err != nil {
 		log.Err(err).Msg("SaveTestReportCore: exec failed")

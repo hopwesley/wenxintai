@@ -1,3 +1,6 @@
+import {onMounted, onBeforeUnmount, getCurrentInstance, computed, ref} from 'vue'
+import type { Router } from 'vue-router'
+
 export const TestTypeBasic = "basic"
 export const TestTypePro = "pro"
 export const TestTypeSchool = "school"
@@ -8,13 +11,10 @@ export const StageRiasec = "riasec"
 export const StageAsc = "asc"
 export const StageOcean = "ocean"
 export const StageMotivation = "motivation"
-
 export interface TestFlowStep {
     stage: string      // "basic-info" / "riasec" / "asc" / ...
     title: string      // 展示给用户看的中文文案，如“基础信息”“兴趣测试”
 }
-
-
 export const Mode33 = '3+3'
 export const Mode312 = '3+1+2'
 export type ModeOption = '3+3' | '3+1+2'
@@ -26,25 +26,18 @@ export const scaleOptions = [
     {value: 4 as AnswerValue, label: '经常'},
     {value: 5 as AnswerValue, label: '总是'},
 ]
-
 export interface CommonResponse {
     ok: boolean
     msg: string | null
     next_route: string | null
     next_route_index: number
 }
-
-import {onMounted, onBeforeUnmount, getCurrentInstance} from 'vue'
-import type { Router } from 'vue-router'
-
 export interface UseSSEOptions {
     onMsg?: (data: any) => void
     onOpen?: () => void
     onError?: (event: Error) => void
     onClose?: () => void
     onDone?: (question: string) => void
-
-    // 新增一个可选配置：是否自动在 mounted 时启动
     autoStart?: boolean
 }
 
@@ -190,5 +183,67 @@ export function useTestCommon() {
         Mode33,
         Mode312,
         scaleOptions,
+    }
+}
+
+
+export function useSseLogs(
+    maxLines = 8,
+    minChunkLen = 20,
+) {
+    const logLines = ref<string[]>([])
+    const rawMessage = ref('')
+
+    // 是否已经插入过“第一行固定提示文案”
+    const hasSeedLine = ref(false)
+
+    const truncatedLatestMessage = computed(() => logLines.value)
+
+    function pushLine(text: string) {
+        const content = text.trim()
+        if (!content) return
+
+        // 所有行统一增加前缀 AI>
+        const line = `AI> ${content}`
+        logLines.value.push(line)
+
+        if (logLines.value.length > maxLines) {
+            logLines.value.splice(0, logLines.value.length - maxLines)
+        }
+    }
+
+    function handleSseMsg(chunk: string) {
+        // 第一次收到后端消息时，先插入一条固定的“人类可读”的提示行
+        if (!hasSeedLine.value) {
+            pushLine('已收到你的回答，正在加载试题模板…')
+            hasSeedLine.value = true
+        }
+
+        rawMessage.value += chunk
+
+        // 还没攒够长度，就先不刷到日志窗口里
+        if (rawMessage.value.length < minChunkLen) {
+            return
+        }
+
+        // 把当前累计内容刷成一条新日志
+        const flushed = rawMessage.value
+        rawMessage.value = ''
+
+        pushLine(flushed)
+    }
+
+    function resetLogs() {
+        logLines.value = []
+        rawMessage.value = ''
+        hasSeedLine.value = false
+    }
+
+    return {
+        logLines,
+        truncatedLatestMessage,
+        rawMessage,
+        handleSseMsg,
+        resetLogs,
     }
 }

@@ -85,7 +85,13 @@
         title="AI 正在为你生成专属题目…"
         subtitle="正在分析你的测试设置，智能规划本阶段题目结构"
         :log-lines="truncatedLatestMessage"
+        :meta="{
+    mode: state.mode || '',
+    grade: state.grade || '',
+    stage: currentStepTitle
+  }"
     />
+
 
     <!-- 提交中的遮罩层（保持简单文案） -->
     <div v-if="isSubmitting" class="overlay">
@@ -104,6 +110,7 @@ import AiGeneratingOverlay from "@/views/components/AiGeneratingOverlay.vue";
 
 const {
   route,
+  state,
   aiLoading,
   totalPages,
   totalCount,

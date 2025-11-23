@@ -11,7 +11,6 @@
 }
 
 
-
 .overlay__card--ai {
     position: relative;
     background: radial-gradient(circle at top, #1e293b 0, #020617 60%);
@@ -25,7 +24,7 @@
     /* 尺寸放大，让 AI 面板更有存在感 */
     max-width: 640px;
     min-width: 460px;
-    min-height: 260px;
+    min-height: 320px;
 }
 
 /* 卡片外围流动光效 */
@@ -33,12 +32,11 @@
     content: "";
     position: absolute;
     inset: -40%;
-    background:
-            conic-gradient(from 0deg,
-            rgba(59,130,246,0.2),
-            rgba(56,189,248,0.7),
-            rgba(129,140,248,0.4),
-            rgba(59,130,246,0.2));
+    background: conic-gradient(from 0deg,
+    rgba(59, 130, 246, 0.2),
+    rgba(56, 189, 248, 0.7),
+    rgba(129, 140, 248, 0.4),
+    rgba(59, 130, 246, 0.2));
     opacity: 0.35;
     animation: overlay-ai-spin 18s linear infinite;
     z-index: -1;
@@ -64,13 +62,6 @@
     margin-bottom: 16px;
 }
 
-/* 能量条 / 动画点点 */
-.overlay__pulse {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-}
 
 .overlay__dot {
     width: 10px;
@@ -82,8 +73,14 @@
 }
 
 @keyframes overlay-dot-pulse {
-    0%, 100% { transform: scale(0.85); opacity: 0.6; }
-    50% { transform: scale(1.15); opacity: 1; }
+    0%, 100% {
+        transform: scale(0.85);
+        opacity: 0.6;
+    }
+    50% {
+        transform: scale(1.15);
+        opacity: 1;
+    }
 }
 
 .overlay__bar {
@@ -110,23 +107,113 @@
 }
 
 @keyframes overlay-bar-sweep {
-    0% { transform: translateX(-110%); }
-    100% { transform: translateX(110%); }
+    0% {
+        transform: translateX(-110%);
+    }
+    100% {
+        transform: translateX(110%);
+    }
 }
 
-/* 日志窗口：固定高度，只展示最近几条日志，从底部往上挤 */
+.overlay__header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.overlay__live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(248, 250, 252, 0.06);
+    align-self: flex-start;
+}
+
+.overlay__live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: #f97373;
+    box-shadow: 0 0 10px rgba(248, 113, 113, 0.9);
+    animation: overlay-live-pulse 1s ease-in-out infinite;
+}
+
+.overlay__live-label {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #fee2e2;
+}
+
+@keyframes overlay-live-pulse {
+    0%, 100% {
+        transform: scale(0.9);
+        opacity: 0.7;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}
+
+.overlay__title-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: baseline;
+}
+
+.overlay__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+/* 默认：进入 overlay 时，动画比较明显 */
+.overlay__pulse {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    opacity: 0.9;
+}
+
+/* 一旦 hasLogs = true，则 overlay 根节点多一个类：overlay--ai--active
+   这时候我们把动画淡出一些，把重心交给下面的文本 */
+.overlay--ai--active .overlay__pulse {
+    opacity: 0.35;
+}
+
+
 .overlay__log-window {
-    margin-top: 16px;
-    height: 120px;
-    padding: 10px 14px;
+    margin-top: 10px;
+    height: 220px;
+    padding: 12px 16px;
     border-radius: 12px;
-    background: rgba(15, 23, 42, 0.85);
-    border: 1px solid rgba(148, 163, 184, 0.4);
-    overflow: hidden;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.6);
+    overflow-y: auto;
 
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    gap: 6px;
+}
+
+.overlay__log-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.overlay__log-index {
+    font-size: 11px;
+    color: #6b7280;
+    min-width: 28px;
 }
 
 .overlay__log-text {
@@ -137,4 +224,12 @@
     color: #e5e7eb;
     word-break: break-all;
     white-space: pre-wrap;
+}
+
+/* 没日志时的占位文案 */
+.overlay__log-placeholder {
+    margin-top: 16px;
+    font-size: 12px;
+    color: #9ca3af;
+    opacity: 0.9;
 }

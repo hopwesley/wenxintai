@@ -9,7 +9,7 @@ import {
     StageOcean,
     StageRiasec,
     useSubscriptBySSE,
-    pushStageRoute,
+    pushStageRoute, useSseLogs,
 } from "@/controller/common";
 
 import {useAlert} from "@/controller/useAlert";
@@ -31,13 +31,6 @@ export interface Question {
 
     // 之后 OCEAN / SDT / MI 也可以继续往这里挂可选字段
 }
-
-interface StageSnapshot {
-    questions: Question[]
-    answers: Record<number, AnswerValue>
-    currentPage: number
-}
-
 
 export interface RiasecAnswerPayload {
     id: number
@@ -80,9 +73,7 @@ export function useQuestionsStagePage() {
     const questions = ref<Question[]>([])
     const answers = ref<Record<number, AnswerValue>>({})
     const highlightedQuestions = ref<Record<number, boolean>>({})
-    const logLines = ref<string[]>([])
-    const MAX_LOG_LINES = 8
-    const truncatedLatestMessage = computed(() => logLines.value)
+
     const isSubmitting = ref(false)
     const totalCount = computed(() => questions.value.length)
     const totalPages = computed(() =>
@@ -97,7 +88,6 @@ export function useQuestionsStagePage() {
     )
     const isFirstPage = computed(() => currentPage.value <= 1)
     const isLastPage = computed(() => currentPage.value >= totalPages.value)
-    const rawMessage = ref('')
 
     const public_id: string | undefined = getPublicID()
     const routes = state.testRoutes ?? []
@@ -177,26 +167,19 @@ export function useQuestionsStagePage() {
         hideAIProcess()
     }
 
-    function handleSseMsg(chunk: string) {
-        rawMessage.value += chunk
-        if (rawMessage.value.length < 20) {
-            return
-        }
-        logLines.value.push(rawMessage.value)
-        if (logLines.value.length > MAX_LOG_LINES) {
-            logLines.value.splice(0, logLines.value.length - MAX_LOG_LINES)
-        }
-        rawMessage.value = ''
-    }
+    const {
+        truncatedLatestMessage,
+        handleSseMsg,
+        resetLogs,
+    } = useSseLogs(12, 20)
 
     function resetStageState() {
         currentPage.value = 1
         questions.value = []
         answers.value = {}
         highlightedQuestions.value = {}
-        logLines.value = []
-        rawMessage.value = ''
         isSubmitting.value = false
+        resetLogs()
     }
 
     interface ServerAnswerItem {
@@ -240,7 +223,7 @@ export function useQuestionsStagePage() {
 
         } catch (e) {
             console.error('[QuestionsStagePage] 解析题目失败:', e)
-            showAlert('获取测试题目失败，请稍后再试')
+            showAlert('获取测试题目失败，请稍后再试'+e)
         } finally {
             hideAIProcess()
         }
@@ -519,6 +502,7 @@ export function useQuestionsStagePage() {
         route,
         aiLoading,
         // 分页 & 题目 & 答案
+        state,
         totalCount,
         totalPages,
         pageStartIndex,

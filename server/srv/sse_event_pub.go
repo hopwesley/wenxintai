@@ -58,21 +58,29 @@ func (s *HttpSrv) initSSE() error {
 }
 
 func parseTestIDFromPath(path string) (string, error) {
+	// 去掉 query string
 	if i := strings.Index(path, "?"); i >= 0 {
 		path = path[:i]
 	}
 
 	parts := strings.Split(strings.Trim(path, "/"), "/")
-	if len(parts) < 3 {
-		return "", fmt.Errorf("invalid path, want /api/sub/{id}, got: %s", path)
+	// 现在期望结构：/api/sub/{channel}/{id}
+	// 例如：/api/sub/question/xxxxx 或 /api/sub/report/xxxxx
+	if len(parts) < 4 {
+		return "", fmt.Errorf("invalid path, want /api/sub/{question|report}/{id}, got: %s", path)
 	}
 	if parts[0] != "api" || parts[1] != "sub" {
 		return "", fmt.Errorf("invalid path segments: %v", parts)
 	}
 
-	idStr := parts[2]
+	channel := parts[2]
+	if channel != "question" && channel != "report" {
+		return "", fmt.Errorf("invalid sse channel: %s", channel)
+	}
+
+	idStr := parts[3]
 	if !IsValidPublicID(idStr) {
-		return "", fmt.Errorf("无效的问卷编号: %s", path)
+		return "", fmt.Errorf("无效的问卷编号: %s", idStr)
 	}
 	return idStr, nil
 }
@@ -375,6 +383,8 @@ func (s *HttpSrv) aiReportProcess(msgCh chan *SSEMessage, publicId string, sLog 
 		sendSafe(msgCh, &SSEMessage{Typ: SSE_MT_ERROR, Msg: "保存报告数据失败:" + dbErr.Error()}, &s.log)
 		return
 	}
+
+	sendSafe(msgCh, &SSEMessage{Typ: SSE_MT_DONE, Msg: aiContent}, &s.log)
 
 	sLog.Info().Msg("get ai-generated report success")
 }

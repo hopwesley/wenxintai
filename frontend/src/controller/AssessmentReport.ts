@@ -89,7 +89,7 @@ export interface Report312Anchor {
 export type ReportRecommend312 = Record<string, Report312Anchor>
 
 // 整体响应
-export interface ReportResponse {
+export interface ReportRawData {
     uid: string
     mode: string
     generate_at: string
@@ -100,7 +100,7 @@ export interface ReportResponse {
 }
 
 function getAiReportParam(publicID: string, businessTyp: string) {
-    return apiRequest<ReportResponse>('/api/generate_report', {
+    return apiRequest<ReportRawData>('/api/generate_report', {
         method: 'POST',
         body: {
             public_id: publicID,
@@ -135,6 +135,51 @@ function formatDate(dateStr?: string | null): string {
 }
 
 
+// 一条组合详情
+export interface ComboDetail {
+    combo_name: string
+    combo_description: string
+    combo_advice: string
+}
+
+// 某一个“模式小节”（例如 mode312_PHY、mode312_HIS）
+export interface ModeSectionItem {
+    overview_text: string
+    combo_details: ComboDetail[]
+}
+
+// 整个 mode_section：key 是 "mode312_PHY" / "mode312_HIS" 之类
+export interface ModeSection {
+    [modeKey: string]: ModeSectionItem
+}
+
+// common_section
+export interface CommonSection {
+    report_validity_text: string
+    subjects_summary_text: string
+}
+
+// final_report 部分
+export interface FinalAIReport {
+    mode: string
+    report_validity: string
+    core_trends: string
+    mode_strategy: string
+    student_view: string
+    parent_view: string
+    risk_diagnosis: string
+    strategic_conclusion: string
+}
+
+// 整个 AI 报告 payload
+export interface AssessmentReportPayload {
+    common_section: CommonSection
+    mode_section: ModeSection
+    final_report: FinalAIReport
+}
+
+export const reportData = ref<AssessmentReportPayload | null>(null)
+
 export function useReportPage() {
     const {showLoading, hideLoading} = useGlobalLoading()
     const route = useRoute()
@@ -142,7 +187,13 @@ export function useReportPage() {
     const {showAlert} = useAlert()
     const router = useRouter()
 
-    const report = ref<ReportResponse | null>(null)
+    const report = ref<ReportRawData | null>(null)
+    const subjectRadar = computed<ReportRadarBlock | null>(() => {
+        const r = report.value?.common_score?.radar
+        if (!r || !r.subjects || !r.subjects.length) return null
+        return r
+    })
+
     const overview = reactive<ReportOverviewInfo>({
         mode: '',
         studentLocation: '',
@@ -240,7 +291,7 @@ export function useReportPage() {
         },
     ])
 
-    function applyReportOverview(data: ReportResponse) {
+    function applyReportOverview(data: ReportRawData) {
         overview.mode = data.mode || ''
         overview.account = data.uid || ''
 
@@ -266,9 +317,12 @@ export function useReportPage() {
 
     function handleSseDone(raw: string) {
         try {
-            console.log('------>>> go questions:', raw)
+            console.log('------>>> raw string:', raw)
+            const parsed = JSON.parse(raw) as AssessmentReportPayload
+            console.log('------>>> parsed object:', parsed)
+            reportData.value = parsed
         } catch (e) {
-            showAlert('获取测试题目失败，请稍后再试'+e)
+            showAlert('获取测试题目失败，请稍后再试' + e)
         } finally {
             aiLoading.value = false;
         }
@@ -301,10 +355,9 @@ export function useReportPage() {
 
         try {
             const resp = await getAiReportParam(public_id, businessType.value)
-            applyReportOverview(resp)
-            console.log("------>>>resp data:", resp)
+            report.value = resp;
+            console.log("------>>>resp data:", report)
             applyReportOverview(resp);
-
             sseCtrl.start()
         } catch (e) {
             showAlert("生成 AI 参数失败:" + e);
@@ -323,5 +376,7 @@ export function useReportPage() {
         truncatedLatestMessage,
         recommendedCombos,
         summaryCards,
+        report,
+        subjectRadar
     }
 }

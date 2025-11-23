@@ -77,10 +77,7 @@
             </div>
 
             <div class="basic-analysis-layout__chart basic-analysis-layout__chart--radar">
-              <!-- TODO: 替换为真实雷达图组件 -->
-              <div class="chart-placeholder chart-placeholder--radar">
-                科目能力雷达图
-              </div>
+              <SubjectRadarChart :radar="subjectRadar" />
             </div>
           </div>
 
@@ -105,6 +102,7 @@
               </p>
             </article>
           </div>
+
         </section>
 
         <!-- 基础概念 -->
@@ -335,6 +333,7 @@ import StepIndicator from '@/views/components/StepIndicator.vue'
 import TestLayout from '@/views/components/TestLayout.vue'
 import AiGeneratingOverlay from '@/views/components/AiGeneratingOverlay.vue'
 import {useReportPage} from '@/controller/AssessmentReport'
+import SubjectRadarChart from "@/views/components/SubjectRadarChart.vue";
 
 const {
   state,
@@ -344,6 +343,7 @@ const {
   truncatedLatestMessage,
   recommendedCombos,
   summaryCards,
+  subjectRadar
 } = useReportPage()
 </script>
 

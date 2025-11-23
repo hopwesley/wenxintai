@@ -99,6 +99,11 @@ export function useQuestionsStagePage() {
         String(route.params.testStage ?? '')
     )
 
+    const {
+        truncatedLatestMessage,
+        handleSseMsg,
+        resetLogs,
+    } = useSseLogs(12, 20)
 
     // 唯一标识当前阶段，用于在 store 中找到对应答案
     const stageKey = computed(() => {
@@ -167,11 +172,7 @@ export function useQuestionsStagePage() {
         hideAIProcess()
     }
 
-    const {
-        truncatedLatestMessage,
-        handleSseMsg,
-        resetLogs,
-    } = useSseLogs(12, 20)
+
 
     function resetStageState() {
         currentPage.value = 1

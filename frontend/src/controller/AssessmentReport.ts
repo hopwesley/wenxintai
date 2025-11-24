@@ -104,6 +104,20 @@ export interface ReportRecommend33 {
     top_combinations: Recommend33Combo[]
 }
 
+// 通用：一个组合 + 若干数值（这里我们约定长度为 1 或 2）
+export interface ComboChartMetric {
+    key: string        // 内部字段名，例如 'score' / 's_final' / 'coverage' / 'mix_penalty'
+    label: string      // 展示用名称，例如 '综合得分' / '专业覆盖率'
+    value: number
+}
+
+// 通用：图表用的“组合 + 指标”
+export interface ComboChartItem {
+    comboKey: string        // 组合编码，例如 "PHY_CHE_BIO"
+    metrics: ComboChartMetric[]   // 长度 1 = 单指标；长度 2 = 双指标
+}
+
+
 // 整体响应
 export interface ReportRawData {
     uid: string
@@ -136,15 +150,10 @@ export interface ReportOverviewInfo {
     account: string;         // 问心台账号
 }
 
-
-export interface Mode33ChartCombo {
-    subjects: string[]       // ["CHE","BIO","GEO"]
-    score: number            // 后端原始 score
-}
-
 export interface Mode33ViewModel {
     overviewText: string     // mode33_overview_text
-    chartCombos: Mode33ChartCombo[]
+    chartCombos: ComboChartItem[]
+    rarityRiskPairs: ComboChartItem[]
 }
 
 // ==== 报告概览卡片（顶部那张）用到的字段 ====
@@ -216,46 +225,15 @@ export interface AIReportPayload {
     final_report: FinalAIReport
 }
 
-function isMode33Section(
-    mode: string,
-    section: ModeSection
-): section is Mode33Section {
-    return mode === '3+3' && 'mode33_overview_text' in section
-}
-
-function isMode312Section(
-    mode: string,
-    section: ModeSection
-): section is Mode312Section {
-    return mode === '3+1+2' && !('mode33_overview_text' in section)
-}
-
-
-// 图表 1：每个组合的一根柱子，展示 s_final_combo
-export interface Mode312ComboScoreBar {
-    comboKey: string        // 组合代码，例如 "PHY_CHE_BIO"
-    sFinal: number          // s_final_combo
-}
-
-// 图表 2：每个组合两根柱子，展示 coverage 和 mix_penalty
-export interface Mode312ComboCoverageRiskBar {
-    comboKey: string        // 组合代码，例如 "PHY_CHE_BIO"
-    coverage: number        // coverage
-    mixPenalty: number      // mix_penalty
-}
-
 export interface Mode312OverviewStrips {
-    // 文字条：来源于 AI 报告里的 mode312_PHY / mode312_HIS.overview_text
     phyOverviewText: string
     hisOverviewText: string
 
-    // 物理组两张图的数据
-    phyScoreBars: Mode312ComboScoreBar[]             // 图 1：s_final_combo 柱状图
-    phyCoverageRiskBars: Mode312ComboCoverageRiskBar[] // 图 2：coverage + mix_penalty
+    phyScoreBars: ComboChartItem[]
+    phyCoverageRiskBars: ComboChartItem[]
 
-    // 历史组两张图的数据
-    hisScoreBars: Mode312ComboScoreBar[]
-    hisCoverageRiskBars: Mode312ComboCoverageRiskBar[]
+    hisScoreBars: ComboChartItem[]
+    hisCoverageRiskBars: ComboChartItem[]
 }
 
 export const aiReportData = ref<AIReportPayload | null>(null)
@@ -299,13 +277,7 @@ export function useReportPage() {
         if (raw.mode !== '3+1+2') return null
         if (!raw.recommend_312) return null
 
-        // 只在 AI 报告里确认为 3+1+2 时才解析 mode_section
-        const section = ai.mode_section
-        if (!isMode312Section(ai.final_report.mode, section)) {
-            return null
-        }
-
-        // 文字：来自 AI 报告的 mode312_PHY / mode312_HIS
+        const section = ai.mode_section as Mode312Section
         const phyText = section['mode312_PHY']?.overview_text ?? ''
         const hisText = section['mode312_HIS']?.overview_text ?? ''
 
@@ -326,32 +298,48 @@ export function useReportPage() {
         const buildComboKey = (anchor: Report312Anchor, combo: Report312Combo) =>
             `${anchor.subject}_${combo.aux1}_${combo.aux2}`
 
-        const buildScoreBars = (anchor: Report312Anchor | null): Mode312ComboScoreBar[] => {
+        const buildScoreItems = (anchor: Report312Anchor | null): ComboChartItem[] => {
             if (!anchor || !anchor.combos?.length) return []
             return anchor.combos.map(c => ({
                 comboKey: buildComboKey(anchor, c),
-                sFinal: c.s_final_combo,
+                metrics: [
+                    {
+                        key: 's_final',
+                        label: '综合得分',
+                        value: c.s_final_combo,
+                    },
+                ],
             }))
         }
 
-        const buildCoverageRiskBars = (
-            anchor: Report312Anchor | null,
-        ): Mode312ComboCoverageRiskBar[] => {
+        // 图 2：coverage + mix_penalty -> 双指标结构
+        const buildCoverageRiskItems = (anchor: Report312Anchor | null): ComboChartItem[] => {
             if (!anchor || !anchor.combos?.length) return []
             return anchor.combos.map(c => ({
                 comboKey: buildComboKey(anchor, c),
-                coverage: c.coverage,
-                mixPenalty: c.mix_penalty,
+                metrics: [
+                    {
+                        key: 'coverage',
+                        label: '专业覆盖率',
+                        value: c.coverage,
+                    },
+                    {
+                        key: 'mix_penalty',
+                        label: '组合风险',
+                        value: c.mix_penalty,
+                    },
+                ],
             }))
         }
 
+        console.log("------------->>>",phyAnchor,hisAnchor)
         return {
             phyOverviewText: phyText,
             hisOverviewText: hisText,
-            phyScoreBars: buildScoreBars(phyAnchor),
-            hisScoreBars: buildScoreBars(hisAnchor),
-            phyCoverageRiskBars: buildCoverageRiskBars(phyAnchor),
-            hisCoverageRiskBars: buildCoverageRiskBars(hisAnchor),
+            phyScoreBars: buildScoreItems(phyAnchor),
+            hisScoreBars: buildScoreItems(hisAnchor),
+            phyCoverageRiskBars: buildCoverageRiskItems(phyAnchor),
+            hisCoverageRiskBars: buildCoverageRiskItems(hisAnchor),
         }
     })
 
@@ -383,14 +371,37 @@ export function useReportPage() {
         const overviewText: string = section?.mode33_overview_text ?? ''
         const combosRaw = recommend?.top_combinations ?? []
 
-        const chartCombos: Mode33ChartCombo[] = combosRaw.map(c => ({
-            subjects: c.subjects,
-            score: c.score,
+        const chartCombos: ComboChartItem[] = combosRaw.map(c => ({
+            comboKey: c.subjects.join('_'),  // "CHE_BIO_GEO"
+            metrics: [
+                {
+                    key: 'score',
+                    label: '综合得分',       // 图表 legend / tooltip 显示
+                    value: c.score,
+                },
+            ],
+        }))
+
+        const rarityRiskPairs: ComboChartItem[] = combosRaw.map(c => ({
+            comboKey: c.subjects.join('_'),  // "CHE_BIO_GEO"
+            metrics: [
+                {
+                    key: 'coverage',
+                    label: '稀有度',
+                    value: c.rarity,
+                },
+                {
+                    key: 'mix_penalty',
+                    label: '风险惩罚',
+                    value: c.risk_penalty,
+                },
+            ],
         }))
 
         return {
             overviewText,
             chartCombos,
+            rarityRiskPairs,
         }
     })
 

@@ -306,9 +306,12 @@
               </div>
 
               <div class="recommend-analysis__chart">
-                <!-- TODO：未来接 3+3 模式下的风险 / 稀有度小图 -->
-                <div class="chart-placeholder">
-                  稀有度 &amp; 风险概览（占位）
+                <ComboScoreChart
+                    v-if="mode33View && mode33View.rarityRiskPairs.length"
+                    :combos="mode33View.rarityRiskPairs"
+                />
+                <div v-else class="chart-placeholder">
+                  推荐组合 稀有度 &amp; 风险 暂无数据
                 </div>
               </div>
             </div>
@@ -434,13 +437,21 @@
               <h5 class="report-section__subtitle">物理组整体推荐概览</h5>
               <div class="recommend-analysis-layout">
                 <div class="recommend-analysis__chart">
-                  <div class="chart-placeholder">
-                    物理组 3 个科目组合的综合得分对比（占位图）
+                  <ComboScoreChart
+                      v-if="mode312OverviewStrips && mode312OverviewStrips.phyScoreBars.length"
+                      :combos="mode312OverviewStrips.phyScoreBars"
+                  />
+                  <div v-else class="chart-placeholder">
+                    推荐组合整体分布概览暂无数据
                   </div>
                 </div>
                 <div class="recommend-analysis__chart">
-                  <div class="chart-placeholder">
-                    物理组 3 个科目组合的覆盖率 / 风险对比（占位图）
+                  <ComboScoreChart
+                      v-if="mode312OverviewStrips && mode312OverviewStrips.phyCoverageRiskBars.length"
+                      :combos="mode312OverviewStrips.phyCoverageRiskBars"
+                  />
+                  <div v-else class="chart-placeholder">
+                    推荐组合覆盖率/风险暂无数据
                   </div>
                 </div>
               </div>
@@ -544,13 +555,21 @@
               <h5 class="report-section__subtitle">历史组整体推荐概览</h5>
               <div class="recommend-analysis-layout">
                 <div class="recommend-analysis__chart">
-                  <div class="chart-placeholder">
-                    历史组 3 个科目组合的综合得分对比（占位图）
+                  <ComboScoreChart
+                      v-if="mode312OverviewStrips && mode312OverviewStrips.hisScoreBars.length"
+                      :combos="mode312OverviewStrips.hisScoreBars"
+                  />
+                  <div v-else class="chart-placeholder">
+                    推荐组合整体分布概览暂无数据
                   </div>
                 </div>
                 <div class="recommend-analysis__chart">
-                  <div class="chart-placeholder">
-                    历史组 3 个科目组合的覆盖率 / 风险对比（占位图）
+                  <ComboScoreChart
+                      v-if="mode312OverviewStrips && mode312OverviewStrips.hisCoverageRiskBars.length"
+                      :combos="mode312OverviewStrips.hisCoverageRiskBars"
+                  />
+                  <div v-else class="chart-placeholder">
+                    推荐组合覆盖率/风险暂无数据
                   </div>
                 </div>
               </div>

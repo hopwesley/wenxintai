@@ -274,22 +274,7 @@ export function useReportPage() {
     const isMode33 = computed(() => overview.mode === Mode33)
     const isMode312 = computed(() => overview.mode === Mode312)
 
-    // 3+1+2：anchor + combo -> "物理 + 化学 + 生物"
-    function formatComboName312(anchor: Report312Anchor, combo: Report312Combo): string {
-        const subs = [anchor.subject, combo.aux1, combo.aux2]
-        return subs.map(s => subjectLabelMap[s] ?? s).join(' + ')
-    }
-
-    // 3+1+2：生成 "物理组·首选 / 物理组·备选一 ..."
-    function rankLabelFor312(groupLabel: string, index: number): string {
-        if (index === 0) return `${groupLabel}·首选`
-        if (index === 1) return `${groupLabel}·备选一`
-        if (index === 2) return `${groupLabel}·备选二`
-        return `${groupLabel}·第${index + 1}档`
-    }
-
-
-    // === 新增：3+1+2 概览 + 图表数据 ===
+// === 新增：3+1+2 概览 + 图表数据 ===
     const mode312OverviewStrips = computed<Mode312OverviewStrips | null>(() => {
         const raw = rawReportData.value
         const ai = aiReportData.value
@@ -428,16 +413,13 @@ export function useReportPage() {
             hisS1: hisAnchor?.s1 ?? 0,
         }
     })
-
-    const mode33OverviewText = computed(() => {
+    computed(() => {
         if (!isMode33.value) return ''
 
         const section = aiReportData.value?.mode_section as any
         // 后面我们会把 ModeSection 换成 union 类型，这里先用 any 顶一下
         return section?.mode33_overview_text ?? ''
-    })
-
-    // 备用：当前业务类型（暂时模板里没用，将来如果需要接后端可以直接用）
+    });
     const businessType = computed(() => {
         return String(route.params.typ ?? state.businessType ?? '')
     })
@@ -630,6 +612,11 @@ export function useReportPage() {
         }
     })
 
+    const finalReport = computed<FinalAIReport | null>(() => {
+        const ai = aiReportData.value
+        if (!ai || !ai.final_report) return null
+        return ai.final_report
+    })
 
     return {
         state,
@@ -643,8 +630,8 @@ export function useReportPage() {
         subjectRadar,
         isMode33,
         isMode312,
-        mode33OverviewText,
         mode33View,
         mode312OverviewStrips,
+        finalReport,
     }
 }

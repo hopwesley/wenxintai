@@ -726,17 +726,54 @@
       <section class="report-section report-section--summary">
         <h3 class="report-section__title">报告摘要</h3>
 
-        <div class="summary-grid">
-          <article
-              v-for="card in summaryCards"
-              :key="card.title"
-              class="summary-card"
-          >
-            <h4 class="summary-card__title">{{ card.title }}</h4>
-            <p>{{ card.content }}</p>
+        <!-- 优先使用 AI 的 final_report（3+3 / 3+1+2 都走这里） -->
+        <div
+            v-if="finalReport"
+            class="summary-grid"
+        >
+          <article class="summary-card">
+            <h4 class="summary-card__title">数据可信度与报告有效性</h4>
+            <p>{{ finalReport.report_validity }}</p>
+          </article>
+
+          <article class="summary-card">
+            <h4 class="summary-card__title">核心趋势概览</h4>
+            <p>{{ finalReport.core_trends }}</p>
+          </article>
+
+          <article class="summary-card">
+            <h4 class="summary-card__title">选科模式与组合策略</h4>
+            <p>{{ finalReport.mode_strategy }}</p>
+          </article>
+
+          <article class="summary-card">
+            <h4 class="summary-card__title">给学生的话</h4>
+            <p>{{ finalReport.student_view }}</p>
+          </article>
+
+          <article class="summary-card">
+            <h4 class="summary-card__title">给家长的建议</h4>
+            <p>{{ finalReport.parent_view }}</p>
+          </article>
+
+          <article class="summary-card">
+            <h4 class="summary-card__title">风险诊断与应对方向</h4>
+            <p>{{ finalReport.risk_diagnosis }}</p>
+          </article>
+
+          <article class="summary-card">
+            <h4 class="summary-card__title">整体选科建议</h4>
+            <p>{{ finalReport.strategic_conclusion }}</p>
+          </article>
+        </div>
+
+        <div v-else class="summary-grid">
+          <article  class="summary-card"  >
+            <p>无总结报告可显示</p>
           </article>
         </div>
       </section>
+
 
     </main>
 
@@ -788,6 +825,7 @@ const {
   isMode312,
   mode33View,
   mode312OverviewStrips,
+  finalReport,
 } = useReportPage()
 
 

@@ -21,12 +21,6 @@ export interface ReportCombo {
     recommendExplain: string
 }
 
-export interface SummaryCard {
-    title: string
-    content: string
-}
-
-
 // ===== 报告接口类型 =====
 // 单科 common_score.common.subjects 里的条目
 export interface ReportSubjectScore {
@@ -518,23 +512,6 @@ export function useReportPage() {
         }
     })
 
-    const summaryCards = ref<SummaryCard[]>([
-        {
-            title: 'report_validity_1',
-            content:
-                '本报告基于当前测试结果，提供了较高可信度的选科建议，但仍需要结合学校课程安排与家庭实际情况综合考虑。',
-        },
-        {
-            title: 'report_validity_2',
-            content:
-                '建议家长与学生共同阅读报告内容，重点关注兴趣与能力差异较大的科目，并适当安排后续的体验与辅助学习。',
-        },
-        {
-            title: 'report_validity_3',
-            content:
-                '本报告不直接决定高考选科，仅作为重要参考工具，帮助你更系统地理解自己的优势与风险点。',
-        },
-    ])
 
     function applyReportOverview(data: ReportRawData) {
         overview.mode = data.mode
@@ -625,7 +602,6 @@ export function useReportPage() {
         businessType,
         aiLoading,
         truncatedLatestMessage,
-        summaryCards,
         rawReportData,
         subjectRadar,
         isMode33,

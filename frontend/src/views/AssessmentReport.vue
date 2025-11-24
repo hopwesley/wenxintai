@@ -818,7 +818,6 @@ const {
   overview,
   aiLoading,
   truncatedLatestMessage,
-  summaryCards,
   subjectRadar,
   rawReportData,
   isMode33,

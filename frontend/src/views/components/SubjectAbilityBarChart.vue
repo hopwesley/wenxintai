@@ -3,16 +3,16 @@
     <!-- 上方：一句话说明 + 颜色图例 -->
     <div class="subject-bar-meta">
       <p class="subject-bar-caption">
-        六门学科的相对强弱（Z 分视图）
+        六门学科兴趣–能力差距（Z 差值视图）
       </p>
       <ul class="subject-bar-legend">
         <li class="subject-bar-legend__item">
           <span class="subject-bar-legend__dot subject-bar-legend__dot--interest"></span>
-          兴趣明显高于能力
+          兴趣显著领先能力
         </li>
         <li class="subject-bar-legend__item">
           <span class="subject-bar-legend__dot subject-bar-legend__dot--ability"></span>
-          能力明显高于兴趣
+          能力显著领先兴趣
         </li>
         <li class="subject-bar-legend__item">
           <span class="subject-bar-legend__dot subject-bar-legend__dot--balanced"></span>
@@ -70,7 +70,7 @@ const option = computed(() => {
   const names = list.map(s => subjectLabelMap[s.subject] ?? s.subject)
 
   const seriesData = list.map(s => ({
-    value: s.ability_z,
+    value: s.zgap,
     itemStyle: {
       color: zgapColor(s.zgap),
     },

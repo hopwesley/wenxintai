@@ -3,7 +3,8 @@
     <template #header>
       <StepIndicator/>
     </template>
-    <main class="report-page">
+
+    <main class="report-page" ref="reportPageRoot">
       <!-- 顶部：报告概览卡片 -->
       <section class="report-card report-card--overview">
         <header class="report-card__header">
@@ -193,7 +194,7 @@
                   数据质量评分
                 </td>
                 <td class="field-definitions__cell">
-                  本次测评数据的可信度指标，数值越高，代表答题过程越稳定、报告结论的可靠性越高。
+                  本次测评数据的可信度指标，数值越高，代表答题过程越认真、报告结论的可靠性越高。
                 </td>
               </tr>
               </tbody>
@@ -274,7 +275,6 @@
             </p>
           </article>
         </section>
-
 
       </section>
       <!-- 下半部分：选科组合推荐卡片 -->
@@ -446,6 +446,21 @@
         </div>
         <!-- ===================== 3+1+2 模式：物理组 + 历史组 ===================== -->
         <div v-else-if="isMode312">
+
+          <section class="report-section report-section--mode312-intro">
+            <h3 class="report-section__title">物理 / 历史方向说明</h3>
+            <p class="mode312-intro__text">
+              在当前 3+1+2 模式下，全国范围内理工类专业及招生计划数量通常多于文史类专业，
+              因此从长期升学机会和专业选择空间来看，选择物理往往会获得更宽的专业覆盖范围。
+            </p>
+            <p class="mode312-intro__text mode312-intro__text--secondary">
+              为了避免把「选物理还是选历史」这个关键决策完全交给算法，本系统的做法是：
+              <strong>不直接替你做出文理方向的决定</strong>，
+              而是分别给出以物理为主、以历史为主的 3 个代表性组合，
+              由你和家长结合兴趣、目标专业和学校情况做最终选择。
+            </p>
+          </section>
+
           <!-- 全局说明：为什么不直接替你选物理 / 历史 -->
           <div class="field-definitions field-definitions--compact">
             <table class="field-definitions__table">
@@ -725,8 +740,6 @@
 
       <section class="report-section report-section--summary">
         <h3 class="report-section__title">报告摘要</h3>
-
-        <!-- 优先使用 AI 的 final_report（3+3 / 3+1+2 都走这里） -->
         <div
             v-if="finalReport"
             class="summary-grid"
@@ -766,23 +779,23 @@
             <p>{{ finalReport.strategic_conclusion }}</p>
           </article>
         </div>
-
         <div v-else class="summary-grid">
-          <article  class="summary-card"  >
+          <article class="summary-card">
             <p>无总结报告可显示</p>
           </article>
         </div>
       </section>
 
-
     </main>
 
     <div class="report-page__actions">
-      <!-- TODO：绑定具体路由或打印逻辑 -->
-      <button class="btn btn-secondary report-page__action">
+      <button
+          class="btn btn-secondary report-page__action"
+          @click="handleBackToHome"  >
         返回测试首页
       </button>
-      <button class="btn btn-primary report-page__action">
+
+      <button class="btn btn-primary report-page__action" @click="handleExportPdf">
         导出 PDF
       </button>
     </div>
@@ -812,6 +825,9 @@ import ComboScoreChart from '@/views/components/ComboScoreChart.vue'
 import {aiReportData} from '@/controller/AssessmentReport'
 import {subjectLabelMap} from "@/controller/common";
 
+import html2pdf from 'html2pdf.js'
+import {ref} from "vue";
+
 const {
   state,
   route,
@@ -825,6 +841,7 @@ const {
   mode33View,
   mode312OverviewStrips,
   finalReport,
+  handleBackToHome,
 } = useReportPage()
 
 
@@ -838,6 +855,39 @@ function formatZ(v: number | null | undefined): string {
 function formatPercent(p: number | null | undefined): string {
   if (p === null || p === undefined || Number.isNaN(p)) return '--'
   return `${(p * 100).toFixed(1)}%`
+}
+
+// ref 绑定在 <main class="report-page" ref="reportPageRoot">
+const reportPageRoot = ref<HTMLElement | null>(null)
+
+const handleExportPdf = () => {
+  if (!reportPageRoot.value) return
+
+  const opt = {
+    margin: 10,
+    filename: `选科报告-${overview.account || overview.generateDate || 'report'}.pdf`,
+    image: {
+      type: 'jpeg',
+      quality: 0.95,
+    },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+    },
+    jsPDF: {
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait',
+    },
+    pagebreak: {
+      mode: ['css', 'legacy'],
+    },
+  }
+
+  html2pdf()
+      .set(opt as any)
+      .from(reportPageRoot.value as HTMLElement)
+      .save()
 }
 
 

@@ -82,7 +82,6 @@ export interface Report312Anchor {
 // recommend_312 顶层：key 例如 "anchor_phy" / "anchor_his"…
 export type ReportRecommend312 = Record<string, Report312Anchor>
 
-
 // 3+3 推荐组合的原始数值
 export interface Recommend33Combo {
     subjects: string[]          // ["CHE","BIO","GEO"]
@@ -111,7 +110,6 @@ export interface ComboChartItem {
     metrics: ComboChartMetric[]   // 长度 1 = 单指标；长度 2 = 双指标
 }
 
-
 // 整体响应
 export interface ReportRawData {
     uid: string
@@ -133,7 +131,6 @@ function getAiReportParam(publicID: string, businessTyp: string) {
     })
 }
 
-
 export interface ReportOverviewInfo {
     mode: ModeOption;            // 模式：3+3 / 3+1+2
     studentLocation: string; // 学生所在地
@@ -143,8 +140,6 @@ export interface ReportOverviewInfo {
     schoolName: string;      // 学校名称
     account: string;         // 问心台账号
 }
-
-
 
 export interface Mode33ViewModel {
     overviewText: string     // mode33_overview_text
@@ -407,6 +402,7 @@ export function useReportPage() {
             hisS1: hisAnchor?.s1 ?? 0,
         }
     })
+
     computed(() => {
         if (!isMode33.value) return ''
 
@@ -414,6 +410,7 @@ export function useReportPage() {
         // 后面我们会把 ModeSection 换成 union 类型，这里先用 any 顶一下
         return section?.mode33_overview_text ?? ''
     });
+
     const businessType = computed(() => {
         return String(route.params.typ ?? state.businessType ?? '')
     })
@@ -531,7 +528,6 @@ export function useReportPage() {
         aiLoading.value = false
     }
 
-
     const {
         truncatedLatestMessage,
         handleSseMsg,
@@ -595,6 +591,15 @@ export function useReportPage() {
         return ai.final_report
     })
 
+    const handleBackToHome = () => {
+        return apiRequest<ReportRawData>('/api/generate_report', {
+            method: 'POST',
+            body: {
+
+            },
+        })
+    }
+
     return {
         state,
         route,
@@ -609,5 +614,6 @@ export function useReportPage() {
         mode33View,
         mode312OverviewStrips,
         finalReport,
+        handleBackToHome,
     }
 }

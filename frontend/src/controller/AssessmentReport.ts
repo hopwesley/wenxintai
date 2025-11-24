@@ -4,7 +4,7 @@ import {useGlobalLoading} from '@/controller/useGlobalLoading'
 import {useTestSession} from '@/controller/testSession'
 import {apiRequest} from "@/api";
 import {useAlert} from "@/controller/useAlert";
-import {Mode312, Mode33, ModeOption, useSseLogs, useSubscriptBySSE} from "@/controller/common";
+import {Mode312, Mode33, ModeOption, subjectLabelMap, useSseLogs, useSubscriptBySSE} from "@/controller/common";
 
 export interface ComboMetric {
     label: string
@@ -17,8 +17,8 @@ export interface ReportCombo {
     score: string
     theme: string
     metrics: ComboMetric[]
-    factorExplain: string[]
-    recommendExplain: string[]
+    recommendAdvice: string
+    recommendExplain: string
 }
 
 export interface SummaryCard {
@@ -150,10 +150,13 @@ export interface ReportOverviewInfo {
     account: string;         // 问心台账号
 }
 
+
+
 export interface Mode33ViewModel {
     overviewText: string     // mode33_overview_text
     chartCombos: ComboChartItem[]
     rarityRiskPairs: ComboChartItem[]
+    topCombos: ReportCombo[]
 }
 
 // ==== 报告概览卡片（顶部那张）用到的字段 ====
@@ -234,6 +237,12 @@ export interface Mode312OverviewStrips {
 
     hisScoreBars: ComboChartItem[]
     hisCoverageRiskBars: ComboChartItem[]
+
+    phyTopCombos: ReportCombo[]
+    hisTopCombos: ReportCombo[]
+
+    phyS1: number
+    hisS1: number
 }
 
 export const aiReportData = ref<AIReportPayload | null>(null)
@@ -265,6 +274,19 @@ export function useReportPage() {
     const isMode33 = computed(() => overview.mode === Mode33)
     const isMode312 = computed(() => overview.mode === Mode312)
 
+    // 3+1+2：anchor + combo -> "物理 + 化学 + 生物"
+    function formatComboName312(anchor: Report312Anchor, combo: Report312Combo): string {
+        const subs = [anchor.subject, combo.aux1, combo.aux2]
+        return subs.map(s => subjectLabelMap[s] ?? s).join(' + ')
+    }
+
+    // 3+1+2：生成 "物理组·首选 / 物理组·备选一 ..."
+    function rankLabelFor312(groupLabel: string, index: number): string {
+        if (index === 0) return `${groupLabel}·首选`
+        if (index === 1) return `${groupLabel}·备选一`
+        if (index === 2) return `${groupLabel}·备选二`
+        return `${groupLabel}·第${index + 1}档`
+    }
 
 
     // === 新增：3+1+2 概览 + 图表数据 ===
@@ -294,7 +316,6 @@ export function useReportPage() {
             Object.values(raw.recommend_312).find(a => a.subject === 'HIS') ??
             null
 
-        // 小工具：组合代码
         const buildComboKey = (anchor: Report312Anchor, combo: Report312Combo) =>
             `${anchor.subject}_${combo.aux1}_${combo.aux2}`
 
@@ -312,7 +333,6 @@ export function useReportPage() {
             }))
         }
 
-        // 图 2：coverage + mix_penalty -> 双指标结构
         const buildCoverageRiskItems = (anchor: Report312Anchor | null): ComboChartItem[] => {
             if (!anchor || !anchor.combos?.length) return []
             return anchor.combos.map(c => ({
@@ -332,7 +352,69 @@ export function useReportPage() {
             }))
         }
 
-        console.log("------------->>>",phyAnchor,hisAnchor)
+        const buildGroupCombos = (
+            anchor: Report312Anchor | null,
+            sec: ModeSectionItem | undefined,
+        ): ReportCombo[] => {
+            if (!anchor || !anchor.combos?.length) return []
+
+            // “物理组”“历史组”
+            const groupLabel = `${subjectLabelMap[anchor.subject] ?? anchor.subject}组`
+
+            // AI 文本索引：combo_name -> ComboDetail
+            const explainIndex: Record<string, ComboDetail> = {}
+            if (sec?.combo_details?.length) {
+                for (const detail of sec.combo_details) {
+                    if (detail.combo_name) {
+                        explainIndex[detail.combo_name] = detail
+                    }
+                }
+            }
+
+            // 按 s_final_combo 从高到低排序
+            const sorted = [...anchor.combos].sort((a, b) => b.s_final_combo - a.s_final_combo)
+
+            return sorted.map((c, index) => {
+                const comboKey = buildComboKey(anchor, c) // e.g. PHY_CHE_BIO
+                const explain = explainIndex[comboKey]
+
+                // 档位文案
+                let rankLabel = `${groupLabel}·第${index + 1}档`
+                if (index === 0) rankLabel = `${groupLabel}·首选`
+                else if (index === 1) rankLabel = `${groupLabel}·备选一`
+                else if (index === 2) rankLabel = `${groupLabel}·备选二`
+
+                // 颜色主题：沿用 3+3 的规则
+                const theme =
+                    index === 0 ? 'primary'
+                        : index === 1 ? 'blue'
+                            : 'yellow'
+
+                // 组合中文名：主干 + 辅科1 + 辅科2
+                const subs = [anchor.subject, c.aux1, c.aux2]
+                const name = subs.map(s => subjectLabelMap[s] ?? s).join(' + ')
+
+                return {
+                    rankLabel,
+                    name,
+                    score: c.s_final_combo.toFixed(3),
+                    theme,
+                    metrics: [
+                        {label: '辅科平均匹配度', value: c.avg_fit},
+                        {label: '辅科平均能力值', value: c.auxAbility},
+                        {label: '辅科最低匹配度', value: c.min_fit},
+                        {label: '辅科一致性', value: c.combo_cos},
+                    ],
+                    recommendExplain: explain?.combo_description ?? '',
+                    recommendAdvice: explain?.combo_advice ?? '',
+                }
+            })
+        }
+        const phySection = section['mode312_PHY']
+        const hisSection = section['mode312_HIS']
+        const phyTopCombos = buildGroupCombos(phyAnchor, phySection)
+        const hisTopCombos = buildGroupCombos(hisAnchor, hisSection)
+
         return {
             phyOverviewText: phyText,
             hisOverviewText: hisText,
@@ -340,6 +422,10 @@ export function useReportPage() {
             hisScoreBars: buildScoreItems(hisAnchor),
             phyCoverageRiskBars: buildCoverageRiskItems(phyAnchor),
             hisCoverageRiskBars: buildCoverageRiskItems(hisAnchor),
+            phyTopCombos,
+            hisTopCombos,
+            phyS1: phyAnchor?.s1 ?? 0,
+            hisS1: hisAnchor?.s1 ?? 0,
         }
     })
 
@@ -358,6 +444,24 @@ export function useReportPage() {
     // 之后接入后端 / SSE 时再开启，这里先保持为 false
     const aiLoading = ref(false)
 
+
+    // 3+3：科目数组 -> “化学 + 生物 + 地理”
+    function formatComboName33(subjects: string[]): string {
+        return subjects.map(s => subjectLabelMap[s] ?? s).join(' + ')
+    }
+
+// 3+3：第几个组合 -> 档位文案
+    function rankLabelFor33(index: number): string {
+        const preset = ['第一档', '第二档', '第三档']
+        return preset[index] ?? `第${index + 1}档`
+    }
+
+// 3+3：第几个组合 -> 颜色主题
+    function themeFor33(index: number): string {
+        if (index === 0) return 'primary' // 首选：主紫色
+        if (index === 1) return 'blue'    // 备选一：蓝色
+        return 'yellow'                   // 其他：黄色
+    }
 
     // 3+3 模式统一视图：overview 文本 + 三个组合的原始 score
     const mode33View = computed<Mode33ViewModel | null>(() => {
@@ -398,193 +502,39 @@ export function useReportPage() {
             ],
         }))
 
+        const sortedCombos = [...combosRaw].sort((a, b) => b.score - a.score)
+        const topCombos: ReportCombo[] = sortedCombos.map((c, index) => {
+            const comboKey = c.subjects.join('_')
+            const ai_combo_detail = section?.mode33_combo_details[comboKey]
+            return {
+                rankLabel: rankLabelFor33(index),            // 第一档 / 第二档 / 第三档...
+                name: formatComboName33(c.subjects),        // 物理 + 化学 + 生物 / 历史 + 地理 + 生物...
+                score: c.score.toFixed(3),                  // 展示用分数，先保留三位小数
+                theme: themeFor33(index),                   // primary / blue / yellow
+                recommendExplain: ai_combo_detail?.combo_description,
+                recommendAdvice:ai_combo_detail?.combo_advice,
+                metrics:[{
+                    label: '平均匹配度',
+                    value: c.avg_fit,
+                },
+                    {
+                        label: '最低能力等级',
+                        value: c.min_ability,
+                    },
+                    {
+                        label: '方向协同性',
+                        value: c.combo_cosine,
+                    },],
+            }
+        })
+
         return {
             overviewText,
             chartCombos,
             rarityRiskPairs,
+            topCombos,
         }
     })
-
-    const recommendedCombos = ref<ReportCombo[]>([
-        {
-            rankLabel: '第一档',
-            name: '物理 + 化学 + 生物',
-            score: '89',
-            theme: 'primary',
-            metrics: [
-                {label: 'A 维度', value: 33},
-                {label: 'B 维度', value: 22},
-                {label: 'C 维度', value: 2},
-                {label: 'D 维度', value: 44},
-            ],
-            factorExplain: [
-                '2gap 表示兴趣与能力之间的差异。',
-                'AI：该组合在能力上较为均衡，兴趣略有倾向。',
-                'AI：适合作为首选或备选方向。',
-            ],
-            recommendExplain: [
-                '该组合有利于理科方向的长期发展。',
-                '如果未来考虑工科、医科等方向，此组合较为匹配。',
-            ],
-        },
-        {
-            rankLabel: '第二档',
-            name: '物理 + 化学 + 生物',
-            score: '82',
-            theme: 'blue',
-            metrics: [
-                {label: 'A 维度', value: 33},
-                {label: 'B 维度', value: 22},
-                {label: 'C 维度', value: 2},
-                {label: 'D 维度', value: 44},
-            ],
-            factorExplain: [
-                '2gap 表示兴趣与能力之间的差异。',
-                'AI：该组合在能力上较为均衡，兴趣略有倾向。',
-                'AI：适合作为首选或备选方向。',
-            ],
-            recommendExplain: [
-                '该组合有利于理科方向的长期发展。',
-                '如果未来考虑工科、医科等方向，此组合较为匹配。',
-            ],
-        },
-        {
-            rankLabel: '第三档',
-            name: '物理 + 化学 + 生物',
-            score: '78',
-            theme: 'yellow',
-            metrics: [
-                {label: 'A 维度', value: 30},
-                {label: 'B 维度', value: 20},
-                {label: 'C 维度', value: 5},
-                {label: 'D 维度', value: 40},
-            ],
-            factorExplain: [
-                '2gap 稍大，说明兴趣与能力之间存在一定差异。',
-                'AI：需要在学习投入上做出更多权衡。',
-            ],
-            recommendExplain: ['可作为备选方案，在目标不确定时保持灵活性。'],
-        },
-    ])
-
-    // 3+1+2 模式下：以物理为主的 3 个组合（假数据，占位）
-    const combos312Phy = ref<ReportCombo[]>([
-        {
-            rankLabel: '物理组·首选',
-            name: '物理 + 化学 + 生物',
-            score: '0.51',
-            theme: 'primary',
-            metrics: [
-                {label: '主干阶段 S1', value: 0.48},
-                {label: '辅科阶段 S23', value: 0.55},
-                {label: '综合得分 S_final', value: 0.51},
-                {label: '专业覆盖率', value: 0.96},
-            ],
-            factorExplain: [
-                '示例：物理作为主干科目，兴趣与能力整合度较高，方向较为稳定。',
-                '示例：化学、生物与物理在学习风格上协同性强，整体结构扎实。',
-            ],
-            recommendExplain: [
-                '示例：适合作为 3+1+2 模式下以物理为主的首选组合，适合理科倾向明显的学生。',
-            ],
-        },
-        {
-            rankLabel: '物理组·备选一',
-            name: '物理 + 化学 + 政治',
-            score: '0.49',
-            theme: 'blue',
-            metrics: [
-                {label: '主干阶段 S1', value: 0.48},
-                {label: '辅科阶段 S23', value: 0.50},
-                {label: '综合得分 S_final', value: 0.49},
-                {label: '专业覆盖率', value: 0.99},
-            ],
-            factorExplain: [
-                '示例：该组合在覆盖理工与政法相关专业方面更广，但辅科匹配度略有分化。',
-            ],
-            recommendExplain: [
-                '示例：适合在理科倾向明确、同时希望保留部分文法类方向的学生作为备选方案。',
-            ],
-        },
-        {
-            rankLabel: '物理组·备选二',
-            name: '物理 + 生物 + 政治',
-            score: '0.48',
-            theme: 'yellow',
-            metrics: [
-                {label: '主干阶段 S1', value: 0.48},
-                {label: '辅科阶段 S23', value: 0.48},
-                {label: '综合得分 S_final', value: 0.48},
-                {label: '专业覆盖率', value: 0.85},
-            ],
-            factorExplain: [
-                '示例：协同性较好，但辅科能力存在一定分化，对学习节奏要求更高。',
-            ],
-            recommendExplain: [
-                '示例：适合作为灵活度较高的备选组合，需要在时间管理和科目平衡上多加注意。',
-            ],
-        },
-    ])
-
-    // 3+1+2 模式下：以历史为主的 3 个组合（假数据，占位）
-    const combos312His = ref<ReportCombo[]>([
-        {
-            rankLabel: '历史组·首选',
-            name: '历史 + 化学 + 生物',
-            score: '0.37',
-            theme: 'primary',
-            metrics: [
-                {label: '主干阶段 S1', value: 0.33},
-                {label: '辅科阶段 S23', value: 0.42},
-                {label: '综合得分 S_final', value: 0.37},
-                {label: '专业覆盖率', value: 0.46},
-            ],
-            factorExplain: [
-                '示例：历史作为主干科目，兴趣与能力整合度一般，需要一定补强。',
-                '示例：化学、生物作为辅科在能力上有优势，但整体覆盖略窄。',
-            ],
-            recommendExplain: [
-                '示例：适合作为偏向文科但仍希望保留部分理科基础时的首选方案。',
-            ],
-        },
-        {
-            rankLabel: '历史组·备选一',
-            name: '历史 + 政治 + 生物',
-            score: '0.35',
-            theme: 'blue',
-            metrics: [
-                {label: '主干阶段 S1', value: 0.33},
-                {label: '辅科阶段 S23', value: 0.38},
-                {label: '综合得分 S_final', value: 0.35},
-                {label: '专业覆盖率', value: 0.46},
-            ],
-            factorExplain: [
-                '示例：文科协同性更好，但整体专业覆盖范围相对较集中。',
-            ],
-            recommendExplain: [
-                '示例：适合明确文科兴趣、目标集中在部分人文社科方向的学生。',
-            ],
-        },
-        {
-            rankLabel: '历史组·备选二',
-            name: '历史 + 化学 + 政治',
-            score: '0.34',
-            theme: 'yellow',
-            metrics: [
-                {label: '主干阶段 S1', value: 0.33},
-                {label: '辅科阶段 S23', value: 0.37},
-                {label: '综合得分 S_final', value: 0.34},
-                {label: '专业覆盖率', value: 0.44},
-            ],
-            factorExplain: [
-                '示例：辅科能力较均衡，但整体结构略松散，覆盖有限。',
-            ],
-            recommendExplain: [
-                '示例：适合作为风险更可控的保守型文科组合备选。',
-            ],
-        },
-    ])
-
 
     const summaryCards = ref<SummaryCard[]>([
         {
@@ -688,14 +638,11 @@ export function useReportPage() {
         businessType,
         aiLoading,
         truncatedLatestMessage,
-        recommendedCombos,
         summaryCards,
         rawReportData,
         subjectRadar,
         isMode33,
         isMode312,
-        combos312Phy,
-        combos312His,
         mode33OverviewText,
         mode33View,
         mode312OverviewStrips,

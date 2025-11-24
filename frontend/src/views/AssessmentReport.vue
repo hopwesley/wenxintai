@@ -117,84 +117,11 @@
             </div>
           </div>
 
-          <div class="report-table-wrapper">
-            <table class="report-table">
-              <thead>
-              <tr>
-                <th class="report-table__cell report-table__cell--head report-table__cell--subject">
-                  学科
-                </th>
-                <th class="report-table__cell report-table__cell--head">
-                  兴趣 z
-                </th>
-                <th class="report-table__cell report-table__cell--head">
-                  能力 z
-                </th>
-                <th class="report-table__cell report-table__cell--head">
-                  zGap
-                </th>
-                <th class="report-table__cell report-table__cell--head">
-                  能力占比
-                </th>
-                <th class="report-table__cell report-table__cell--head">
-                  fit
-                </th>
-              </tr>
-              </thead>
-
-              <tbody v-if="rawReportData && rawReportData.common_score && rawReportData.common_score.common">
-              <tr
-                  v-for="sub in rawReportData.common_score.common.subjects"
-                  :key="sub.subject"
-              >
-                <td class="report-table__cell report-table__cell--subject">
-                  {{ subjectLabelMap[sub.subject] ?? sub.subject }}
-                </td>
-                <td class="report-table__cell">
-                  {{ formatZ(sub.interest_z) }}
-                </td>
-                <td class="report-table__cell">
-                  {{ formatZ(sub.ability_z) }}
-                </td>
-                <td class="report-table__cell">
-                  {{ formatZ(sub.zgap) }}
-                </td>
-                <td class="report-table__cell">
-                  {{ formatPercent(sub.ability_share) }}
-                </td>
-                <td class="report-table__cell">
-                  {{ formatZ(sub.fit) }}
-                </td>
-              </tr>
-              </tbody>
-
-              <!-- 没数据时的兜底行（可选） -->
-              <tbody v-else>
-              <tr>
-                <td class="report-table__cell" colspan="6">
-                  暂无基础参数数据
-                </td>
-              </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div>
-            <article class="analysis-interpretation">
-              <div class="analysis-interpretation__header">
-                <span class="analysis-interpretation__title">能力/兴趣结构综述</span>
-              </div>
-              <p class="analysis-interpretation__text">
-                {{ aiReportData?.common_section?.subjects_summary_text }}
-              </p>
-            </article>
-          </div>
 
         </section>
 
         <section class="report-section report-section--concepts">
           <h2 class="report-section__title">核心指标说明</h2>
-
           <p class="report-section__intro">
             下表对本报告中涉及的关键指标进行简要说明，建议在阅读图表和文字解读前先浏览一遍，
             方便理解各学科在“兴趣”“能力”“匹配度”等维度上的含义。
@@ -273,7 +200,81 @@
             </table>
           </div>
 
+          <div class="report-table-wrapper">
+            <table class="report-table">
+              <thead>
+              <tr>
+                <th class="report-table__cell report-table__cell--head report-table__cell--subject">
+                  学科
+                </th>
+                <th class="report-table__cell report-table__cell--head">
+                  兴趣 z
+                </th>
+                <th class="report-table__cell report-table__cell--head">
+                  能力 z
+                </th>
+                <th class="report-table__cell report-table__cell--head">
+                  zGap
+                </th>
+                <th class="report-table__cell report-table__cell--head">
+                  能力占比
+                </th>
+                <th class="report-table__cell report-table__cell--head">
+                  fit
+                </th>
+              </tr>
+              </thead>
+
+              <tbody v-if="rawReportData && rawReportData.common_score && rawReportData.common_score.common">
+              <tr
+                  v-for="sub in rawReportData.common_score.common.subjects"
+                  :key="sub.subject"
+              >
+                <td class="report-table__cell report-table__cell--subject">
+                  {{ subjectLabelMap[sub.subject] ?? sub.subject }}
+                </td>
+                <td class="report-table__cell">
+                  {{ formatZ(sub.interest_z) }}
+                </td>
+                <td class="report-table__cell">
+                  {{ formatZ(sub.ability_z) }}
+                </td>
+                <td class="report-table__cell">
+                  {{ formatZ(sub.zgap) }}
+                </td>
+                <td class="report-table__cell">
+                  {{ formatPercent(sub.ability_share) }}
+                </td>
+                <td class="report-table__cell">
+                  {{ formatZ(sub.fit) }}
+                </td>
+              </tr>
+              </tbody>
+
+              <!-- 没数据时的兜底行（可选） -->
+              <tbody v-else>
+              <tr>
+                <td class="report-table__cell" colspan="6">
+                  暂无基础参数数据
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+
         </section>
+
+        <section>
+          <article class="analysis-interpretation">
+            <div class="analysis-interpretation__header">
+              <span class="analysis-interpretation__title">能力/兴趣结构综述</span>
+            </div>
+            <p class="analysis-interpretation__text">
+              {{ aiReportData?.common_section?.subjects_summary_text }}
+            </p>
+          </article>
+        </section>
+
 
       </section>
       <!-- 下半部分：选科组合推荐卡片 -->
@@ -284,11 +285,65 @@
             <h2 class="report-card__title">选科组合推荐</h2>
           </div>
         </header>
-
+        <!-- 3+3 模式参数说明：字体偏小、不占太多空间 -->
         <div class="report-card__divider"></div>
-
         <!-- ===================== 3+3 模式：沿用现有结构 ===================== -->
         <div v-if="isMode33">
+          <div class="field-definitions field-definitions--compact">
+            <table class="field-definitions__table">
+              <thead>
+              <tr>
+                <th class="field-definitions__cell field-definitions__cell--head">参数名称</th>
+                <th class="field-definitions__cell field-definitions__cell--head">对选科的影响说明</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">平均匹配度</td>
+                <td class="field-definitions__cell">
+                  反映孩子在这三门科目上兴趣与能力的整体协调程度。数值越高，说明既有兴趣又有相对优势，
+                  更利于长期投入和稳定发挥，是判断“这三科是否适合长期学下去”的核心指标之一。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">最低能力等级</td>
+                <td class="field-definitions__cell">
+                  三门科目中当前能力相对最弱的一门。数值越低，短板越明显，选为组合时需要在备考中为这门科目
+                  预留更多时间和支持，否则整体成绩容易被这一门拖累。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">方向协同性</td>
+                <td class="field-definitions__cell">
+                  衡量三门科目的学习方式、思维特点是否接近。协同性越高，科目之间切换成本越低，
+                  孩子在时间与精力分配上会更顺畅，不容易出现“每天都在完全不同类型学科之间来回换挡”的疲惫感。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">综合得分</td>
+                <td class="field-definitions__cell">
+                  对该组合整体适配度的综合评价，在匹配度、能力基础和风险等多个维度之间做平衡。
+                  分数越高，整体越适合作为优先考虑的选科方案。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">稀有度</td>
+                <td class="field-definitions__cell">
+                  表示在当前地区报考中，该组合被选择的多少程度。数值越高越少见，可能带来竞争对手较少、
+                  但课程资源、志愿填报参考信息相对不足等双重影响，一般需要家长和学生额外关注对应院校的选科要求。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">风险惩罚</td>
+                <td class="field-definitions__cell">
+                  综合考虑学科短板、兴趣冲突和组合稀有带来的不稳定因素。值越高，说明在时间精力分配、
+                  成绩波动或志愿填报上需要更谨慎，更适合作为备选方案，而不是唯一依赖的组合。
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+
           <!-- 5. 推荐概览（将来可以放两张小图） -->
           <section class="report-section report-section--recommend-analysis">
             <h3 class="report-section__title">整体推荐概览（3+3 模式）</h3>
@@ -316,23 +371,20 @@
               </div>
             </div>
 
-            <div
-                v-if="mode33View && mode33View.overviewText"
-                class="recommend-main-strip"
-            >
+            <div v-if="mode33View && mode33View.overviewText" class="recommend-main-strip">
   <span class="recommend-main-strip__label">
     {{ mode33View.overviewText }}
   </span>
             </div>
-
 
           </section>
 
           <!-- 6. 分档组合列表（3+3：仍然用原来的 recommendedCombos） -->
           <section class="report-section report-section--combos">
             <h3 class="report-section__title">分档组合详情（3+3 模式）</h3>
+
             <div
-                v-for="combo in recommendedCombos"
+                v-for="combo in mode33View?.topCombos"
                 :key="combo.rankLabel + combo.name"
                 class="combo-block"
             >
@@ -348,10 +400,9 @@
             {{ combo.rankLabel }}：{{ combo.name }}
           </span>
                 <span class="combo-rank-strip__score">
-            得分：{{ combo.score }}
+            综合得分：{{ combo.score }}
           </span>
               </div>
-
               <div class="combo-panel">
                 <header class="combo-panel__header">
                   <h4 class="combo-panel__title">结构指标概览</h4>
@@ -373,14 +424,10 @@
                 </div>
 
                 <section class="combo-panel__section">
-                  <h5 class="combo-panel__subtitle">影响因素解读</h5>
+                  <h5 class="combo-panel__subtitle">AI 推荐评语</h5>
                   <div class="combo-panel__ai-block">
-                    <p
-                        v-for="(line, idx) in combo.factorExplain"
-                        :key="idx"
-                        class="combo-panel__text-line"
-                    >
-                      {{ line }}
+                    <p class="combo-panel__text-line">
+                      {{ combo.recommendExplain }}
                     </p>
                   </div>
                 </section>
@@ -388,12 +435,8 @@
                 <section class="combo-panel__section">
                   <h5 class="combo-panel__subtitle">AI 选科建议</h5>
                   <div class="combo-panel__ai-block">
-                    <p
-                        v-for="(line, idx) in combo.recommendExplain"
-                        :key="idx"
-                        class="combo-panel__text-line"
-                    >
-                      {{ line }}
+                    <p class="combo-panel__text-line">
+                      {{ combo.recommendAdvice }}
                     </p>
                   </div>
                 </section>
@@ -401,33 +444,76 @@
             </div>
           </section>
         </div>
-
         <!-- ===================== 3+1+2 模式：物理组 + 历史组 ===================== -->
         <div v-else-if="isMode312">
           <!-- 全局说明：为什么不直接替你选物理 / 历史 -->
-          <section class="report-section report-section--mode312-intro">
-            <h3 class="report-section__title">物理 / 历史方向说明</h3>
-            <p class="mode312-intro__text">
-              在当前 3+1+2 模式下，全国范围内理工类专业及招生计划数量通常多于文史类专业，
-              因此从长期升学机会和专业选择空间来看，选择物理往往会获得更宽的专业覆盖范围。
-            </p>
-            <p class="mode312-intro__text mode312-intro__text--secondary">
-              为了避免把「选物理还是选历史」这个关键决策完全交给算法，本系统的做法是：
-              <strong>不直接替你做出文理方向的决定</strong>，
-              而是分别给出以物理为主、以历史为主的 3 个代表性组合，
-              由你和家长结合兴趣、目标专业和学校情况做最终选择。
-            </p>
-          </section>
+          <div class="field-definitions field-definitions--compact">
+            <table class="field-definitions__table">
+              <thead>
+              <tr>
+                <th class="field-definitions__cell field-definitions__cell--head">参数名称</th>
+                <th class="field-definitions__cell field-definitions__cell--head">对选科的影响说明</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">综合得分</td>
+                <td class="field-definitions__cell">
+                  综合反映主干科目与两门辅科的整体适配情况，结合兴趣、能力和风险等多维因素得出。
+                  分数越高，说明该三科组合更稳、更契合学生当前的兴趣和学习实力，适合作为优先考虑方案。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">专业覆盖率</td>
+                <td class="field-definitions__cell">
+                  表示该三科组合在当前省份规则下能覆盖的专业范围。覆盖率越高，说明未来志愿选择空间更大，
+                  可报考专业更丰富，升学灵活度更高。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">组合风险</td>
+                <td class="field-definitions__cell">
+                  衡量该组合在文理跨度、学习方式冲突或短板科目影响下的潜在不稳定性。
+                  数值偏高时，说明需要在时间分配和备考节奏上更谨慎，建议作为备选组合。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">辅科平均匹配度</td>
+                <td class="field-definitions__cell">
+                  反映两门辅科在兴趣与能力上的整体协调性。数值越高，说明这两门课更贴合学生的学习风格，
+                  同时具备一定的兴趣驱动和学习信心。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">辅科平均能力值</td>
+                <td class="field-definitions__cell">
+                  表示学生在两门辅科上的平均能力水平。数值越高，说明在非主干科目上学习基础更扎实，
+                  具备较好的扩展潜力和学习稳健度。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">辅科最低匹配度</td>
+                <td class="field-definitions__cell">
+                  两门辅科中相对较弱的一门在兴趣与能力上的匹配度，用来识别潜在短板。
+                  如果该值明显偏低，需要在后续学习中对该科目给予更多关注与支持。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">辅科一致性</td>
+                <td class="field-definitions__cell">
+                  衡量两门辅科在学习方式与思维风格上的一致程度。数值越高，说明两门课在复习节奏、
+                  思维模式上更协调，切换成本更低，整体学习更顺畅。
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
 
           <!-- ===================== 3+1+2 · 物理组 ===================== -->
           <section class="report-section report-section--mode312-group">
             <!-- 物理组标题 + 概述 -->
             <header class="recommend-312-group__header">
               <h4 class="recommend-312-group__title">以物理为主的 3+1+2 组合</h4>
-              <p class="recommend-312-group__overview">
-                示例：物理组主干扎实，辅科协同性强，整体专业覆盖更广，
-                更适合理科倾向明显、希望保留更多工科与理学专业选择空间的学生。
-              </p>
             </header>
 
             <!-- 物理组：2 张图表占位，展示 3 个组合的得分情况 -->
@@ -456,7 +542,7 @@
                 </div>
               </div>
 
-              <div  v-if="mode312OverviewStrips"  class="recommend-main-strip"  >
+              <div v-if="mode312OverviewStrips" class="recommend-main-strip">
                 <span class="recommend-main-strip__label">  {{ mode312OverviewStrips.phyOverviewText }}</span>
               </div>
 
@@ -467,7 +553,7 @@
               <h5 class="report-section__subtitle">以物理为主的分档组合详情</h5>
 
               <div
-                  v-for="combo in combos312Phy"
+                  v-for="combo in mode312OverviewStrips?.phyTopCombos"
                   :key="'PHY-' + combo.rankLabel + combo.name"
                   class="combo-block"
               >
@@ -483,7 +569,7 @@
               {{ combo.rankLabel }}：{{ combo.name }}
             </span>
                   <span class="combo-rank-strip__score">
-              得分：{{ combo.score }}
+              综合得分：{{ combo.score }}
             </span>
                 </div>
 
@@ -510,12 +596,8 @@
                   <section class="combo-panel__section">
                     <h5 class="combo-panel__subtitle">影响因素解读</h5>
                     <div class="combo-panel__ai-block">
-                      <p
-                          v-for="(line, idx) in combo.factorExplain"
-                          :key="idx"
-                          class="combo-panel__text-line"
-                      >
-                        {{ line }}
+                      <p class="combo-panel__text-line">
+                        {{ combo.recommendExplain }}
                       </p>
                     </div>
                   </section>
@@ -523,12 +605,8 @@
                   <section class="combo-panel__section">
                     <h5 class="combo-panel__subtitle">AI 选科建议</h5>
                     <div class="combo-panel__ai-block">
-                      <p
-                          v-for="(line, idx) in combo.recommendExplain"
-                          :key="idx"
-                          class="combo-panel__text-line"
-                      >
-                        {{ line }}
+                      <p class="combo-panel__text-line">
+                        {{ combo.recommendAdvice }}
                       </p>
                     </div>
                   </section>
@@ -542,10 +620,6 @@
             <!-- 历史组标题 + 概述 -->
             <header class="recommend-312-group__header">
               <h4 class="recommend-312-group__title">以历史为主的 3+1+2 组合</h4>
-              <p class="recommend-312-group__overview">
-                示例：历史组专业覆盖相对较窄，但在人文社科、法学等方向协同性更高，
-                更适合文科兴趣更强、未来希望深耕人文方向的学生。
-              </p>
             </header>
 
             <!-- 历史组：2 张图表占位 -->
@@ -574,8 +648,8 @@
                 </div>
               </div>
 
-              <div  v-if="mode312OverviewStrips"  class="recommend-main-strip"  >
-                <span class="recommend-main-strip__label"> {{ mode312OverviewStrips.hisOverviewText  }} </span>
+              <div v-if="mode312OverviewStrips" class="recommend-main-strip">
+                <span class="recommend-main-strip__label"> {{ mode312OverviewStrips.hisOverviewText }} </span>
               </div>
 
             </section>
@@ -585,7 +659,7 @@
               <h5 class="report-section__subtitle">以历史为主的分档组合详情</h5>
 
               <div
-                  v-for="combo in combos312His"
+                  v-for="combo in mode312OverviewStrips?.hisTopCombos"
                   :key="'HIS-' + combo.rankLabel + combo.name"
                   class="combo-block"
               >
@@ -628,12 +702,8 @@
                   <section class="combo-panel__section">
                     <h5 class="combo-panel__subtitle">影响因素解读</h5>
                     <div class="combo-panel__ai-block">
-                      <p
-                          v-for="(line, idx) in combo.factorExplain"
-                          :key="idx"
-                          class="combo-panel__text-line"
-                      >
-                        {{ line }}
+                      <p class="combo-panel__text-line">
+                        {{ combo.recommendExplain }}
                       </p>
                     </div>
                   </section>
@@ -641,12 +711,8 @@
                   <section class="combo-panel__section">
                     <h5 class="combo-panel__subtitle">AI 选科建议</h5>
                     <div class="combo-panel__ai-block">
-                      <p
-                          v-for="(line, idx) in combo.recommendExplain"
-                          :key="idx"
-                          class="combo-panel__text-line"
-                      >
-                        {{ line }}
+                      <p class="combo-panel__text-line">
+                        {{ combo.recommendAdvice }}
                       </p>
                     </div>
                   </section>
@@ -655,36 +721,35 @@
             </section>
           </section>
         </div>
+      </section>
 
-        <!-- ===================== Summary：两种模式共用 ===================== -->
-        <section class="report-section report-section--summary">
-          <h3 class="report-section__title">报告摘要</h3>
+      <section class="report-section report-section--summary">
+        <h3 class="report-section__title">报告摘要</h3>
 
-          <div class="summary-grid">
-            <article
-                v-for="card in summaryCards"
-                :key="card.title"
-                class="summary-card"
-            >
-              <h4 class="summary-card__title">{{ card.title }}</h4>
-              <p>{{ card.content }}</p>
-            </article>
-          </div>
-        </section>
-
-        <!-- 页面底部按钮：打印 / 导出 / 返回 -->
-        <div class="report-page__actions">
-          <!-- TODO：绑定具体路由或打印逻辑 -->
-          <button class="btn btn-secondary report-page__action">
-            返回测试首页
-          </button>
-          <button class="btn btn-primary report-page__action">
-            导出 PDF
-          </button>
+        <div class="summary-grid">
+          <article
+              v-for="card in summaryCards"
+              :key="card.title"
+              class="summary-card"
+          >
+            <h4 class="summary-card__title">{{ card.title }}</h4>
+            <p>{{ card.content }}</p>
+          </article>
         </div>
       </section>
 
     </main>
+
+    <div class="report-page__actions">
+      <!-- TODO：绑定具体路由或打印逻辑 -->
+      <button class="btn btn-secondary report-page__action">
+        返回测试首页
+      </button>
+      <button class="btn btn-primary report-page__action">
+        导出 PDF
+      </button>
+    </div>
+
     <AiGeneratingOverlay
         v-if="aiLoading"
         title="AI 正在为你生成专属报告…"
@@ -716,14 +781,11 @@ const {
   overview,
   aiLoading,
   truncatedLatestMessage,
-  recommendedCombos,
   summaryCards,
   subjectRadar,
   rawReportData,
   isMode33,
   isMode312,
-  combos312Phy,
-  combos312His,
   mode33View,
   mode312OverviewStrips,
 } = useReportPage()

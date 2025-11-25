@@ -9,8 +9,11 @@
     "serve": "vite preview"
   },
   "dependencies": {
+    "echarts": "^6.0.0",
+    "html2pdf.js": "^0.12.1",
     "pinia": "^3.0.4",
     "vue": "^3.3.4",
+    "vue-echarts": "^8.0.1",
     "vue-router": "^4.2.0"
   },
   "devDependencies": {

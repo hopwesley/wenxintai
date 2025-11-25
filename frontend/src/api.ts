@@ -28,7 +28,7 @@ export async function apiRequest<T = any>(path: string, options: RequestOptions 
         }
     }
 
-    let body: any = null
+    let body: any
     try {
         body = await resp.json()
     } catch {
@@ -63,45 +63,6 @@ export async function login(payload: LoginPayload) {
 export async function getHobbies(): Promise<string[]> {
   const data = await apiRequest<{ hobbies: string[] }>('/api/hobbies')
   return data?.hobbies ?? []
-}
-
-export interface QuestionsRequest {
-  session_id?: string
-  mode: string
-  grade: string
-  hobby: string
-}
-
-export async function getQuestions(payload: QuestionsRequest) {
-  return apiRequest('/api/questions', { method: 'POST', body: payload })
-}
-
-export interface AnswersRequest {
-  session_id?: string
-  mode: string
-  riasec_answers: any[]
-  asc_answers: any[]
-  alpha?: number
-  beta?: number
-  gamma?: number
-}
-
-export async function sendAnswers(payload: AnswersRequest) {
-  return apiRequest('/api/answers', { method: 'POST', body: payload })
-}
-
-export interface SubmitTestSessionRequest {
-  sessionId: string
-  variant: 'basic' | 'pro' | 'campus'
-  age: number
-  mode: string
-  hobby: string
-  riasec_answers: Record<string, number>
-  asc_answers: Record<string, number>
-}
-
-export async function submitTestSession(payload: SubmitTestSessionRequest) {
-  return apiRequest('/api/test/submit', { method: 'POST', body: payload })
 }
 
 export interface ReportRequest {

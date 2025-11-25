@@ -1,0 +1,34 @@
+import {createRouter, createWebHistory, RouteRecordRaw} from 'vue-router'
+import {StageBasic, StageReport} from "@/controller/common";
+
+const routes: RouteRecordRaw[] = [
+    {
+        path: '/',
+        name: 'home',
+        component: () => import('@/views/HomeView.vue'),
+    },
+    {
+        path: '/assessment/:typ/'+StageBasic,
+        name: 'test-basic-info',
+        component: () => import('@/views/AssessmentBasicInfo.vue'),
+    },
+    {
+        path: '/assessment/:typ/'+StageReport,
+        name: 'test-report',
+        component: () => import('@/views/AssessmentReport.vue'),
+    },
+    {
+        path: '/assessment/:businessType/:testStage',
+        name: 'test-stage',
+        component: () => import('@/views/AssessmentQuestions.vue'),
+    },
+    {
+        path: '/:pathMatch(.*)*',
+        redirect: '/'
+    },
+]
+
+export const router = createRouter({
+    history: createWebHistory(),
+    routes
+})

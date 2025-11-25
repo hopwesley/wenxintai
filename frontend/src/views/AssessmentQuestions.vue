@@ -1,121 +1,133 @@
 <template>
   <TestLayout :key="route.fullPath">
+    <!-- 顶部步骤条 -->
     <template #header>
-      <StepIndicator :steps="stepItems" :current="currentStep"/>
+      <StepIndicator/>
     </template>
 
     <section class="questions">
+      <!-- 顶部标题 + 进度 -->
       <header class="questions__header">
         <h1>{{ currentStepTitle }}</h1>
-        <p class="questions__progress" v-if="totalPages > 1">{{ currentPage }} / {{ totalPages }}</p>
+        <p class="questions__progress" v-if="totalPages > 1">
+          第 {{ pageStartIndex + 1 }}–{{ pageEndIndex }} 题 / 共 {{ totalCount }} 题
+        </p>
       </header>
 
-      <div v-if="loading" class="questions__loading">正在从服务器获取信息…</div>
-      <div v-else-if="errorMessage" class="questions__error">{{ errorMessage }}</div>
-      <div v-else>
-        <form @submit.prevent="handleNext">
-          <div v-for="q in currentPageQuestions" :key="q.id" class="question"
-               :class="{ 'question--highlight': highlightedId === q.id }" ref="setRef">
-            <p class="question__text">{{ q.text }}</p>
-            <div class="question__options">
-              <label v-for="opt in scaleOptions" :key="opt.value" class="question__option">
-                <input type="radio" :name="q.id" :value="opt.value" :checked="getAnswer(q.id) === opt.value"
-                       @change="onSelect(q.id, opt.value)"/>
-                <span>{{ opt.label }}</span>
-              </label>
-            </div>
-          </div>
-        </form>
+      <!-- 主区域：根据 loading / error / 正常显示不同内容 -->
+      <div v-if="aiLoading" class="questions__loading">
+        正在为你准备本阶段的专属题目…
       </div>
 
-      <footer class="questions__footer" v-if="!loading && !errorMessage">
-        <button type="button" class="questions__nav questions__nav--prev" @click="handlePrev">上一步</button>
-        <button type="button" class="questions__nav questions__nav--next"
-                :disabled="!isCurrentPageComplete || submitting" @click="handleNext">
-          <span v-if="submitting">提交中…</span>
-          <span v-else>{{ nextLabel }}</span>
-        </button>
-      </footer>
+      <div v-else>
+        <!-- 整个答题区域用 form 包裹 -->
+        <form @submit.prevent="handleNext">
+          <!-- 当前页题目列表：每页 5 题 -->
+          <section>
+            <article
+                v-for="(question, idx) in pagedQuestions"
+                :key="question.id"
+                class="question"
+                :class="{ 'question--highlight': isQuestionHighlighted(question.id) }"
+            >
+              <!-- 题干：序号 + 文本 -->
+              <p class="question__text">
+                {{ pageStartIndex + idx + 1 }}. {{ question.text }}
+              </p>
+
+              <!-- 选项：5 个尺度 -->
+              <div class="question__options">
+                <label
+                    v-for="opt in scaleOptions"
+                    :key="opt.value"
+                    class="question__option"
+                >
+                  <input
+                      type="radio"
+                      :name="`q-${question.id}`"
+                      :value="opt.value"
+                      v-model="answers[question.id]"
+                  />
+                  <span class="question__option-label">
+                    {{ opt.label }}
+                  </span>
+                </label>
+              </div>
+            </article>
+          </section>
+
+          <!-- 底部翻页按钮 -->
+          <footer class="questions__footer">
+            <button
+                v-if="totalPages > 1"
+                type="button"
+                class="btn btn-secondary questions__nav"
+                @click="handlePrev"
+                :disabled="isFirstPage || isSubmitting"
+            >
+              返回上一页
+            </button>
+
+            <button
+                type="submit"
+                class="btn btn-primary questions__nav"
+                :disabled="isSubmitting"
+            >
+              {{ isLastPage ? '提交本阶段' : '下一页' }}
+            </button>
+          </footer>
+        </form>
+      </div>
     </section>
 
-    <!-- 全屏遮罩 -->
-    <div v-if="loading" class="overlay">
-      <div class="overlay__card">正在从服务器获取信息…</div>
+    <AiGeneratingOverlay
+        v-if="aiLoading"
+        title="AI 正在为你生成专属题目…"
+        subtitle="正在分析你的测试设置，智能规划本阶段题目结构"
+        :log-lines="truncatedLatestMessage"
+        :meta="{
+    mode: state.mode || '',
+    grade: state.grade || '',
+    stage: currentStepTitle
+  }"
+    />
+
+
+    <!-- 提交中的遮罩层（保持简单文案） -->
+    <div v-if="isSubmitting" class="overlay">
+      <div class="overlay__card">
+        正在提交本阶段答案，请稍候…
+      </div>
     </div>
   </TestLayout>
 </template>
 <script setup lang="ts">
-import {onMounted, ref} from 'vue'
-import TestLayout from '@/layouts/TestLayout.vue'
+import TestLayout from '@/views/components/TestLayout.vue'
 import StepIndicator from '@/views/components/StepIndicator.vue'
-import {applyTest, useQuestionsStageView} from '@/controller/AssessmentQuestions'
-import {useTestSession} from "@/store/testSession";
-import {StageBasic, TestTypeBasic} from "@/controller/common";
+import {useQuestionsStagePage} from '@/controller/AssessmentQuestions'
+import {scaleOptions} from '@/controller/common'
+import AiGeneratingOverlay from "@/views/components/AiGeneratingOverlay.vue";
 
 const {
   route,
-  loading,
-  stepItems,
-  currentStep,
+  state,
+  aiLoading,
+  totalPages,
+  totalCount,
+  pageStartIndex,
+  pageEndIndex,
+  pagedQuestions,
+  answers,
+  isFirstPage,
+  isLastPage,
+  isSubmitting,
+  truncatedLatestMessage,
+  isQuestionHighlighted,
+  handlePrev,
+  handleNext,
   currentStepTitle,
-  showLoading,
-  hideLoading,
-} = useQuestionsStageView()
+} = useQuestionsStagePage()
 
-const totalPages = ref(1)
-const currentPage = ref(1)
-const currentPageQuestions = ref<{ id: string; text: string }[]>([])
-const errorMessage = ref('')
-const submitting = ref(false)
-const nextLabel = ref('下一步')
-const isCurrentPageComplete = ref(true)
-const highlightedId = ref<string | null>(null)
-const scaleOptions = ref<{ value: number; label: string }[]>([])
-
-
-function getAnswer(_id: string) {
-  return undefined
-}
-
-function onSelect(_id: string, _value: number) {
-}
-
-async function handlePrev() {
-}
-
-async function handleNext() {
-}
-
-const {state} = useTestSession()
-onMounted(async () => {
-  showLoading()
-  errorMessage.value = ''
-
-  const scaleKey = String(route.params.scale ?? StageBasic)
-  const testType = state.testType || TestTypeBasic
-
-  try {
-    const resp = await applyTest(scaleKey, {
-      test_type: testType,
-      invite_code: state.inviteCode || undefined,
-      wechat_openid: state.wechatOpenId || undefined,
-      grade: state.grade || undefined,
-      mode: state.mode || undefined,
-      hobby: state.hobby || undefined,
-      session_id: state.sessionId || undefined,
-    })
-
-    console.log('[QuestionsStageView] apply_test resp:', resp)
-
-  } catch (err) {
-    console.error('[QuestionsStageView] applyTest error', err)
-    errorMessage.value = '初始化测试失败，请返回首页重试'
-    hideLoading()
-  }finally {
-    hideLoading()
-  }
-})
 </script>
-
 
 <style scoped src="@/styles/questions-stage.css"></style>

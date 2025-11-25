@@ -1,7 +1,7 @@
 <template>
   <TestLayout>
     <template #header>
-      <StepIndicator :steps="stepItems" :current="currentStepIndex"/>
+      <StepIndicator/>
     </template>
     <main class="config-page">
       <section class="config-card">
@@ -28,8 +28,8 @@
             <span>测试模式</span>
             <select v-model="form.mode" :disabled="submitting" required>
               <option value="">请选择模式</option>
-              <option value="3+3">3+3 模式</option>
-              <option value="3+1+2">3+1+2 模式</option>
+              <option value='3+3'>3+3 模式</option>
+              <option value='3+1+2'>3+1+2 模式</option>
             </select>
           </label>
 
@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import TestLayout from '@/layouts/TestLayout.vue'
+import TestLayout from '@/views/components/TestLayout.vue'
 import StepIndicator from '@/views/components/StepIndicator.vue'
 import { useStartTestConfig } from '@/controller/AssessmentBasicInfo'
 
@@ -66,11 +66,9 @@ const {
   submitting,
   errorMessage,
   canSubmit,
-  stepItems,
-  currentStepIndex,
   handleSubmit,
 } = useStartTestConfig()
+
 </script>
 
-<style scoped src="@/styles/assessment-basic-info.css"></style>
-
+<style scoped src="@/styles/assessment-basicInfo.css"></style>

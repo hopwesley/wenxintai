@@ -3,200 +3,155 @@ package srv
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/hopwesley/wenxintai/server/dbSrv"
 )
 
-type TestBasicInfo struct {
-	Grade string `json:"grade"`
-	Mode  string `json:"mode"`
-	Hobby string `json:"hobby,omitempty"`
-}
-
 type testFlowRequest struct {
-	TestType     string  `json:"test_type"`
-	TestPublicID string  `json:"public_id,omitempty"`
-	InviteCode   *string `json:"invite_code,omitempty"`
-	WechatOpenID *string `json:"wechat_openid,omitempty"`
+	TestPublicID string `json:"public_id"`
 }
 
 func (req *testFlowRequest) parseObj(r *http.Request) *ApiErr {
+	if r.Method != http.MethodPost {
+		return ApiMethodInvalid
+	}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		return ApiInvalidReq("invalid request body", err)
 	}
-
-	if strings.TrimSpace(req.TestType) == "" {
-		return ApiInvalidReq("test_type is required", nil)
+	if !IsValidPublicID(req.TestPublicID) {
+		return ApiInvalidReq("无效的问卷编号", nil)
 	}
-
-	if (req.InviteCode == nil || strings.TrimSpace(*req.InviteCode) == "") &&
-		(req.WechatOpenID == nil || strings.TrimSpace(*req.WechatOpenID) == "") {
-		return ApiInvalidReq("请先微信登录或者使用邀请码开始测试", nil)
-	}
-
 	return nil
 }
 
-func (req *testFlowRequest) isInviteCodeUsage() bool {
-	return req.InviteCode != nil &&
-		len(strings.TrimSpace(*req.InviteCode)) > 2
-}
-
-func (req *testFlowRequest) isWeChatUsage() bool {
-	return req.WechatOpenID != nil &&
-		len(strings.TrimSpace(*req.WechatOpenID)) > 2
-}
-
-func (req *testFlowRequest) getUserId() (string, string) {
-	var inviteCode, weChatID = "", ""
-	if req.isInviteCodeUsage() {
-		inviteCode = *req.InviteCode
-	}
-	if req.isWeChatUsage() {
-		weChatID = *req.WechatOpenID
-	}
-
-	return inviteCode, weChatID
-}
-
-type testRouteDef struct {
-	Router string `json:"router"` // 英文路由名，例如 basic-info / riasec / asc / report
-	Desc   string `json:"desc"`   // 中文描述，例如 基本信息 / 兴趣测试 / 能力测试 / 测试报告
+type TestFlowStep struct {
+	Stage string `json:"stage"` // 路由用的 key，例如 "basic-info" / "riasec" / ...
+	Title string `json:"title"` // 展示给用户的标题，例如 "基础信息" / "兴趣测试"
 }
 
 type testFlowResponse struct {
-	TestPublicID string         `json:"public_id"`
-	Routes       []testRouteDef `json:"routes"`
-	NextRoute    string         `json:"nextRoute,omitempty"`
+	TestPublicID string `json:"public_id"`
+	BusinessType string `json:"business_type"`
+
+	Steps        []TestFlowStep `json:"steps"`         // 全部阶段（key + title）
+	CurrentStage string         `json:"current_stage"` // 当前阶段的 stage key，比如 "riasec"
+	CurrentIndex int            `json:"current_index"` // 当前阶段在 Steps 里的下标（0-based）
+
+	Routes    []string `json:"routes"`
+	NextRoute string   `json:"next_route"`
+	NextRid   int16    `json:"next_route_id"`
 }
 
 func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		writeError(w, ApiMethodInvalid)
+
+	var req testFlowRequest
+	err := req.parseObj(r)
+	if err != nil {
+		s.log.Err(err).Msgf("invalid test flow request")
+		writeError(w, err)
 		return
 	}
-	var req testFlowRequest
+	ctx := r.Context()
+
+	sLog := s.log.With().Str("public_id", req.TestPublicID).Logger()
+	s.log.Info().Msg("query test flow")
+
+	record, dbErr := dbSrv.Instance().FindTestRecordByPublicId(ctx, req.TestPublicID)
+	if dbErr != nil {
+		sLog.Err(dbErr).Msg("failed find test record")
+		writeError(w, ApiInternalErr("查询文件数据库操作失败", dbErr))
+		return
+	}
+
+	// 1. 取出完整流程的 stage 列表 & 描述列表
+	stageFlow := getTestRoutes(record.BusinessType)    // e.g. ["basic-info","riasec",...]
+	titleFlow := getTestRoutesDes(record.BusinessType) // e.g. ["基础信息","兴趣测试",...]
+
+	if stageFlow == nil || titleFlow == nil {
+		sLog.Error().Msgf("failed build test routes for business_type=%s", record.BusinessType)
+		writeError(w, ApiInternalErr("没有测试类型为："+record.BusinessType+"的测试卷", nil))
+		return
+	}
+
+	// 2. 当前应该在哪个阶段（基于 status 计算）
+	currentStage := parseStatusToRoute(record, stageFlow)
+
+	// 3. 在流程中找到当前阶段的 index（0-based）
+	currentIndex := 0
+	for i, sName := range stageFlow {
+		if sName == currentStage {
+			currentIndex = i
+			break
+		}
+	}
+
+	// 4. 组装 steps（stage + title）
+	steps := getTestFlowSteps(record.BusinessType)
+
+	resp := testFlowResponse{
+		TestPublicID: req.TestPublicID,
+		BusinessType: record.BusinessType,
+
+		Steps:        steps,
+		CurrentStage: currentStage,
+		CurrentIndex: currentIndex,
+
+		// 兼容旧字段
+		Routes:    titleFlow,
+		NextRoute: currentStage,
+		NextRid:   int16(currentIndex),
+	}
+
+	sLog.Debug().
+		Str("business_type", record.BusinessType).
+		Str("current_stage", currentStage).
+		Int("current_index", currentIndex).
+		Msg("test record found")
+
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (s *HttpSrv) updateBasicInfo(w http.ResponseWriter, r *http.Request) {
+
+	var req BasicInfoReq
 	err := req.parseObj(r)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
 
-	routes := buildTestRoutes(req.TestType)
-	if routes == nil {
-		writeError(w, NewApiError(http.StatusInternalServerError,
-			ErrorCodeInternal, "没有测试类型为："+req.TestType+"的测试卷", nil))
-		return
-	}
+	slog := s.log.With().Str("public_id", req.PublicId).Logger()
+	slog.Info().Msg("prepare to update basic info")
+
 	ctx := r.Context()
+	businessTyp, dbErr := dbSrv.Instance().UpdateBasicInfo(
+		ctx,
+		req.PublicId,
+		string(req.Grade),
+		string(req.Mode),
+		req.Hobby,
+		RecordStatusInTest,
+	)
 
-	if len(req.TestPublicID) < 4 {
-		publicID, dbErr := dbSrv.Instance().NewTestRecord(ctx, req.TestType, req.InviteCode, req.WechatOpenID)
-		if dbErr != nil {
-			writeError(w, NewApiError(http.StatusInternalServerError,
-				ErrorCodeInternal, "创建文件数据库操作失败", dbErr))
-			return
-		}
-
-		resp := testFlowResponse{
-			Routes:       routes,
-			TestPublicID: publicID,
-		}
-
-		s.log.Debug().Str("public_id", publicID).Msg("no test public id found, init a empty test record")
-		writeJSON(w, http.StatusOK, resp)
-		return
-	}
-
-	var inviteCode, weChatID = req.getUserId()
-	record, dbErr := dbSrv.Instance().FindRestRecordByUid(ctx, inviteCode, weChatID)
 	if dbErr != nil {
-		writeError(w, NewApiError(http.StatusInternalServerError,
-			ErrorCodeInternal, "查询文件数据库操作失败", dbErr))
+		slog.Err(dbErr).Msg("更新基本信息失败")
+		writeError(w, NewApiError(http.StatusInternalServerError, "db_update_failed", "更新基本信息失败", err))
 		return
 	}
 
-	var nextStep = calculateNextStep(record)
-	resp := testFlowResponse{
-		Routes:       routes,
-		TestPublicID: req.TestPublicID,
-		NextRoute:    nextStep,
-	}
-	s.log.Debug().Str("test_type", req.TestType).Str("invite_code", inviteCode).
-		Str("wechat_id", weChatID).Str("next_step", nextStep).Msg("test record found")
-	writeJSON(w, http.StatusOK, resp)
-}
-
-func calculateNextStep(record *dbSrv.TestRecord) string {
-	switch record.Status {
-	case RecordStatusInit:
-		return StageBasic
-	default:
-		return StageBasic
-	}
-}
-
-const (
-	RecordStatusInit = 0
-)
-
-const (
-	StageBasic  = "basic-info"
-	StageReport = "report"
-
-	StageRiasec    = "riasec"
-	StageRiasecDes = "兴趣测试"
-
-	StageAsc    = "asc"
-	StageAscDes = "能力测试"
-
-	StageOcean    = "ocean"
-	StageOceanDes = "性格测试"
-
-	StageMotivation    = "motivation"
-	StageMotivationDes = "价值观测试"
-
-	TestTypeBasic  = "basic"
-	TestTypePro    = "pro"
-	TestTypeSchool = "school"
-)
-
-func buildTestRoutes(testType string) []testRouteDef {
-	basic := testRouteDef{Router: StageBasic, Desc: "基本信息"}
-	report := testRouteDef{Router: StageReport, Desc: "测试报告"}
-
-	var middle []testRouteDef
-
-	switch testType {
-	case TestTypeBasic:
-		middle = []testRouteDef{
-			{Router: StageRiasec, Desc: StageRiasecDes},
-			{Router: StageAsc, Desc: StageAscDes},
-		}
-	case TestTypePro:
-		middle = []testRouteDef{
-			{Router: StageRiasec, Desc: StageRiasecDes},
-			{Router: StageAsc, Desc: StageAscDes},
-			{Router: StageOcean, Desc: StageOceanDes},
-			{Router: StageMotivation, Desc: StageMotivationDes},
-		}
-	case TestTypeSchool:
-		middle = []testRouteDef{
-			{Router: StageRiasec, Desc: StageRiasecDes},
-			{Router: StageAsc, Desc: StageAscDes},
-			{Router: StageOcean, Desc: StageOceanDes},
-			{Router: StageMotivation, Desc: StageMotivationDes},
-		}
-
-	default:
-		return nil
+	nri, nextR, rErr := nextRoute(businessTyp, StageBasic)
+	if rErr != nil {
+		slog.Err(rErr).Msg("获取下一级路由失败")
+		writeError(w, NewApiError(http.StatusInternalServerError, "db_update_failed", "未找到一下", err))
+		return
 	}
 
-	routes := make([]testRouteDef, 0, len(middle)+2)
-	routes = append(routes, basic)
-	routes = append(routes, middle...)
-	routes = append(routes, report)
+	writeJSON(w, http.StatusOK, &CommonRes{
+		Ok:        true,
+		Msg:       "更新基本信息成功",
+		NextRoute: nextR,
+		NextRid:   nri,
+	})
 
-	return routes
+	slog.Info().Str("next-route", nextR).Int("next-route-index", nri).Msg("update basic info success")
 }

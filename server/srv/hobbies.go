@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/hopwesley/wenxintai/server/assessment"
 	"github.com/hopwesley/wenxintai/server/dbSrv"
 )
 
@@ -20,6 +19,7 @@ func (s *HttpSrv) initHobbies() error {
 	} else {
 		s.cfg.studentHobbies = defaultHobbies
 	}
+
 	s.log.Info().Msg("init hobbies cache success")
 	return err
 }
@@ -30,6 +30,6 @@ func (s *HttpSrv) handleHobbies(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"hobbies": assessment.StudentHobbies,
+		"hobbies": s.cfg.studentHobbies,
 	})
 }

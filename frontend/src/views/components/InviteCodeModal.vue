@@ -36,8 +36,8 @@
 
 <script setup lang="ts">
 import {computed, nextTick, ref, watch} from 'vue'
-import {verifyInvite, VerifyInviteResponse, verifyInviteWithMessage} from '@/controller/InviteCode'
-import {useTestSession} from '@/store/testSession'
+import {VerifyInviteResponse, verifyInviteWithMessage} from '@/controller/InviteCode'
+import {useTestSession} from '@/controller/testSession'
 
 const {setInviteCode} = useTestSession()
 
@@ -104,7 +104,6 @@ async function handleConfirm() {
     emit('success', response)
   }
 }
-
 
 </script>
 

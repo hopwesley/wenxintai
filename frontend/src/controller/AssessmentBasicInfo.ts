@@ -1,9 +1,16 @@
 import {computed, onMounted, reactive, ref} from 'vue'
 import {useRouter} from 'vue-router'
-import {useTestSession} from '@/store/testSession'
-import {getHobbies} from '@/api'
-import {useAlert} from '@/logic/useAlert'
-import {StageBasic, ModeOption, Mode33, Mode312, TestTypeBasic} from "@/controller/common";
+import {useTestSession} from '@/controller/testSession'
+import {apiRequest, getHobbies} from '@/api'
+import {useAlert} from '@/controller/useAlert'
+import {
+    ModeOption,
+    Mode33,
+    Mode312,
+    TestTypeBasic,
+    CommonResponse,
+    pushStageRoute,
+} from "@/controller/common";
 
 interface TestConfigForm {
     grade: string
@@ -14,7 +21,7 @@ interface TestConfigForm {
 export function useStartTestConfig() {
     const {showAlert} = useAlert()
     const router = useRouter()
-    const {state, setTestConfig} = useTestSession()
+    const {state, setTestConfig, getPublicID, setNextRouteItem} = useTestSession()
 
     function handleFlowError(msg?: string) {
         showAlert(msg ?? '测试流程异常，请返回首页重新开始', () => {
@@ -22,23 +29,10 @@ export function useStartTestConfig() {
         })
     }
 
-    const stepItems = computed(() => {
-        const routes = state.testRoutes ?? []
-        return routes.map((r) => ({
-            key: r.router,
-            title: r.desc,
-        }))
-    })
-
-    const currentStepIndex = computed(() => {
-        const routes = state.testRoutes ?? []
-        const idx = routes.findIndex((r) => r.router === 'basic-info')
-        return idx >= 0 ? idx + 1 : 0
-    })
 
     const form = reactive<TestConfigForm>({
         grade: state.grade ?? '',
-        mode: state.mode ?? '', // 默认空，强制用户选择
+        mode: state.mode ?? '',
         hobby: state.hobby ?? '',
     })
 
@@ -46,6 +40,7 @@ export function useStartTestConfig() {
     const errorMessage = ref('')
     const submitting = ref(false)
     const inviteCode = computed(() => state.inviteCode ?? '')
+    const public_id: string = getPublicID() as string
 
     const selectedMode = computed<ModeOption | null>(() => {
         return form.mode === Mode33 || form.mode === Mode312 ? form.mode : null
@@ -56,15 +51,8 @@ export function useStartTestConfig() {
     })
 
     onMounted(async () => {
-
-        const routes = state.testRoutes ?? []
-        if (!routes.length) {
-            handleFlowError('测试流程异常，未找到测试流程，请返回首页重新开始')
-            return
-        }
-        const idx = routes.findIndex((r) => r.router === StageBasic)
-        if (idx < 0) {
-            handleFlowError('测试流程异常，未找到 basic-info 步骤，请返回首页重新开始')
+        if (!public_id) {
+            handleFlowError("没有找到测试记录，请登录重试")
             return
         }
 
@@ -76,6 +64,21 @@ export function useStartTestConfig() {
             hobbies.value = []
         }
     })
+
+
+    interface BasicInfoReq {
+        public_id: string
+        grade: string
+        mode: string
+        hobby?: string | null
+    }
+
+    function updateTestBasicInfo(payload: BasicInfoReq) {
+        return apiRequest<CommonResponse>('/api/tests/basic_info', {
+            method: 'POST',
+            body: payload,
+        })
+    }
 
     async function handleSubmit() {
 
@@ -95,23 +98,30 @@ export function useStartTestConfig() {
             const grade = form.grade.trim()
             const hobby = form.hobby.trim()
 
+            const res = await updateTestBasicInfo({
+                public_id: public_id,
+                grade,
+                mode: selectedMode.value as ModeOption,
+                hobby: hobby || null,
+            })
+            if (!res.ok) {
+                showAlert('更新用户信息失败:' + res.msg)
+                return
+            }
             setTestConfig({
                 grade,
                 mode: selectedMode.value as ModeOption,
                 hobby: hobby || undefined,
             })
 
-            const routes = state.testRoutes ?? []
-            const idx = routes.findIndex((r) => r.router === StageBasic)
-            if (idx < 0 || idx === routes.length - 1) {
+            if (!res.next_route) {
                 handleFlowError('测试流程异常，未找到下一步，请返回首页重新开始')
                 return
             }
 
-            const next = routes[idx + 1]
-            const typ = state.testType || TestTypeBasic
-
-            await router.push(`/test/${typ}/${next.router}`)
+            setNextRouteItem(res.next_route, res.next_route_index)
+            const businessType = state.businessType || TestTypeBasic
+            await pushStageRoute(router, businessType, res.next_route)
         } catch (err) {
             console.error('[StartTestConfig] handleSubmit error', err)
             handleFlowError(
@@ -129,8 +139,6 @@ export function useStartTestConfig() {
         submitting,
         errorMessage,
         canSubmit,
-        stepItems,
-        currentStepIndex,
         handleSubmit,
     }
 }

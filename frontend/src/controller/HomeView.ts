@@ -1,30 +1,37 @@
 // 单个测试步骤
 import {apiRequest} from "@/api";
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
-import { useTestSession } from '@/store/testSession'
-import { useAlert } from '@/logic/useAlert'
+import {ref, onMounted, onBeforeUnmount} from 'vue'
+import {useRouter} from 'vue-router'
+import {useTestSession} from '@/controller/testSession'
+import {useAlert} from '@/controller/useAlert'
 import {VerifyInviteResponse} from "@/controller/InviteCode";
-import { useAuthStore } from '@/store/auth'
-import {TestTypeBasic, TestTypePro, TestTypeSchool} from "@/controller/common";
+import {useAuthStore} from '@/controller/wx_auth'
+import {
+    StageBasic,
+    TestTypeBasic,
+    TestTypePro,
+    TestTypeSchool,
+    type TestFlowStep,
+    pushStageRoute,
+} from "@/controller/common";
 
-export interface TestRouteDef {
-    router: string; // 英文路由名，例如 'basic-info' | 'riasec' | 'asc' | 'report'
-    desc: string;   // 中文描述，例如 '基本信息' | '兴趣测试' | '能力测试' | '测试报告'
-}
 
 export interface FetchTestFlowRequest {
-    test_type: string;
-    public_id?: string | null;
-    invite_code?: string;
-    wechat_openid?: string;
+    public_id: string;
 }
 
 export interface FetchTestFlowResponse {
-    public_id: string;
-    routes: TestRouteDef[];
-    nextRoute?: string | null;
+    public_id: string
+    business_type: string
+
+    // 完整流程
+    steps: TestFlowStep[]
+
+    // 当前要进入的阶段（例如 "basic-info" / "riasec"）
+    current_stage: string
+    current_index: number
 }
+
 
 export async function fetchTestFlow(payload: FetchTestFlowRequest) {
     return apiRequest<FetchTestFlowResponse>('/api/test_flow', {
@@ -37,18 +44,28 @@ export function useHomeView() {
 
     type PlanKey = typeof TestTypeBasic | typeof TestTypePro | typeof TestTypeSchool
 
+    const inviteCodeInput = ref('')
+    const inviteStatus = ref<'idle' | 'success' | 'error'>('idle')
+
+    function handleFlowError(msg: string) {
+        console.error('[HomeView] flow error:', msg)
+        inviteStatus.value = 'error'
+        showAlert(msg)
+    }
+
     const tabDefs = [
-        { key: 'start', label: '开始测试', targetId: 'section-start-test' },
-        { key: 'intro', label: '产品介绍', targetId: 'section-product-intro' },
-        { key: 'letter', label: '致家长的一封信', targetId: 'section-parent-letter' },
+        {key: 'start', label: '开始测试', targetId: 'section-start-test'},
+        {key: 'intro', label: '产品介绍', targetId: 'section-product-intro'},
+        {key: 'letter', label: '致家长的一封信', targetId: 'section-parent-letter'},
     ] as const
 
     const activePlan = ref<PlanKey>('basic')
     type TabKey = (typeof tabDefs)[number]['key']
 
-    const { showAlert } = useAlert()
+    const {showAlert} = useAlert()
     const router = useRouter()
-    const { state, setPublicID, setTestType, setTestRoutes } = useTestSession()
+    const {state, setPublicID, setBusinessType, setTestFlow, setNextRouteItem} = useTestSession()
+
     const authStore = useAuthStore()
     const inviteModalOpen = ref(false)
 
@@ -58,7 +75,7 @@ export function useHomeView() {
     }
 
     function startTest(typ: string) {
-        setTestType(typ)
+        setBusinessType(typ)
         inviteModalOpen.value = true
     }
 
@@ -70,7 +87,7 @@ export function useHomeView() {
 
         const el = document.getElementById(tab.targetId)
         if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            el.scrollIntoView({behavior: 'smooth', block: 'start'})
         }
     }
 
@@ -86,40 +103,43 @@ export function useHomeView() {
         window.removeEventListener('scroll', handleScroll)
     })
 
-    async function handleInviteSuccess(payload: VerifyInviteResponse) {
-        const typ = state.testType || TestTypeBasic
-        const req = {
-            test_type: typ,
-            public_id:payload.public_id,
-            invite_code: state.inviteCode as string | undefined,
-            wechat_openid: state.wechatOpenId as string | undefined,
-        }
+    async function handleInviteSuccess(payload: InviteVerifySuccessPayload) {
+        // 当前业务类型（兜底用）
+        const fallbackBusinessType = state.businessType || TestTypeBasic
 
-        let routes: TestRouteDef[] = []
-        let nextRoute: string | null | undefined
+        // 先把 public_id 存一下
+        setPublicID(payload.public_id)
+
+        const req = {public_id: payload.public_id}
 
         try {
             const resp = await fetchTestFlow(req)
-            routes = resp.routes || []
-            nextRoute = resp.nextRoute ?? null
 
-            setPublicID(resp.public_id)
-            setTestRoutes(routes)
-        } catch (e) {
-            console.error('[handleInviteSuccess] fetchTestFlow failed', e)
-            showAlert('获取测试流程失败，请稍后再试:' + e)
-            return
+            const steps = resp.steps || []
+            if (!steps.length) {
+                handleFlowError('测试流程异常，未配置任何测试阶段')
+                return
+            }
+
+            const businessType = resp.business_type || fallbackBusinessType
+            if (!businessType) {
+                handleFlowError('测试流程异常，未找到测评类型')
+                return
+            }
+
+            const currentStage = resp.current_stage || StageBasic
+            const currentIndex = resp.current_index
+
+            // 同步到全局 store
+            setBusinessType(businessType)
+            setTestFlow(steps)
+            setNextRouteItem(currentStage, currentIndex)
+
+            await pushStageRoute(router, businessType, currentStage)
+        } catch (err) {
+            console.error('fetch test flow failed:', err)
+            handleFlowError('获取测试流程失败，请稍后再试')
         }
-
-        const targetRouter =   nextRoute || (routes.length > 0 ? routes[0].router : null)
-
-        if (!targetRouter) {
-            console.warn('[handleInviteSuccess] no target router found')
-            showAlert('测试流程配置异常，请稍后再试或联系管理员')
-            return
-        }
-
-        await router.push(`/assessment/${typ}/${targetRouter}`)
     }
 
     return {

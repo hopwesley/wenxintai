@@ -31,7 +31,16 @@ var (
 func ApiInvalidReq(msg string, err error) *ApiErr {
 	return NewApiError(http.StatusBadRequest, ErrorCodeBadRequest, msg, err)
 }
+func ApiInternalErr(msg string, err error) *ApiErr {
+	return NewApiError(http.StatusInternalServerError, ErrorCodeInternal, msg, err)
+}
+func ApiInvalidTestSequence(err error) *ApiErr {
+	return NewApiError(http.StatusInternalServerError, ErrorCodeInternal, "请按照测试顺序进行测试", err)
+}
 
+func ApiInvalidNoTestRecord(err error) *ApiErr {
+	return NewApiError(http.StatusInternalServerError, ErrorCodeInternal, "未找到问卷数据", err)
+}
 func (e *ApiErr) Error() string {
 	if e.Message != "" {
 		return e.Message

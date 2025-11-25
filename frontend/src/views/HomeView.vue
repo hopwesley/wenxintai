@@ -1,12 +1,11 @@
 <template>
   <div class="home">
+
     <section class="hero">
       <div class="site-header">
         <div class="header-container">
           <div class="logo-dot" aria-label="问心台">
           </div>
-
-          <!-- 新增：主导航 tab -->
           <nav class="main-nav-tabs">
             <button
                 v-for="tab in tabDefs"
@@ -22,7 +21,6 @@
           <button class="btn btn-ghost login-btn" @click="openLogin">登录</button>
         </div>
       </div>
-
       <div class="hero-inner container">
         <div class="hero-copy">
           <h1>AI生成题目,千人千面</h1>
@@ -295,7 +293,6 @@
         <p class="plan-tip">需签约</p>
       </button>
     </section>
-
     <!-- ① 选科引擎核心价值阐述（新模块） -->
     <section id="section-product-intro" class="home-section value-section">
       <div class="container">
@@ -361,7 +358,7 @@
                 <h3>心理学理论支撑</h3>
                 <p>
                   · 霍兰德职业兴趣理论：评估孩子在现实型、研究型、艺术型、社会型、企业型、常规型六大类型的倾向，
-                  把兴趣与未来大学专业及职业环境进行匹配。<br />
+                  把兴趣与未来大学专业及职业环境进行匹配。<br/>
                   · 自我决定理论：关注孩子的自主感、胜任感与关系感（是否得到重要他人的支持），
                   这是激发持续学习动力的重要心理基础。
                 </p>
@@ -374,7 +371,7 @@
                 <h3>心理学理论支撑</h3>
                 <p>
                   · 霍兰德职业兴趣理论：评估孩子在现实型、研究型、艺术型、社会型、企业型、常规型六大类型的倾向，
-                  把兴趣与未来大学专业及职业环境进行匹配。<br />
+                  把兴趣与未来大学专业及职业环境进行匹配。<br/>
                   · 自我决定理论：关注孩子的自主感、胜任感与关系感（是否得到重要他人的支持），
                   这是激发持续学习动力的重要心理基础。
                 </p>
@@ -461,20 +458,24 @@
       </div>
     </section>
 
-    <section>
+    <section id="icp-area">
       <div
           style="margin: 0 auto;color: #b0b1b3; text-align: center;padding: 16px;border-top: 1px solid #ECECEE; font-size: 14px">
         域世安（北京）科技有限公司 | 京ICP备2025150532号-1
       </div>
     </section>
+
     <InviteCodeModal v-model:open="inviteModalOpen" @success="handleInviteSuccess"/>
   </div>
 </template>
 
 <script setup lang="ts">
-import {ref} from 'vue'
+import {ref, watch} from 'vue'
 import InviteCodeModal from '@/views/components/InviteCodeModal.vue'
-import { useHomeView } from '@/controller/HomeView'
+import {useHomeView} from '@/controller/HomeView'
+
+import {useAuthStore} from '@/controller/wx_auth'
+import {useRouter} from "vue-router";
 
 type LetterTabKey = 'parent' | 'student'
 const activeLetterTab = ref<LetterTabKey>('parent')
@@ -489,6 +490,28 @@ const {
   handleTabClick,
   handleInviteSuccess,
 } = useHomeView()
+
+
+const authStore = useAuthStore()
+const router = useRouter()
+
+// 监听微信扫码登录状态变化
+watch(
+    () => authStore.loginStatus,
+    (status) => {
+      if (status !== 'success') return
+
+      if (authStore.isNewUser) {
+        // 新用户：这里后面可以改成真正的“补充信息”弹窗
+        console.log('[HomeView] 微信登录成功，新用户，需要弹出补充信息界面')
+        // TODO：在这里打开你自己的“补充信息”组件 / 页面
+      } else {
+        // 老用户：认为已经是完整用户，跳回首页，显示登录后内容
+        console.log('[HomeView] 微信登录成功，老用户，跳回首页')
+        router.push('/')
+      }
+    },
+)
 
 </script>
 

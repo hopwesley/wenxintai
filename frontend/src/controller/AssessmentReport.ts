@@ -592,10 +592,12 @@ export function useReportPage() {
     })
 
     const handleBackToHome = () => {
-        return apiRequest<ReportRawData>('/api/generate_report', {
+        const public_id = state.recordPublicID
+        return apiRequest<ReportRawData>('/api/finish_report', {
             method: 'POST',
             body: {
-
+                public_id:public_id,
+                business_type:businessType.value,
             },
         })
     }

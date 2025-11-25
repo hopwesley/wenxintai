@@ -3,6 +3,7 @@ package dbSrv
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"sync"
 
 	"github.com/hopwesley/wenxintai/server/comm"
@@ -58,7 +59,7 @@ func (pdb *psDatabase) WithTx(ctx context.Context, fn func(tx *sql.Tx) error) er
 func (pdb *psDatabase) Init(cfg any) error {
 	pbCfg, ok := cfg.(*PSDBConfig)
 	if !ok {
-		return comm.ErrType
+		return errors.New("invalid type convert")
 	}
 
 	db, err := pbCfg.connDB()

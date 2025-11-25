@@ -10,7 +10,10 @@
   "server": {
     "port": "8080",
     "static_dir": "./static",
-    "read_timeout":10
+    "read_timeout":10,
+    "we_chat_app_id":"wx51cf75df014d41e8",
+    "we_chat_app_sec":"",
+    "we_chat_app_callback":"sharp-happy-grouse.ngrok-free.app/wechat_signin"
   },
   "database": {
     "host": "127.0.0.1",

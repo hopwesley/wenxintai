@@ -239,3 +239,7 @@ func (s *HttpSrv) handleTestReport(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, combinedResult)
 }
+
+func (s *HttpSrv) finishReport(w http.ResponseWriter, r *http.Request) {
+
+}

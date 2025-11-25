@@ -70,8 +70,7 @@ export function useHomeView() {
     const inviteModalOpen = ref(false)
 
     function openLogin() {
-        authStore.openWeChatLogin()
-        console.log('[HomeView] dialogOpen ->', authStore.wechatLoginOpen)
+        authStore.startWeChatLogin().then(r => {})
     }
 
     function startTest(typ: string) {
@@ -103,7 +102,7 @@ export function useHomeView() {
         window.removeEventListener('scroll', handleScroll)
     })
 
-    async function handleInviteSuccess(payload: InviteVerifySuccessPayload) {
+    async function handleInviteSuccess(payload: VerifyInviteResponse) {
         // 当前业务类型（兜底用）
         const fallbackBusinessType = state.businessType || TestTypeBasic
 

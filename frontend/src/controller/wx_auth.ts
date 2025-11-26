@@ -4,7 +4,7 @@ import { apiRequest } from '@/api'
 
 export type WxLoginStatus = 'idle' | 'pending' | 'success' | 'error' | 'expired'
 const VITE_WX_APPID="wx51cf75df014d41e8"
-const VITE_WX_REDIRECT_URI="https://signup.wenxintai.cn/api/auth/wx/callback"
+const VITE_WX_REDIRECT_URI="https://sharp-happy-grouse.ngrok-free.app/api/wechat_signin"
 interface WxLoginStatusResponse {
     status: 'pending' | 'ok' | 'expired'
     is_new?: boolean
@@ -45,23 +45,6 @@ export const useAuthStore = defineStore('auth', () => {
         loginStatus.value = 'idle'
         isNewUser.value = null
     }
-
-    function openWeChatLogin() {
-        wechatLoginOpen.value = true
-    }
-
-    function closeWeChatLogin() {
-        wechatLoginOpen.value = false
-        resetLoginState()
-    }
-
-    function toggleWeChatLogin(val?: boolean) {
-        wechatLoginOpen.value = val ?? !wechatLoginOpen.value
-        if (!wechatLoginOpen.value) {
-            resetLoginState()
-        }
-    }
-
     /**
      * 开始一次新的微信扫码登录流程：
      * 1) 生成 state
@@ -157,16 +140,11 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     return {
-        // 状态
         wechatLoginOpen,
         loginState,
         loginStatus,
         isNewUser,
         isLoggedIn,
-        // 行为
-        openWeChatLogin,
-        closeWeChatLogin,
-        toggleWeChatLogin,
         startWeChatLogin,
     }
 })

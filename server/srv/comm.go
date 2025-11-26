@@ -87,11 +87,13 @@ const (
 
 	TestTypeBasic  = "basic"
 	TestTypePro    = "pro"
+	TestTypeAdv    = "adv"
 	TestTypeSchool = "school"
 )
 
 var testFlowForBasic = []string{StageBasic, StageRiasec, StageAsc, StageReport}
 var testFlowForPro = []string{StageBasic, StageRiasec, StageAsc, StageOcean, StageMotivation, StageReport}
+var testFlowForAdv = []string{StageBasic, StageRiasec, StageAsc, StageOcean, StageMotivation, StageReport}
 var testFlowForSchool = []string{StageBasic, StageRiasec, StageAsc, StageOcean, StageMotivation, StageReport}
 
 func nextRoute(businessTyp, curStage string) (int, string, error) {
@@ -102,6 +104,8 @@ func nextRoute(businessTyp, curStage string) (int, string, error) {
 		flow = testFlowForBasic
 	case TestTypePro:
 		flow = testFlowForPro
+	case TestTypeAdv:
+		flow = testFlowForAdv
 	case TestTypeSchool:
 		flow = testFlowForSchool
 	default:
@@ -139,6 +143,8 @@ func getTestRoutes(testType string) []string {
 		return testFlowForBasic
 	case TestTypePro:
 		return testFlowForPro
+	case TestTypeAdv:
+		return testFlowForAdv
 	case TestTypeSchool:
 		return testFlowForSchool
 	default:
@@ -162,6 +168,15 @@ var testFlowDescForPro = []string{
 	StageReportDes,
 }
 
+var testFlowDescForAdv = []string{
+	StageBasicDes,
+	StageRiasecDes,
+	StageAscDes,
+	StageOceanDes,
+	StageMotivationDes,
+	StageReportDes,
+}
+
 var testFlowDescForSchool = []string{
 	StageBasicDes,
 	StageRiasecDes,
@@ -177,6 +192,8 @@ func getTestRoutesDes(testType string) []string {
 		return testFlowDescForBasic
 	case TestTypePro:
 		return testFlowDescForPro
+	case TestTypeAdv:
+		return testFlowDescForAdv
 	case TestTypeSchool:
 		return testFlowDescForSchool
 	default:
@@ -261,6 +278,9 @@ func getTestFlowSteps(businessType string) []TestFlowStep {
 	case TestTypePro:
 		stages = testFlowForPro
 		titles = testFlowDescForPro
+	case TestTypeAdv:
+		stages = testFlowForAdv
+		titles = testFlowDescForAdv
 	case TestTypeSchool:
 		stages = testFlowForSchool
 		titles = testFlowDescForSchool
@@ -305,6 +325,16 @@ func parseAITestTyp(testTyp, businessTyp string) ai_api.TestTyp {
 			return ai_api.TypASC
 		}
 	case TestTypePro:
+		switch testTyp {
+		case StageRiasec:
+			return ai_api.TypRIASEC
+		case StageOcean:
+			return ai_api.TypOCEAN
+		case StageAsc:
+			return ai_api.TypASC
+		}
+
+	case TestTypeAdv:
 		switch testTyp {
 		case StageRiasec:
 			return ai_api.TypRIASEC

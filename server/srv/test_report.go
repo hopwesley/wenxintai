@@ -195,6 +195,8 @@ func (s *HttpSrv) handleTestReport(w http.ResponseWriter, r *http.Request) {
 		resp, aiErr = ai_api.BasicBuildReportParam(ai_api.Mode(record.Mode.String), answersMap)
 	case TestTypePro:
 		resp, aiErr = ai_api.ProBuildReportParam(ai_api.Mode(record.Mode.String), answersMap)
+	case TestTypeAdv:
+		resp, aiErr = ai_api.ProBuildReportParam(ai_api.Mode(record.Mode.String), answersMap)
 	case TestTypeSchool:
 		resp, aiErr = ai_api.SchoolBuildReportParam(ai_api.Mode(record.Mode.String), answersMap)
 	default:

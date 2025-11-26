@@ -60,11 +60,9 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '@/controller/wx_auth'
-
-const props = defineProps<{
+defineProps<{
   open: boolean
-}>()
-
+}>();
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
 }>()

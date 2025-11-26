@@ -33,12 +33,12 @@
         </div>
       </div>
     </section>
+
     <section class="plans container" id="section-start-test">
-      <button
+      <div
           class="plan-card plan-a"
-          :class="{ 'is-active': activePlan === 'basic' }"
-          @click="activePlan = 'basic'"
-          type="button"
+          :class="{ 'is-active': activePlan === TestTypeBasic }"
+          @click="activePlan = TestTypeBasic"
       >
         <div class="planA-head">基础版</div>
         <div class="plan-card-content">
@@ -48,8 +48,7 @@
           <ul class="plan-features">
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                <svg width="16px" height="16px" viewBox="0 0 16 16"  xmlns="http://www.w3.org/2000/svg" >
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -65,8 +64,7 @@
             </li>
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                <svg width="16px" height="16px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" >
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -119,11 +117,11 @@
           </RouterLink>
         </div>
         <p class="plan-tip">邀请码免费测试</p>
-      </button>
-      <button
+      </div>
+      <div
           class="plan-card plan-pro"
-          :class="{ 'is-active': activePlan === 'pro', disabled: true }"
-          @click="activePlan = 'pro'"
+          :class="{ 'is-active': activePlan === TestTypePro, disabled: true }"
+          @click="activePlan = TestTypePro"
           type="button"
           aria-disabled="true"
       >
@@ -205,11 +203,97 @@
           <div class="btn btn-disabled w-full" aria-disabled="true">敬请期待</div>
         </div>
         <p class="plan-tip">需邀请</p>
-      </button>
-      <button
+      </div>
+      <div
+          class="plan-card plan-pro"
+          :class="{ 'is-active': activePlan === TestTypeAdv, disabled: true }"
+          @click="activePlan = TestTypeAdv"
+          type="button"
+          aria-disabled="true"
+      >
+        <div class="planA-head">增强版</div>
+        <div class="plan-card-content">
+          <div class="plan-head">
+            <div class="price price-gray"><span class="currency">¥</span>79.9</div>
+          </div>
+          <ul class="plan-features">
+            <li class="plan-lists">
+              <div class="list-icon">
+                <svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
+                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                  <title>形状结合</title>
+                  <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
+                    <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
+                      <path
+                          d="M337.608242,745.911968 L337.575942,745.984855 C337.119327,747.069316 336.836904,748.567485 336.836904,750.222317 C336.836904,751.769892 337.083903,753.180453 337.489381,754.243768 C337.129462,754.709541 336.710603,755.128402 336.244547,755.489232 C335.182367,755.083015 333.771411,754.835864 332.223358,754.835864 C330.530609,754.835864 329.001785,755.131376 327.912006,755.606561 C327.330883,755.182193 326.817434,754.668743 326.392425,754.086618 C326.868431,752.996904 327.163763,751.468498 327.163763,749.776268 C327.163763,748.228215 326.916611,746.81726 326.51091,745.75383 C326.871565,745.288761 327.289801,744.870524 327.755104,744.51014 C328.8183,744.915571 330.229256,745.162722 331.777309,745.162722 C333.469539,745.162722 334.997944,744.86739 336.087658,744.392462 C336.669701,744.81631 337.183199,745.329796 337.608242,745.911968 Z"
+                          id="形状结合"
+                          transform="translate(332.0003, 749.9995) rotate(-45) translate(-332.0003, -749.9995)"></path>
+                    </g>
+                  </g>
+                </svg>
+              </div>
+              <div class="list-intro">更全面的维度对比</div>
+            </li>
+            <li class="plan-lists">
+              <div class="list-icon">
+                <svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
+                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                  <title>形状结合</title>
+                  <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
+                    <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
+                      <path
+                          d="M337.608242,745.911968 L337.575942,745.984855 C337.119327,747.069316 336.836904,748.567485 336.836904,750.222317 C336.836904,751.769892 337.083903,753.180453 337.489381,754.243768 C337.129462,754.709541 336.710603,755.128402 336.244547,755.489232 C335.182367,755.083015 333.771411,754.835864 332.223358,754.835864 C330.530609,754.835864 329.001785,755.131376 327.912006,755.606561 C327.330883,755.182193 326.817434,754.668743 326.392425,754.086618 C326.868431,752.996904 327.163763,751.468498 327.163763,749.776268 C327.163763,748.228215 326.916611,746.81726 326.51091,745.75383 C326.871565,745.288761 327.289801,744.870524 327.755104,744.51014 C328.8183,744.915571 330.229256,745.162722 331.777309,745.162722 C333.469539,745.162722 334.997944,744.86739 336.087658,744.392462 C336.669701,744.81631 337.183199,745.329796 337.608242,745.911968 Z"
+                          id="形状结合"
+                          transform="translate(332.0003, 749.9995) rotate(-45) translate(-332.0003, -749.9995)"></path>
+                    </g>
+                  </g>
+                </svg>
+              </div>
+              <div class="list-intro">深度解释与策略</div>
+            </li>
+            <li class="plan-lists">
+              <div class="list-icon">
+                <svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
+                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                  <title>形状结合</title>
+                  <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
+                    <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
+                      <path
+                          d="M337.608242,745.911968 L337.575942,745.984855 C337.119327,747.069316 336.836904,748.567485 336.836904,750.222317 C336.836904,751.769892 337.083903,753.180453 337.489381,754.243768 C337.129462,754.709541 336.710603,755.128402 336.244547,755.489232 C335.182367,755.083015 333.771411,754.835864 332.223358,754.835864 C330.530609,754.835864 329.001785,755.131376 327.912006,755.606561 C327.330883,755.182193 326.817434,754.668743 326.392425,754.086618 C326.868431,752.996904 327.163763,751.468498 327.163763,749.776268 C327.163763,748.228215 326.916611,746.81726 326.51091,745.75383 C326.871565,745.288761 327.289801,744.870524 327.755104,744.51014 C328.8183,744.915571 330.229256,745.162722 331.777309,745.162722 C333.469539,745.162722 334.997944,744.86739 336.087658,744.392462 C336.669701,744.81631 337.183199,745.329796 337.608242,745.911968 Z"
+                          id="形状结合"
+                          transform="translate(332.0003, 749.9995) rotate(-45) translate(-332.0003, -749.9995)"></path>
+                    </g>
+                  </g>
+                </svg>
+              </div>
+              <div class="list-intro">历史记录与对比</div>
+            </li>
+            <li class="plan-lists">
+              <div class="list-icon">
+                <svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
+                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                  <title>形状结合</title>
+                  <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
+                    <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
+                      <path
+                          d="M337.608242,745.911968 L337.575942,745.984855 C337.119327,747.069316 336.836904,748.567485 336.836904,750.222317 C336.836904,751.769892 337.083903,753.180453 337.489381,754.243768 C337.129462,754.709541 336.710603,755.128402 336.244547,755.489232 C335.182367,755.083015 333.771411,754.835864 332.223358,754.835864 C330.530609,754.835864 329.001785,755.131376 327.912006,755.606561 C327.330883,755.182193 326.817434,754.668743 326.392425,754.086618 C326.868431,752.996904 327.163763,751.468498 327.163763,749.776268 C327.163763,748.228215 326.916611,746.81726 326.51091,745.75383 C326.871565,745.288761 327.289801,744.870524 327.755104,744.51014 C328.8183,744.915571 330.229256,745.162722 331.777309,745.162722 C333.469539,745.162722 334.997944,744.86739 336.087658,744.392462 C336.669701,744.81631 337.183199,745.329796 337.608242,745.911968 Z"
+                          id="形状结合"
+                          transform="translate(332.0003, 749.9995) rotate(-45) translate(-332.0003, -749.9995)"></path>
+                    </g>
+                  </g>
+                </svg>
+              </div>
+              <div class="list-intro">导出 PDF 报告</div>
+            </li>
+          </ul>
+          <div class="btn btn-disabled w-full" aria-disabled="true">敬请期待</div>
+        </div>
+        <p class="plan-tip">暂未开放</p>
+      </div>
+      <div
           class="plan-card plan-school"
-          :class="{ 'is-active': activePlan === 'school', disabled: true }"
-          @click="activePlan = 'school'"
+          :class="{ 'is-active': activePlan === TestTypeSchool, disabled: true }"
+          @click="activePlan = TestTypeSchool"
           type="button"
           aria-disabled="true"
       >
@@ -291,7 +375,7 @@
           <div class="btn btn-disabled w-full" aria-disabled="true">敬请期待</div>
         </div>
         <p class="plan-tip">需签约</p>
-      </button>
+      </div>
     </section>
     <!-- ① 选科引擎核心价值阐述（新模块） -->
     <section id="section-product-intro" class="home-section value-section">
@@ -476,6 +560,7 @@ import {useHomeView} from '@/controller/HomeView'
 
 import {useAuthStore} from '@/controller/wx_auth'
 import {useRouter} from "vue-router";
+import {TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool} from "@/controller/common";
 
 type LetterTabKey = 'parent' | 'student'
 const activeLetterTab = ref<LetterTabKey>('parent')

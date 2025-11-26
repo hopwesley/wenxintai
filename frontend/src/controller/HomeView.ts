@@ -9,10 +9,8 @@ import {useAuthStore} from '@/controller/wx_auth'
 import {
     StageBasic,
     TestTypeBasic,
-    TestTypePro,
-    TestTypeSchool,
     type TestFlowStep,
-    pushStageRoute,
+    pushStageRoute, PlanKey,
 } from "@/controller/common";
 
 
@@ -22,7 +20,7 @@ export interface FetchTestFlowRequest {
 
 export interface FetchTestFlowResponse {
     public_id: string
-    business_type: string
+    business_type: PlanKey
 
     // 完整流程
     steps: TestFlowStep[]
@@ -42,9 +40,6 @@ export async function fetchTestFlow(payload: FetchTestFlowRequest) {
 
 export function useHomeView() {
 
-    type PlanKey = typeof TestTypeBasic | typeof TestTypePro | typeof TestTypeSchool
-
-    const inviteCodeInput = ref('')
     const inviteStatus = ref<'idle' | 'success' | 'error'>('idle')
 
     function handleFlowError(msg: string) {
@@ -70,10 +65,10 @@ export function useHomeView() {
     const inviteModalOpen = ref(false)
 
     function openLogin() {
-        authStore.startWeChatLogin().then(r => {})
+        authStore.startWeChatLogin().then()
     }
 
-    function startTest(typ: string) {
+    function startTest(typ: PlanKey) {
         setBusinessType(typ)
         inviteModalOpen.value = true
     }

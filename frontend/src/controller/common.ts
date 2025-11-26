@@ -3,7 +3,9 @@ import type { Router } from 'vue-router'
 
 export const TestTypeBasic = "basic"
 export const TestTypePro = "pro"
+export const TestTypeAdv = "adv"
 export const TestTypeSchool = "school"
+export type PlanKey = typeof TestTypeBasic | typeof TestTypePro | typeof TestTypeSchool|typeof TestTypeAdv
 
 export const StageBasic = "basic-info"
 export const StageReport = "report"
@@ -172,29 +174,6 @@ export function pushStageRoute(
         },
     })
 }
-
-export function useTestCommon() {
-    return {
-        // 业务类型
-        TestTypeBasic,
-        TestTypePro,
-        TestTypeSchool,
-
-        // 各个阶段的路由 key
-        StageBasic,
-        StageReport,
-        StageRiasec,
-        StageAsc,
-        StageOcean,
-        StageMotivation,
-
-        // 模式 & 量表
-        Mode33,
-        Mode312,
-        scaleOptions,
-    }
-}
-
 
 export function useSseLogs(
     maxLines = 8,

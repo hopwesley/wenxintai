@@ -25,25 +25,37 @@ h3,p{
     margin: 0 auto;
     padding: 0 20px;
 }
+a {
+    text-decoration: none;
+}
 
-.btn{
+.btn {
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    padding:12px 24px;
-    border-radius:12px;
+    padding:10px 24px;
+    border-radius:8px;
     border:none;
     cursor:pointer;
-    font-weight:600;
-    text-decoration:none
-}
-.btn-primary{
+    font-weight:500;
+    font-size:16px;
     background:var(--brand);
     color:#fff;
 }
-.btn-primary:hover{background:var(--brand-dark)}
-.btn-disabled{background:#e5e7eb;color:#9ca3af;cursor:not-allowed}
-.w-full{width:100%}
+
+.btn:hover{
+    background:var(--brand-dark)
+}
+
+.btn-disabled {
+    background:#e5e7eb;
+    color:#9ca3af;
+    cursor:not-allowed
+}
+
+.w-full {
+    width:100%
+}
 
 /* Hero */
 .hero{
@@ -72,7 +84,7 @@ h3,p{
     margin-top: 118px;
 }
 .hero-copy h1{
-    font-size: 65px;
+    font-size: 48px;
     line-height:65px;
     margin:0 0 6px;
     color: var(--brand);
@@ -87,22 +99,34 @@ h3,p{
     margin:12px 0 20px;
     color: var(--brand);
     font-size: 16px;
+    line-height: 28px;
 }
 
 /* Plans */
-.plans{display:grid; grid-template-columns: repeat(3,1fr); gap:22px; margin:28px auto}
-.plan-card.disabled{opacity:.7}
-.plan-head{display:flex; align-items:baseline; justify-content:space-between}
+.plans {
+    display:grid;
+    grid-template-columns: repeat(4,1fr);
+    gap:22px;
+    margin:28px auto
+}
+
+.plan-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:flex-end
+}
+
 .plan-head h3 {
     margin:0;
-    font-size:18px
+    font-size:18px;
 }
 
 .price{
-    font-size:48px;
+    font-size:36px;
     font-weight:800;
     color:var(--brand);
 }
+
 .price-gray {
     color: #CDCED1;
 }
@@ -120,6 +144,7 @@ h3,p{
     color:var(--text-secondary);
     margin: 16px 0;
 }
+
 .plan-tip {
     margin:12px 0 0 0;
     color:#94a3b8;
@@ -140,16 +165,19 @@ h3,p{
     background: linear-gradient(to top, #D0DAF8 0%, #5A60EA 100%);
 
 }
+
 .summary-inner p,
 .summary-inner h3{
     color: white;
     margin-bottom: 6px;
 }
+
 .summary-list {
     display:grid;
     grid-template-columns: repeat(4,1fr);
     gap:16px;
 }
+
 .summary-item h4{
     margin:0 0 8px;
     font-size:16px
@@ -161,6 +189,7 @@ h3,p{
     font-size:14px;
     line-height:1.6
 }
+
 .summary-cta{
     display:flex;
     justify-content:center;
@@ -169,6 +198,7 @@ h3,p{
     align-items:center;
     gap:8px;
 }
+
 .summary-hint{
     margin:0;
     color: rgba(148, 163, 184, 0.66);
@@ -305,8 +335,9 @@ h3,p{
     padding: 16px;
     border-radius: 16px;
 }
+
 .planA-head {
-    font-size: 18px;
+    font-size: 14px;
     font-weight: 600;
     text-align: left ;
     line-height: 18px;
@@ -324,7 +355,7 @@ h3,p{
 }
 .list-intro{
     font-weight: 400;
-    font-size: 16px;
+    font-size: 14px;
     color: #1D1D20;
     line-height: 24px;
     text-align: center;
@@ -334,19 +365,8 @@ h3,p{
 
 .plan-card.is-active{
     border-color: #bfd5ff;
-    box-shadow: 0 10px 30px rgba(91,124,255,.18);
     position: relative;
 }
-.plan-card.is-active::after{
-    /* 顶部细条高亮 */
-    content:'';
-    position:absolute; left:0; right:0; top:0; height:4px;
-    border-top-left-radius:var(--radius);
-    border-top-right-radius:var(--radius);
-    background: linear-gradient(90deg, #7aa2ff, #5b7cff);
-}
-
-.plan-card.disabled{ opacity:.7; cursor:default; }
 
 /* 调整三列区域与整体留白，使之更接近设计图 */
 .plans{ margin:44px auto 22px; }
@@ -504,15 +524,15 @@ h3,p{
 
 .home-section .section-header h2{
     font-size:32px;
-    margin: 0;
+    margin: 0 0 32px  0;
     color:var(--text-primary);
 }
 
-.home-section .section-header p{
+.home-section .section-header p {
     color:var(--text-third);
     line-height:22px;
     font-size:14px;
-    padding: 12px 0;
+    padding-bottom: 12px;
     text-align: center;
 }
 
@@ -672,46 +692,72 @@ h3,p{
 }
 
 /* ③ 致家长 / 隐私 / CTA 模块 */
-.letter-section{
-    background:#fff;
+/* ===== 信件板块：背景图 + 布局 ===== */
+.letter-section {
+    padding: 0; /* 由内部 letter-bg 控制上下留白 */
 }
 
-.letter-switch{
-    max-width:520px;
-    margin:0 auto 24px;
-    padding:6px;
-    border-radius:999px;
-    background:linear-gradient(90deg,#8BC6EC,#9599E2);
-    display:flex;
-    gap:8px;
+.letter-section .letter-bg {
+    width: 100vw;
+    margin-left: 50%;
+    transform: translateX(-50%);
+    background-image: url('../images/home-letter-bg.png'); /* TODO: 换成你的背景图路径 */
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover; /* 宽度铺满浏览器，高度由内容撑开 */
+    background: linear-gradient(244deg, rgb(246 232 246 / 60%) 0%, rgb(208 218 248 / 60%) 100%);
 }
 
-.letter-tab{
-    flex:1;
-    border:none;
-    border-radius:999px;
-    background:transparent;
-    padding:10px 12px;
-    font-size:14px;
-    color:#f5f5ff;
-    cursor:pointer;
+/* 上下留白，保证这块有独立的“版心高度” */
+.letter-section .letter-bg .container {
+    padding-top: 80px;
+    padding-bottom: 80px;
 }
 
-.letter-tab.is-active{
-    background:#fff;
-    color:var(--text-primary);
-    box-shadow:0 6px 18px rgba(15,23,42,.12);
+/* 让信的内容在背景里垂直居中，视感接近 banner 文案的位置 */
+.letter-section .letter-layout {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-height: 320px; /* 可按实际效果微调 */
 }
 
-.letter-content{
-    background:#fff;
-    border-radius:24px;
-    padding:24px 28px;
-    box-shadow:var(--shadow);
-    margin-bottom:32px;
-    font-size:14px;
-    color:var(--text-secondary);
-    line-height:1.8;
+/* 控制正文宽度，让左边对齐、宽度接近 hero 文案 */
+.letter-section .letter-main {
+    max-width: 720px; /* 这个数值可以按照你 hero 文案的宽度微调 */
+}
+
+/* 段落之间多一点间距 */
+.letter-section .letter-content p + p {
+    margin-top: 12px;
+}
+
+.section-header--letter h2 {
+    text-align: left;
+}
+
+.letter-content p {
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 22px;
+    text-align: left;
+}
+
+/* 简单的移动端适配 */
+@media (max-width: 768px) {
+    .letter-section .letter-bg .container {
+        padding-top: 40px;
+        padding-bottom: 40px;
+    }
+
+    .letter-section .letter-layout {
+        min-height: auto;
+    }
+
+    .letter-section .letter-main {
+        max-width: 100%;
+    }
 }
 
 .privacy-block{
@@ -754,6 +800,15 @@ h3,p{
     font-size:14px;
     color:var(--text-secondary);
 }
+
+.privacy-section .privacy-block {
+    margin: 0 auto;
+}
+
+.cta-section .cta-start-test {
+    margin: 0 auto;
+}
+
 
 @media (max-width: 720px){
     .letter-content,

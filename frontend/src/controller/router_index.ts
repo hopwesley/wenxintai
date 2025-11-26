@@ -23,6 +23,21 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/AssessmentQuestions.vue'),
     },
     {
+        path: '/agreements/user',
+        name: 'agreement-user',
+        component: () => import('@/views/agreements/UserAgreementView.vue'),
+    },
+    {
+        path: '/agreements/privacy',
+        name: 'agreement-privacy',
+        component: () => import('@/views/agreements/PrivacyPolicyView.vue'),
+    },
+    {
+        path: '/agreements/license',
+        name: 'agreement-license',
+        component: () => import('@/views/agreements/LicenseAgreementView.vue'),
+    },
+    {
         path: '/:pathMatch(.*)*',
         redirect: '/'
     },

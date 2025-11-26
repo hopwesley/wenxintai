@@ -63,10 +63,17 @@ func (s *HttpSrv) wechatSignInCallBack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userInfo, err := s.fetchWeChatUserInfo(ctx, token.AccessToken, token.OpenID)
+	if err != nil {
+		s.log.Error().Err(err).Msg("fetch wechat userinfo failed")
+		// 一般来说，这个失败不应该中断整个登录，可以继续走，只是没头像/昵称
+	}
+
 	s.log.Info().
 		Str("openid", token.OpenID).
 		Str("unionid", token.UnionID).
 		Str("state", state).
+		Interface("profile", userInfo).
 		Msg("WeChat oauth success")
 
 	// TODO: 这里就是你之后要接数据库的地方：
@@ -160,4 +167,49 @@ func (s *HttpSrv) wechatSignStatus(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(resp)
+}
+
+type wechatUserInfoResp struct {
+	OpenID     string `json:"openid"`
+	Nickname   string `json:"nickname"`
+	Sex        int    `json:"sex"`
+	Province   string `json:"province"`
+	City       string `json:"city"`
+	Country    string `json:"country"`
+	HeadImgURL string `json:"headimgurl"`
+	UnionID    string `json:"unionid"`
+
+	ErrCode int    `json:"errcode"`
+	ErrMsg  string `json:"errmsg"`
+}
+
+func (s *HttpSrv) fetchWeChatUserInfo(ctx context.Context, accessToken, openID string) (*wechatUserInfoResp, error) {
+	v := url.Values{}
+	v.Set("access_token", accessToken)
+	v.Set("openid", openID)
+	v.Set("lang", "zh_CN")
+
+	u := "https://api.weixin.qq.com/sns/userinfo?" + v.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	if err != nil {
+		return nil, fmt.Errorf("new request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("http do: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var ui wechatUserInfoResp
+	if err := json.NewDecoder(resp.Body).Decode(&ui); err != nil {
+		return nil, fmt.Errorf("decode wechat userinfo resp: %w", err)
+	}
+
+	if ui.ErrCode != 0 {
+		return nil, fmt.Errorf("wechat userinfo err: %d %s", ui.ErrCode, ui.ErrMsg)
+	}
+
+	return &ui, nil
 }

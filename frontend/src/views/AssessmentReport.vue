@@ -118,7 +118,6 @@
             </div>
           </div>
 
-
         </section>
 
         <section class="report-section report-section--concepts">

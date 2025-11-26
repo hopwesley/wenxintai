@@ -20,8 +20,10 @@
             </div>
 
             <p class="desc">
-              注册登录即代表同意
-              <span>用户服务协议、隐私政策、会员服务协议、授权许可协议</span>
+              注册/登录即代表你同意
+              <a href="/agreements/user" target="_blank">《用户服务协议》</a>、
+              <a href="/agreements/privacy" target="_blank">《隐私政策》</a>、
+              <a href="/agreements/license" target="_blank">《授权许可协议》</a>
             </p>
 
             <p

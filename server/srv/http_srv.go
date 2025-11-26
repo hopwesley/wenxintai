@@ -14,15 +14,18 @@ import (
 )
 
 const (
-	apiHealthy        = "/api/health"
-	apiLoadHobbies    = "/api/hobbies"
-	apiInviteVerify   = "/api/invites/verify"
-	apiTestFlow       = "/api/test_flow"
-	apiTestBasicInfo  = "/api/tests/basic_info"
-	apiSSEQuestionSub = "/api/sub/question/"
-	apiSSEReportSub   = "/api/sub/report/"
-	apiSubmitTest     = "/api/test_submit"
-	apiGenerateReport = "/api/generate_report"
+	apiHealthy              = "/api/health"
+	apiLoadHobbies          = "/api/hobbies"
+	apiInviteVerify         = "/api/invites/verify"
+	apiTestFlow             = "/api/test_flow"
+	apiTestBasicInfo        = "/api/tests/basic_info"
+	apiSSEQuestionSub       = "/api/sub/question/"
+	apiSSEReportSub         = "/api/sub/report/"
+	apiSubmitTest           = "/api/test_submit"
+	apiGenerateReport       = "/api/generate_report"
+	apiFinishReport         = "/api/finish_report"
+	apiWeChatSignIn         = "/api/auth/wx/status"
+	apiWeChatSignInCallBack = "/api/wechat_signin"
 )
 
 var (
@@ -91,6 +94,9 @@ func (s *HttpSrv) initRouter() error {
 	mux.HandleFunc(apiSSEReportSub, s.handleReportSSEEvent)
 	mux.HandleFunc(apiSubmitTest, s.handleTestSubmit)
 	mux.HandleFunc(apiGenerateReport, s.handleTestReport)
+	mux.HandleFunc(apiFinishReport, s.finishReport)
+	mux.HandleFunc(apiWeChatSignIn, s.wechatSignStatus)
+	mux.HandleFunc(apiWeChatSignInCallBack, s.wechatSignInCallBack)
 
 	if stat, err := os.Stat(s.cfg.StaticDir); err != nil || !stat.IsDir() {
 		if err == nil {

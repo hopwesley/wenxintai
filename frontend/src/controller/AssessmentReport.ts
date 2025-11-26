@@ -239,7 +239,7 @@ export const aiReportData = ref<AIReportPayload | null>(null)
 export function useReportPage() {
     const {showLoading, hideLoading} = useGlobalLoading()
     const route = useRoute()
-    const {state} = useTestSession()
+    const {state,resetSession} = useTestSession()
     const {showAlert} = useAlert()
     const router = useRouter()
 
@@ -535,10 +535,8 @@ export function useReportPage() {
 
     function handleSseDone(raw: string) {
         try {
-            let parsed = JSON.parse(raw) as AIReportPayload
-            if (typeof parsed === 'string') {
-                parsed = JSON.parse(parsed) as AIReportPayload
-            }
+            let parsed = JSON.parse(raw)
+            parsed = JSON.parse(parsed) as AIReportPayload
             console.log('------>>> parsed object:', parsed)
             aiReportData.value = parsed
 
@@ -592,10 +590,13 @@ export function useReportPage() {
     })
 
     const handleBackToHome = () => {
-        return apiRequest<ReportRawData>('/api/generate_report', {
+        resetSession();
+        const public_id = state.recordPublicID
+        return apiRequest<ReportRawData>('/api/finish_report', {
             method: 'POST',
             body: {
-
+                public_id:public_id,
+                business_type:businessType.value,
             },
         })
     }

@@ -7,21 +7,50 @@
           alt="WeChat"
       />
       <div class="wechat-login-welcome">
-        <div class="left-img">
-        </div>
+        <div class="left-img"></div>
+
         <div class="wechat-login-dialog">
           <button class="close-btn" @click="close">×</button>
           <div class="wechat-login-content">
             <h3>微信扫码登录</h3>
-            <div class="qrcode-box">
-              <img
-                  src="/img/logo.png"
-                  alt="WeChat QR Code"
-              />
-            </div>
-            <p class="desc">注册登录即代表同意 <span>用户服务协议、隐私政策、
-              会员服务协议、授权许可协议</span></p>
 
+            <div class="qrcode-box">
+              <!-- 这里不再用 img，而是交给 WxLogin.js 渲染 iframe -->
+              <div id="wx-login-qrcode" class="wx-qrcode-container"></div>
+            </div>
+
+            <p class="desc">
+              注册登录即代表同意
+              <span>用户服务协议、隐私政策、会员服务协议、授权许可协议</span>
+            </p>
+
+            <p
+                v-if="authStore.loginStatus === 'pending'"
+                class="status"
+            >
+              请使用微信扫一扫完成登录…
+            </p>
+            <p
+                v-else-if="authStore.loginStatus === 'expired'"
+                class="status status-error"
+            >
+              二维码已过期，请点击下方按钮重新获取。
+            </p>
+            <p
+                v-else-if="authStore.loginStatus === 'error'"
+                class="status status-error"
+            >
+              登录出现异常，请稍后重试。
+            </p>
+
+            <button
+                v-if="authStore.loginStatus === 'expired'"
+                type="button"
+                class="refresh-btn"
+                @click="authStore.startWeChatLogin()"
+            >
+              重新获取二维码
+            </button>
           </div>
         </div>
       </div>
@@ -30,13 +59,18 @@
 </template>
 
 <script setup lang="ts">
-defineProps({
-  open: {
-    type: Boolean,
-    required: true
-  }
-});
-const emit = defineEmits(['update:open'])
+import { useAuthStore } from '@/controller/wx_auth'
+
+const props = defineProps<{
+  open: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'update:open', value: boolean): void
+}>()
+
+// 直接拿全局 authStore 来展示状态 + 重新获取二维码
+const authStore = useAuthStore()
 
 function close() {
   emit('update:open', false)
@@ -118,12 +152,39 @@ function close() {
   justify-content: center;
   background: transparent;
   padding: 16px;
-
 }
 
-.qrcode-box img {
+/* 新增：给 WxLogin 渲染的 iframe 提供容器 */
+.wx-qrcode-container {
   width: 100%;
   height: 100%;
+}
+
+/* 原来的 qrcode-box img 可以删除 */
+
+.status {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #BAB2B2;
+}
+
+.status-error {
+  color: #EF4444;
+}
+
+.refresh-btn {
+  margin-top: 12px;
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: #16a34a;
+  color: #fff;
+  font-size: 14px;
+}
+
+.refresh-btn:hover {
+  background: #15803d;
 }
 
 .close-btn {

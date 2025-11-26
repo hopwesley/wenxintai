@@ -1,9 +1,7 @@
 import { reactive, watch } from 'vue'
 import {
-    ModeOption,
-    TestTypeBasic,
-    TestTypePro,
-    TestTypeSchool,
+    AnswerValue,
+    ModeOption, PlanKey,
     type TestFlowStep,
 } from '@/controller/common'
 
@@ -11,7 +9,7 @@ const STORAGE_KEY = 'wenxintai:test-session'
 
 export interface TestSession {
     recordPublicID?: string
-    businessType?: typeof TestTypeBasic | typeof TestTypePro | typeof TestTypeSchool | string
+    businessType?: PlanKey
     testFlowSteps?: TestFlowStep[]
     testRoutes?: string[]
     nextRouteItem: Record<string, number>
@@ -105,10 +103,6 @@ watch(
 )
 
 export function useTestSession() {
-    function setCurrentStep(step: number) {
-        state.currentStep = step
-    }
-
     function setTestConfig(payload: { grade: string; mode: ModeOption; hobby?: string }) {
         state.grade = payload.grade
         state.mode = payload.mode
@@ -120,7 +114,7 @@ export function useTestSession() {
         state.inviteCode = normalized || undefined
     }
 
-    function setBusinessType(typ: string | undefined) {
+    function setBusinessType(typ: PlanKey) {
         if (!typ) return
         state.businessType = typ
     }
@@ -134,12 +128,6 @@ export function useTestSession() {
             state.nextRouteItem = {}
         }
     }
-
-    function setTestRoutes(routes: string[]) {
-        if (!routes || routes.length === 0) return
-        state.testRoutes = routes
-    }
-
     function setNextRouteItem(route:string, rid:number){
         if (!route) return
 
@@ -178,26 +166,21 @@ export function useTestSession() {
         state.testRoutes = undefined
         state.nextRouteItem = {}
         state.stageAnswers = {}
-        // 重置内存里的 state
         Object.assign(state, { ...defaultSession })
-        // 清理 localStorage
         clearStorage()
     }
 
     return {
         state,
-
-        setCurrentStep,
         setTestConfig,
         setInviteCode,
         setBusinessType,
         setTestFlow,
-        setTestRoutes,
         setPublicID,
         getPublicID,
         setNextRouteItem,
-
         saveStageAnswers,
         loadStageAnswers,
+        resetSession,
     }
 }

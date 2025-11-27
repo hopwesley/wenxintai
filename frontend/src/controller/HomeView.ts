@@ -91,6 +91,9 @@ export function useHomeView() {
 
     onMounted(() => {
         window.addEventListener('scroll', handleScroll)
+        authStore.fetchSignInStatus().then().catch(err => {
+            console.error('[HomeView] fetchSignInStatus failed', err)
+        })
     })
 
     onBeforeUnmount(() => {

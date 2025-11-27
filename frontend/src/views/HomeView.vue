@@ -17,7 +17,29 @@
               {{ tab.label }}
             </button>
           </nav>
-          <button class="btn btn-ghost login-btn" @click="openLogin">登录</button>
+          <div class="header-right">
+            <button
+                v-if="signInStatus.status !== 'ok'"
+                type="button"
+                class="btn btn-ghost login-btn"
+                @click="openLogin"
+            >
+              微信登录
+            </button>
+
+            <button
+                v-else
+                type="button"
+                class="header-user"
+            >
+              <img
+                  class="header-avatar"
+                  :src="signInStatus.avatar_url"
+                  alt="微信头像"
+              />
+              <span class="header-nick">{{ signInStatus.nick_name }}</span>
+            </button>
+          </div>
         </div>
       </div>
       <div class="hero-inner container">
@@ -589,13 +611,14 @@
 </template>
 
 <script setup lang="ts">
-import {ref, watch} from 'vue'
+import {computed} from 'vue'
 import InviteCodeModal from '@/views/components/InviteCodeModal.vue'
 import {useHomeView} from '@/controller/HomeView'
 
 import {useAuthStore} from '@/controller/wx_auth'
 import {useRouter} from "vue-router";
 import {TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool} from "@/controller/common";
+import {storeToRefs} from "pinia";
 
 const {
   activePlan,
@@ -612,23 +635,9 @@ const {
 const authStore = useAuthStore()
 const router = useRouter()
 
-// 监听微信扫码登录状态变化
-watch(
-    () => authStore.loginStatus,
-    (status) => {
-      if (status !== 'success') return
-
-      if (authStore.isNewUser) {
-        // 新用户：这里后面可以改成真正的“补充信息”弹窗
-        console.log('[HomeView] 微信登录成功，新用户，需要弹出补充信息界面')
-        // TODO：在这里打开你自己的“补充信息”组件 / 页面
-      } else {
-        // 老用户：认为已经是完整用户，跳回首页，显示登录后内容
-        console.log('[HomeView] 微信登录成功，老用户，跳回首页')
-        router.push('/')
-      }
-    },
-)
+const { signInStatus } = storeToRefs(authStore)
+// 是否登录
+const isLoggedIn = computed(() => signInStatus.value.status === 'ok')
 
 </script>
 

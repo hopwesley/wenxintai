@@ -59,8 +59,6 @@ export const useAuthStore = defineStore('auth', () => {
         clearTimer()
         loginState.value = null
         loginStatus.value = 'idle'
-        // 重置本地“这次登录相关”的状态，不影响已有登录用户
-        // （如果你希望重置时也当成退出，可以一起改 isLoggedIn 和 signInStatus）
     }
 
     function cancelWeChatLogin() {
@@ -190,13 +188,13 @@ export const useAuthStore = defineStore('auth', () => {
             if (res.status === 'ok') {
                 isLoggedIn.value = true
                 loginStatus.value = 'success'
-            } else if (res.status === 'expired') {
-                isLoggedIn.value = false
-                loginStatus.value = 'expired'
             } else {
-                // pending -> 对首页场景可以当成“未登录”
                 isLoggedIn.value = false
-                // 也可以把它改写成本地 signOut，看你喜好
+                if (res.status === 'expired') {
+                    loginStatus.value = 'expired'
+                } else {
+                    loginStatus.value = 'idle'
+                }
             }
         } catch (e) {
             console.error('[auth] fetchSignInStatus failed', e)

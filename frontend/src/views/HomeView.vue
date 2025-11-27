@@ -28,9 +28,9 @@
             <br>
             通过精准能力画像与价值观探索，帮助孩子发现“天赋赛道”
           </p>
-          <div class="hero-cta">
+          <!--      <div class="hero-cta">
             <RouterLink to="/login" class="btn btn-primary">立即开始</RouterLink>
-          </div>
+          </div> -->
         </div>
       </div>
     </section>

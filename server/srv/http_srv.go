@@ -26,6 +26,7 @@ const (
 	apiFinishReport         = "/api/finish_report"
 	apiWeChatSignIn         = "/api/auth/wx/status"
 	apiWeChatSignInCallBack = "/api/wechat_signin"
+	apiWeChatLogOut         = "/api/auth/logout"
 )
 
 var (
@@ -97,6 +98,7 @@ func (s *HttpSrv) initRouter() error {
 	mux.HandleFunc(apiFinishReport, s.finishReport)
 	mux.HandleFunc(apiWeChatSignIn, s.wechatSignStatus)
 	mux.HandleFunc(apiWeChatSignInCallBack, s.wechatSignInCallBack)
+	mux.HandleFunc(apiWeChatLogOut, s.wechatLogout)
 
 	if stat, err := os.Stat(s.cfg.StaticDir); err != nil || !stat.IsDir() {
 		if err == nil {

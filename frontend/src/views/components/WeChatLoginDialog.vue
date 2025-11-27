@@ -73,6 +73,7 @@ const emit = defineEmits<{
 const authStore = useAuthStore()
 
 function close() {
+  authStore.cancelWeChatLogin()
   emit('update:open', false)
 }
 </script>

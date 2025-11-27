@@ -26,4 +26,6 @@ type DbService interface {
 	SaveTestReportCore(ctx context.Context, publicId, businessType, mode string, commonScoreJSON []byte, modeParamJSON []byte) error
 	UpdateTestReportAIContent(ctx context.Context, publicId string, aiContentJSON []byte) error
 	FindTestReportByPublicId(ctx context.Context, publicId string) (*TestReport, error)
+	FindUserProfileByUid(ctx context.Context, uid string) (*UserProfile, error)
+	InsertOrUpdateUserProfileBasic(ctx context.Context, id string, name string, url string) error
 }

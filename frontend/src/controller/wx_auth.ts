@@ -1,13 +1,27 @@
-import { ref, nextTick } from 'vue'
-import { defineStore } from 'pinia'
-import { apiRequest } from '@/api'
+import {ref, nextTick} from 'vue'
+import {defineStore} from 'pinia'
+import {apiRequest} from '@/api'
 
 export type WxLoginStatus = 'idle' | 'pending' | 'success' | 'error' | 'expired'
-const VITE_WX_APPID="wx51cf75df014d41e8"
-const VITE_WX_REDIRECT_URI="https://sharp-happy-grouse.ngrok-free.app/api/wechat_signin"
-interface WxLoginStatusResponse {
-    status: 'pending' | 'ok' | 'expired'
+
+/**
+ * 对应 Go 里的 wxStatusResponse：
+ * type wxStatusResponse struct {
+ *   Status    string `json:"status"`
+ *   IsNew     *bool  `json:"is_new,omitempty"`
+ *   NickName  string `json:"nick_name,omitempty"`
+ *   AvatarURL string `json:"avatar_url,omitempty"`
+ * }
+ *
+ * 额外增加一个本地状态 'signOut'，表示“明确退出登录”。
+ */
+export interface WxLoginStatusResponse {
+    status: 'pending' | 'ok' | 'expired' | 'signOut'
     is_new?: boolean
+    nick_name?: string
+    avatar_url?: string
+    appid?: string
+    redirect_uri?: string
 }
 
 let pollTimer: number | null = null
@@ -23,14 +37,16 @@ export const useAuthStore = defineStore('auth', () => {
     // 当前这次扫码登录的 state
     const loginState = ref<string | null>(null)
 
-    // 当前扫码登录状态
+    // 当前扫码登录状态（只管“这一次扫码流程”）
     const loginStatus = ref<WxLoginStatus>('idle')
 
-    // 是否新用户（由后端判断）
-    const isNewUser = ref<boolean | null>(null)
-
-    // 全局登录态（你后面可以在别的页面用它来控制“仅登录可见”按钮）
+    // 全局登录态（是否有已登录用户）
     const isLoggedIn = ref(false)
+
+    // 当前登录用户的状态（给 HomeView 用来显示头像 / 昵称）
+    const signInStatus = ref<WxLoginStatusResponse>({
+        status: 'signOut',
+    })
 
     function clearTimer() {
         if (pollTimer !== null) {
@@ -43,8 +59,15 @@ export const useAuthStore = defineStore('auth', () => {
         clearTimer()
         loginState.value = null
         loginStatus.value = 'idle'
-        isNewUser.value = null
+        // 重置本地“这次登录相关”的状态，不影响已有登录用户
+        // （如果你希望重置时也当成退出，可以一起改 isLoggedIn 和 signInStatus）
     }
+
+    function cancelWeChatLogin() {
+        resetLoginState()
+        wechatLoginOpen.value = false
+    }
+
     /**
      * 开始一次新的微信扫码登录流程：
      * 1) 生成 state
@@ -53,6 +76,18 @@ export const useAuthStore = defineStore('auth', () => {
      * 4) 轮询后端登录状态
      */
     async function startWeChatLogin() {
+
+        await ensureWxConfig()
+
+        const appid = signInStatus.value.appid
+        const rawRedirect = signInStatus.value.redirect_uri
+
+        if (!appid || !rawRedirect) {
+            console.error('[auth] 微信登录配置缺失：appid 或 redirect_uri 为空')
+            loginStatus.value = 'error'
+            return
+        }
+
         resetLoginState()
         const state = genState()
         loginState.value = state
@@ -73,47 +108,46 @@ export const useAuthStore = defineStore('auth', () => {
             return
         }
 
-        if (!VITE_WX_APPID || !VITE_WX_REDIRECT_URI) {
-            console.error('[auth] VITE_WX_APPID / VITE_WX_REDIRECT_URI 未配置')
-            loginStatus.value = 'error'
-            return
-        }
-
-        const redirectUri = encodeURIComponent(VITE_WX_REDIRECT_URI)
+        const redirectUri = encodeURIComponent(rawRedirect)
 
         // 注意：这个容器在 HomeView.vue 里
         new wxLoginCtor({
             id: 'wx-login-qrcode',
-            appid: VITE_WX_APPID,
+            appid: appid,
             scope: 'snsapi_login',
             redirect_uri: redirectUri,
             state,
             style: '',
-            href: ''
+            href: '',
         })
 
         startPolling()
     }
 
+    /**
+     * 轮询一次 /api/auth/wx/status
+     * 注意：后端现在是“只看 cookie，不看 state”，所以 ?state=... 只是兼容保留。
+     */
     async function pollOnce() {
         if (!loginState.value) return
 
         try {
             const res = await apiRequest<WxLoginStatusResponse>(
                 `/api/auth/wx/status?state=${encodeURIComponent(loginState.value)}`,
-                { method: 'GET' },
+                {method: 'GET'},
             )
 
+            // 把返回结果直接同步到 signInStatus
+            signInStatus.value = res
+
             if (res.status === 'ok') {
-                // 后端确认登录成功
                 loginStatus.value = 'success'
-                isNewUser.value = !!res.is_new
                 isLoggedIn.value = true
                 wechatLoginOpen.value = false
                 clearTimer()
             } else if (res.status === 'expired') {
-                // 后端认为二维码 / 登录会话过期
                 loginStatus.value = 'expired'
+                // 这里你也可以顺手把 signInStatus 当成 signOut，视业务需求而定
                 clearTimer()
             } else {
                 // pending -> 继续轮询
@@ -139,12 +173,72 @@ export const useAuthStore = defineStore('auth', () => {
         }, 1500)
     }
 
+    /**
+     * 页面加载时，根据 cookie 静默检查一次登录状态
+     * HomeView 之后可以在 onMounted 里调用：
+     *   const auth = useAuthStore()
+     *   auth.fetchSignInStatus()
+     */
+    async function fetchSignInStatus() {
+        try {
+            const res = await apiRequest<WxLoginStatusResponse>('/api/auth/wx/status', {
+                method: 'GET',
+            })
+
+            signInStatus.value = res
+
+            if (res.status === 'ok') {
+                isLoggedIn.value = true
+                loginStatus.value = 'success'
+            } else if (res.status === 'expired') {
+                isLoggedIn.value = false
+                loginStatus.value = 'expired'
+            } else {
+                // pending -> 对首页场景可以当成“未登录”
+                isLoggedIn.value = false
+                // 也可以把它改写成本地 signOut，看你喜好
+            }
+        } catch (e) {
+            console.error('[auth] fetchSignInStatus failed', e)
+            // 出错就保持现状，不强制改状态
+        }
+    }
+
+    async function ensureWxConfig() {
+        if (signInStatus.value.appid && signInStatus.value.redirect_uri) {
+            return
+        }
+        await fetchSignInStatus()
+    }
+    /**
+     * 退出登录：清服务端 cookie + 清本地状态
+     */
+    async function logout() {
+        try {
+            await apiRequest('/api/auth/logout', {method: 'POST'})
+        } catch (e) {
+            console.error('[auth] logout failed', e)
+            // 即使接口失败，本地也可以先清状态
+        }
+        clearTimer()
+        loginState.value = null
+        loginStatus.value = 'idle'
+        isLoggedIn.value = false
+        signInStatus.value = {status: 'signOut'}
+        wechatLoginOpen.value = false
+    }
+
     return {
+        // 状态
         wechatLoginOpen,
         loginState,
         loginStatus,
-        isNewUser,
         isLoggedIn,
+        signInStatus,
+        // 行为
         startWeChatLogin,
+        cancelWeChatLogin,
+        fetchSignInStatus,
+        logout,
     }
 })

@@ -117,7 +117,7 @@ func convertOcean(rawJSON []byte) ([]ai_api.OCEANCAnswer, error) {
 const ReportInvalidDuration = 6 * 30 * 24 * time.Hour
 
 type CombinedReport struct {
-	*UserProfile
+	*dbSrv.UserProfile
 	Mode        string    `json:"mode"`
 	GeneratedAt time.Time `json:"generate_at"`
 	ExpiredAt   time.Time `json:"expired_at"`
@@ -229,7 +229,7 @@ func (s *HttpSrv) handleTestReport(w http.ResponseWriter, r *http.Request) {
 	sLog.Info().Msg("build param of report success")
 
 	combinedResult := &CombinedReport{
-		UserProfile: &UserProfile{
+		UserProfile: &dbSrv.UserProfile{
 			Uid: record.InviteCode.String,
 		},
 		Mode:         record.Mode.String,

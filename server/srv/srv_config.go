@@ -1,14 +1,14 @@
 package srv
 
 type Config struct {
-	Host              string `json:"host"`
-	Port              string `json:"port"`
-	StaticDir         string `json:"static_dir"`
-	studentHobbies    []string
-	ReadTimeout       int64  `json:"read_timeout,omitempty"`
-	WeChatAppID       string `json:"we_chat_app_id"`
-	WeChatAppSecret   string `json:"we_chat_app_sec"`
-	WeChatAppCallBack string `json:"we_chat_app_callback"`
+	Host                 string `json:"host"`
+	Port                 string `json:"port"`
+	StaticDir            string `json:"static_dir"`
+	studentHobbies       []string
+	ReadTimeout          int64  `json:"read_timeout,omitempty"`
+	WeChatAppID          string `json:"we_chat_app_id"`
+	WeChatAppSecret      string `json:"we_chat_app_sec"`
+	WeChatRedirectDomain string `json:"we_chat_redirect_domain"`
 }
 
 func (cfg *Config) srvAddr() string {

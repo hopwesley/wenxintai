@@ -6,17 +6,15 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"time"
+
+	"github.com/hopwesley/wenxintai/server/dbSrv"
 )
 
-type UserProfile struct {
-	Uid        string `json:"uid"`
-	Location   string `json:"location,omitempty"`
-	StudyId    string `json:"study_id,omitempty"`
-	SchoolName string `json:"school_name,omitempty"`
-	NickName   string `json:"nick_name,omitempty"`
-	AvatarUrl  string `json:"avatar_url,omitempty"`
-}
+const (
+	redirectUrlBase   = "https://%s/api/wechat_signin"
+	wxApiUserInfo     = "https://api.weixin.qq.com/sns/userinfo?"
+	wxApiExchangeCode = "https://api.weixin.qq.com/sns/oauth2/access_token?"
+)
 
 type wechatTokenResp struct {
 	AccessToken  string `json:"access_token"`
@@ -30,14 +28,15 @@ type wechatTokenResp struct {
 	ErrMsg  string `json:"errmsg"`
 }
 
-// wxStatusResponse 是返回给前端轮询接口的响应结构
 type wxStatusResponse struct {
-	Status string `json:"status"`           // "pending" | "ok" | "expired"
-	IsNew  *bool  `json:"is_new,omitempty"` // 只有 status == "ok" 时才会有
+	Status      string `json:"status"`              // "pending" | "ok" | "expired"
+	IsNew       *bool  `json:"is_new,omitempty"`    // 只有 status == "ok" 时才会有
+	NickName    string `json:"nick_name,omitempty"` // 登录后返回
+	AvatarURL   string `json:"avatar_url,omitempty"`
+	AppID       string `json:"appid,omitempty"`        // 微信扫码登录用的 appid
+	RedirectURI string `json:"redirect_uri,omitempty"` // 微信扫码登录回调地址
 }
 
-// HandleWeChatCallback 处理微信扫码登录回调
-// GET /api/auth/wx/callback?code=xxx&state=xxx
 func (s *HttpSrv) wechatSignInCallBack(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -63,45 +62,78 @@ func (s *HttpSrv) wechatSignInCallBack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if token.UnionID == "" {
+		s.log.Error().
+			Str("openid", token.OpenID).
+			Msg("empty unionid in wechat resp")
+		http.Error(w, "wechat auth failed: empty unionid", http.StatusBadGateway)
+		return
+	}
+
 	userInfo, err := s.fetchWeChatUserInfo(ctx, token.AccessToken, token.OpenID)
 	if err != nil {
 		s.log.Error().Err(err).Msg("fetch wechat userinfo failed")
-		// 一般来说，这个失败不应该中断整个登录，可以继续走，只是没头像/昵称
+	}
+
+	var nickName, avatarURL string
+	if userInfo != nil {
+		nickName = userInfo.Nickname
+		avatarURL = userInfo.HeadImgURL
 	}
 
 	s.log.Info().
 		Str("openid", token.OpenID).
 		Str("unionid", token.UnionID).
 		Str("state", state).
-		Interface("profile", userInfo).
+		Str("nick", nickName).
+		Str("avatar", avatarURL).
 		Msg("WeChat oauth success")
 
-	// TODO: 这里就是你之后要接数据库的地方：
-	// 1. 用 token.UnionID / token.OpenID 去查用户表
-	// 2. 如果找不到 -> 创建新用户（isNew = true）
-	// 3. 如果能找到 -> isNew = false
-	//
-	// 现在先用 WxLoginStore 模拟一下“新老用户”：
-	entry := wxLoginStore.MarkLogin(state, token.OpenID, token.UnionID)
+	existing, err := dbSrv.Instance().FindUserProfileByUid(ctx, token.UnionID)
+	if err != nil {
+		s.log.Error().Err(err).Msg("FindUserProfileByUid failed")
+		http.Error(w, "wechat auth failed", http.StatusBadGateway)
+		return
+	}
+	isNew := existing == nil
 
-	// TODO: 真正的登录态（session / JWT）请在这里设置。
-	// 下面这行只是 demo：把 openid 写到一个 cookie 里，方便你调试。
+	if err := dbSrv.Instance().InsertOrUpdateUserProfileBasic(
+		ctx,
+		token.UnionID,
+		nickName,
+		avatarURL,
+	); err != nil {
+		s.log.Error().Err(err).Msg("InsertOrUpdateUserProfileBasic failed")
+		http.Error(w, "wechat auth failed", http.StatusBadGateway)
+		return
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "wx_user",
-		Value:    entry.OpenID,
+		Value:    token.UnionID,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 	})
 
-	// 注意：这个 callback 是跑在 <iframe> 里，用户基本看不到页面内容，
-	// 所以返回一段简单 HTML 提示就够了。
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write([]byte(`<html><body>微信登录成功，可以返回原页面。</body></html>`))
+	isNewVal := "0"
+	if isNew {
+		isNewVal = "1"
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "wx_is_new",
+		Value:    isNewVal,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   12 * 3600,
+	})
+
+	http.Redirect(w, r, "/home", http.StatusFound)
 }
 
-// exchangeWeChatCode 向微信服务器用 code 换取 access_token / openid / unionid
 func (s *HttpSrv) exchangeWeChatCode(ctx context.Context, code string) (*wechatTokenResp, error) {
 	v := url.Values{}
 	v.Set("appid", s.cfg.WeChatAppID)
@@ -109,7 +141,7 @@ func (s *HttpSrv) exchangeWeChatCode(ctx context.Context, code string) (*wechatT
 	v.Set("code", code)
 	v.Set("grant_type", "authorization_code")
 
-	u := "https://api.weixin.qq.com/sns/oauth2/access_token?" + v.Encode()
+	u := wxApiExchangeCode + v.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
@@ -138,31 +170,32 @@ func (s *HttpSrv) exchangeWeChatCode(ctx context.Context, code string) (*wechatT
 	return &token, nil
 }
 
-// HandleWeChatStatus 供前端轮询扫码登录状态
-// GET /api/auth/wx/status?state=xxx
 func (s *HttpSrv) wechatSignStatus(w http.ResponseWriter, r *http.Request) {
-	state := r.URL.Query().Get("state")
-	if state == "" {
-		http.Error(w, "missing state", http.StatusBadRequest)
+	ctx := r.Context()
+
+	user, err := s.currentUserFromCookie(ctx, r)
+	if err != nil {
+		s.log.Error().Err(err).Msg("wechatSignStatus: currentUserFromCookie failed")
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	entry, ok := wxLoginStore.Get(state)
-
+	redirectUrl := fmt.Sprintf(redirectUrlBase, s.cfg.WeChatRedirectDomain)
 	resp := wxStatusResponse{
-		Status: "pending",
+		Status:      "pending",
+		AppID:       s.cfg.WeChatAppID,
+		RedirectURI: redirectUrl,
 	}
 
-	if ok {
-		// 简单做一个过期判断，超过 10 分钟就认为过期
-		if time.Since(entry.CreatedAt) > 10*time.Minute {
-			resp.Status = "expired"
-		} else {
-			resp.Status = entry.Status
-			if entry.Status == "ok" {
-				resp.IsNew = &entry.IsNew
-			}
+	if user != nil {
+		resp.Status = "ok"
+
+		if c, err := r.Cookie("wx_is_new"); err == nil {
+			v := c.Value == "1"
+			resp.IsNew = &v
 		}
+		resp.NickName = user.NickName
+		resp.AvatarURL = user.AvatarUrl
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -189,7 +222,7 @@ func (s *HttpSrv) fetchWeChatUserInfo(ctx context.Context, accessToken, openID s
 	v.Set("openid", openID)
 	v.Set("lang", "zh_CN")
 
-	u := "https://api.weixin.qq.com/sns/userinfo?" + v.Encode()
+	u := wxApiUserInfo + v.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
@@ -212,4 +245,42 @@ func (s *HttpSrv) fetchWeChatUserInfo(ctx context.Context, accessToken, openID s
 	}
 
 	return &ui, nil
+}
+
+func (s *HttpSrv) currentUserFromCookie(ctx context.Context, r *http.Request) (*dbSrv.UserProfile, error) {
+	c, err := r.Cookie("wx_user")
+	if err != nil || c.Value == "" {
+		return nil, nil
+	}
+	uid := c.Value
+
+	profile, err := dbSrv.Instance().FindUserProfileByUid(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+	if profile == nil {
+		return nil, nil
+	}
+	return profile, nil
+}
+
+func (s *HttpSrv) wechatLogout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "wx_user",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:   "wx_is_new",
+		Value:  "",
+		Path:   "/",
+		MaxAge: -1,
+	})
+
+	w.WriteHeader(http.StatusNoContent)
 }

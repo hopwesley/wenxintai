@@ -17,7 +17,7 @@
     font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji';
 }
 
-h3,p{
+h2,h3,p{
     margin: 0;
 }
 .container{
@@ -107,7 +107,7 @@ a {
     display:grid;
     grid-template-columns: repeat(4,1fr);
     gap:22px;
-    margin:28px auto
+    margin:80px auto
 }
 
 .plan-head{
@@ -348,6 +348,7 @@ a {
     justify-content: space-between;
     align-content: center;
 }
+
 .list-icon {
     width: 16px;
     height: 16px;
@@ -369,7 +370,6 @@ a {
 }
 
 /* 调整三列区域与整体留白，使之更接近设计图 */
-.plans{ margin:44px auto 22px; }
 .summary{ margin:26px auto 70px; }
 
 /* Summary 的卡片更柔和的阴影与圆角 */
@@ -504,6 +504,17 @@ a {
     opacity:1;
     transform:scaleX(1);
 }
+.nav-tab:hover {
+    color: var(--brand); /* 悬停时突出品牌色 */
+    background: transparent;
+    box-shadow: none;
+}
+
+/* 如果不希望 hover 时出现额外下划线，保持只有激活态有下划线 */
+.nav-tab:hover:not(.is-active)::after {
+    opacity: 0;
+    transform: scaleX(.5);
+}
 
 @media (max-width: 768px){
     .main-nav-tabs{
@@ -539,6 +550,7 @@ a {
 /* ① 核心价值模块 */
 .value-section{
     background:#fff;
+    padding: 42px 0;
 }
 
 .value-grid{
@@ -599,28 +611,25 @@ a {
     }
 }
 
-/* ② 科学与人文模块 */
-.theory-section{
-    background:#f7f8fb;
-}
-
 /* 每一行：图片 + 文案 */
 .theory-row{
     display:flex;
     align-items:center;      /* 垂直居中关键 */
     gap:32px;
-    margin-bottom:52px;
+    margin-top:62px;
 }
+
 .theory-row-right{
     flex-direction: row-reverse;
 }
 
 /* 左侧图片块 */
 .theory-illus{
-    flex:0 0 40%;
     border-radius:24px;
-    min-height:220px;
-    background-size:cover;
+    height: 0;
+    max-width:50%; /* 保持 50% 宽度 */
+    padding-top: 22%;
+    background-size: contain; /* 改为 contain，确保图能在容器内完整显示 */
     background-position:center;
     background-repeat:no-repeat;
 }
@@ -629,32 +638,40 @@ a {
 .theory-illus-donut{
     background-image:url('/img/2-1.png');  /* 示例路径 */
 }
-.theory-illus-steps{
-    background-image:url('/img/2-2.png');
-}
+
 .theory-illus-psych{
     background-image:url('/img/2-2.png');
 }
-/* 图 + 文：各占 50% */
-.theory-illus,
-.theory-text{
-    flex:0 0 50%;
-    max-width:50%;
+/* 图：占 40%， 文：占 60% */
+.theory-illus{
+    flex:0 0 40%; /* 调整图片宽度比例 */
+    max-width:40%;
 }
-/* 右侧文字块 */
 .theory-text{
-    flex:1;
+    flex:0 0 57%; /* 调整文字宽度比例 */
+    max-width:60%;
 }
 
 .theory-text h3{
-    font-size:18px;
+    font-size:20px;
     margin:0 0 12px;
+    color: var(--brand-dark); /* 突出知识点标题 */
 }
 
-.theory-text p{
+.theory-point h4 {
+    font-size: 16px;
+    margin: 16px 0 8px; /* 增加上下间距 */
+    color: var(--text-primary); /* 突出知识点标题 */
+}
+
+.theory-text > .theory-point:first-child h4 {
+    margin-top: 0;
+}
+
+.theory-text p {
     margin:0 0 12px;
     font-size:14px;
-    line-height:1.8;
+    line-height:22px;
     color:var(--text-secondary);
 }
 
@@ -690,6 +707,100 @@ a {
         grid-template-columns:1fr;
     }
 }
+/* ========= 算法核心考量维度 ========= */
+
+.theory-dimensions {
+    background-color: white;
+}
+
+.theory-dimensions__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.theory-dimensions__title {
+    font-size: 32px;
+    font-weight: 500;
+    text-align: left;
+    margin: 0 0 48px 0;
+    color: var(--text-primary);
+}
+
+/* 四列卡片 */
+.theory-dimensions__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 40px;
+}
+
+/* 单个维度卡片 */
+.dimension-card {
+    max-width: 240px;
+    margin: 0 auto;
+    text-align: left;
+}
+
+/* 小图标占位（后续你可以替换成真实图标） */
+.dimension-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    margin-bottom: 16px;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover; /* 宽度铺满浏览器，高度由内容撑开 */
+}
+
+/* 如果有具体图标，可以在这里换成 background-image 或者用 mask */
+.dimension-icon-ability {
+    background-image: url('/img/3-1.png');
+}
+.dimension-icon-interest {
+    background-image: url('/img/3-2.png');
+}
+.dimension-icon-cognitive {
+    background-image: url('/img/3-3.png');
+}
+.dimension-icon-context {
+    background-image: url('/img/3-4.png');
+}
+
+.dimension-card h3 {
+    font-size: 18px;
+    margin: 0 0 12px;
+    color: var(--text-primary);
+}
+
+.dimension-card p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text-secondary);
+}
+
+/* 响应式：窄屏改为 2 列 / 1 列 */
+@media (max-width: 1100px) {
+    .theory-dimensions__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        row-gap: 32px;
+    }
+}
+
+@media (max-width: 640px) {
+    .theory-dimensions__title {
+        font-size: 20px;
+        margin: 24px 0 32px;
+    }
+
+    .theory-dimensions__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dimension-card {
+        max-width: none;
+    }
+}
+
 
 /* ③ 致家长 / 隐私 / CTA 模块 */
 /* ===== 信件板块：背景图 + 布局 ===== */
@@ -701,11 +812,10 @@ a {
     width: 100vw;
     margin-left: 50%;
     transform: translateX(-50%);
-    background-image: url('../images/home-letter-bg.png'); /* TODO: 换成你的背景图路径 */
+    background-image: url('/img/bg-5.png'); /* TODO: 换成你的背景图路径 */
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover; /* 宽度铺满浏览器，高度由内容撑开 */
-    background: linear-gradient(244deg, rgb(246 232 246 / 60%) 0%, rgb(208 218 248 / 60%) 100%);
 }
 
 /* 上下留白，保证这块有独立的“版心高度” */
@@ -725,6 +835,8 @@ a {
 /* 控制正文宽度，让左边对齐、宽度接近 hero 文案 */
 .letter-section .letter-main {
     max-width: 720px; /* 这个数值可以按照你 hero 文案的宽度微调 */
+    position: relative;
+    padding-left: 32px; /* 原来 56px，收紧到 26px，让文字靠近竖线 */
 }
 
 /* 段落之间多一点间距 */
@@ -734,14 +846,27 @@ a {
 
 .section-header--letter h2 {
     text-align: left;
+    font-weight: 400;
+    color: var(--bg-card)!important;
 }
 
 .letter-content p {
-    color: var(--text-secondary);
+    color: var(--bg-card);
     font-size: 14px;
-    font-weight: 400;
-    line-height: 22px;
+    font-weight: 300;
+    line-height: 28px;
     text-align: left;
+}
+
+.letter-section .letter-main::before {
+    content: "";
+    position: absolute;
+    left: 8px;            /* 原来 16px，往右挪近文本 */
+    top: 8px;
+    bottom: 8px;
+    width: 1px;           /* 稍微细一点，会更精致 */
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.5);
 }
 
 /* 简单的移动端适配 */
@@ -790,14 +915,15 @@ a {
     gap:24px;
 }
 
-.cta-text h3{
+.cta-text h2 {
     font-size:20px;
-    margin:0 0 8px;
+
 }
 
 .cta-text p{
     margin:0;
     font-size:14px;
+    padding-top: 8px;
     color:var(--text-secondary);
 }
 

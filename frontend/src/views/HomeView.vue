@@ -425,7 +425,6 @@
       </div>
     </section>
     <!-- ② 科学与人文的双重考量（新模块） -->
-
         <section class="home-section theory-section">
           <div class="container">
             <header class="section-header">
@@ -436,13 +435,14 @@
               <div class="theory-illus theory-illus-donut"></div>
               <div class="theory-text">
                 <h3>教育发展理论支撑</h3>
-                <p>
-                  <strong>加德纳的“多元智能理论”：</strong>我们相信，智能是多元的。孩子的优势可能体现在语言、逻辑、数学、空间、人际、自省等多种智能的不同组合上。选科，正是为了聚焦长处的同时，避其短板。
-                </p>
-                <p>
-                  <strong>“T型人才”与“π型人才”：</strong>未来社会需要既具备某一领域的深度（“T”的竖），又拥有广博知识面与跨界合作能力（“T”的横）的人才，甚至是拥有两项专业深度的“π型人才”。我们的评估，正是为了识别并培育这种深度与广度的最佳结合点。
-                </p>
-
+                <div class="theory-point">
+                  <h4>加德纳的“多元智能理论”</h4>
+                  <p>我们相信，智能是多元的。孩子的优势可能体现在语言、逻辑、数学、空间、人际、自省等多种智能的不同组合上。选科，正是为了聚焦长处的同时，避其短板。</p>
+                </div>
+                <div class="theory-point">
+                  <h4>“T型人才”与“π型人才”</h4>
+                  <p>未来社会需要既具备某一领域的深度（“T”的竖），又拥有广博知识面与跨界合作能力（“T”的横）的人才，甚至是拥有两项专业深度的“π型人才”。我们的评估，正是为了识别并培育这种深度与广度的最佳结合点。</p>
+                </div>
               </div>
             </div>
             <!-- 第二行：圆环图 + 教育发展 & 心理学理论 -->
@@ -450,16 +450,71 @@
               <div class="theory-illus theory-illus-psych"></div>
               <div class="theory-text">
                 <h3>心理学理论支撑</h3>
-                <p>
-                  <strong>霍兰德职业兴趣理论：</strong>通过评估孩子在现实型、研究型、艺术型、社会型、企业型、常规型六大类型的倾向，将其兴趣与未来大学专业和职业环境进行匹配，确保内在驱动与外部选择的和谐统一。
-                </p>
-                <p>
-                  <strong>自我决定理论：：</strong>我们关注孩子的自主感（是否自己认同）、胜任感（是否觉得自己能学好）和归属感（是否觉得该选择被重要他人支持），因为这是激发持续学习动力的心理基石。
-                </p>
+                <div class="theory-point">
+                  <h4>霍兰德职业兴趣理论</h4>
+                  <p>通过评估孩子在现实型、研究型、艺术型、社会型、企业型、常规型六大类型的倾向，将其兴趣与未来大学专业和职业环境进行匹配，确保内在驱动与外部选择的和谐统一。</p>
+                </div>
+                <div class="theory-point">
+                  <h4>自我决定理论</h4>
+                  <p>我们关注孩子的自主感（是否自己认同）、胜任感（是否觉得自己能学好）和归属感（是否觉得该选择被重要他人支持），因为这是激发持续学习动力的心理基石。</p>
+                </div>
               </div>
             </div>
           </div>
         </section>
+    <!-- 算法核心考量维度（放在“智择未来算法逻辑”板块后面） -->
+    <section class="home-section theory-section theory-dimensions">
+      <div class="container">
+        <div class="theory-dimensions__inner">
+          <h2 class="theory-dimensions__title">
+            所以，我们的智能算法引擎是一个多维度的动态模型，核心考量包括：
+          </h2>
+
+          <div class="theory-dimensions__grid">
+            <!-- 1 学科能力现状与潜能 -->
+            <div class="dimension-card">
+              <div class="dimension-icon dimension-icon-ability"></div>
+              <h3>学科能力现状与潜能</h3>
+              <p>
+                不仅看当前成绩，更关注成绩走势、在群体中的相对位置，
+                以及学习过程中展现出的思维方式与发展潜力。
+              </p>
+            </div>
+
+            <!-- 2 稳定的兴趣倾向 -->
+            <div class="dimension-card">
+              <div class="dimension-icon dimension-icon-interest"></div>
+              <h3>稳定的兴趣倾向</h3>
+              <p>
+                通过多次、多情境的评估，剥离临时情绪与偶然因素，
+                找到孩子真正愿意长期投入的热爱所在。
+              </p>
+            </div>
+
+            <!-- 3 认知风格与人格特质 -->
+            <div class="dimension-card">
+              <div class="dimension-icon dimension-icon-cognitive"></div>
+              <h3>认知风格与人格特质</h3>
+              <p>
+                孩子是偏向抽象思维还是具象感知？是细致严谨还是开拓创新？
+                这些都会影响不同学科的学习适配度与发展路径。
+              </p>
+            </div>
+
+            <!-- 4 外部环境匹配度 -->
+            <div class="dimension-card">
+              <div class="dimension-icon dimension-icon-context"></div>
+              <h3>外部环境匹配度</h3>
+              <p>
+                结合本省高考政策、高校选考要求大数据，以及区域与社会发展的长期趋势，
+                评估学科组合与外部环境的整体匹配度。
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ③ 致亲爱的学生和家长（仅信件内容，带背景图） -->
     <section id="section-parent-letter" class="home-section letter-section">
       <div class="letter-bg">
@@ -506,7 +561,7 @@
     </section>
 
     <!-- ⑤ 开始你的测试（独立 CTA 板块） -->
-    <section id="section-start-test" class="home-section cta-section value-section" style="padding-top: 0">
+    <section id="section-start-test" class=" cta-section value-section" style="padding-top: 0">
       <div class="container">
         <div class="cta-start-test">
           <div class="cta-inner">

@@ -139,6 +139,10 @@ export function useHomeView() {
         }
     }
 
+    function handleUserClick() {
+        console.log('[HomeView] user avatar clicked')
+    }
+
     return {
         // 状态
         activePlan,
@@ -151,5 +155,6 @@ export function useHomeView() {
         startTest,
         handleTabClick,
         handleInviteSuccess,
+        handleUserClick,
     }
 }

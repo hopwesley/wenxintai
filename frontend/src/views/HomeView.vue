@@ -18,26 +18,35 @@
             </button>
           </nav>
           <div class="header-right">
+            <!-- 未登录：status !== 'ok' 的时候显示按钮 -->
             <button
-                v-if="signInStatus.status !== 'ok'"
-                type="button"
+                v-if="!isLoggedIn"
                 class="btn btn-ghost login-btn"
+                type="button"
                 @click="openLogin"
             >
               微信登录
             </button>
 
+            <!-- 已登录：用 signInStatus 里的头像 & 昵称 -->
             <button
                 v-else
                 type="button"
-                class="header-user"
+                class="home-user"
+                @click="handleUserClick"
             >
               <img
-                  class="header-avatar"
+                  v-if="signInStatus.avatar_url"
                   :src="signInStatus.avatar_url"
                   alt="微信头像"
+                  class="home-user__avatar"
               />
-              <span class="header-nick">{{ signInStatus.nick_name }}</span>
+              <span
+                  v-if="signInStatus.nick_name"
+                  class="home-user__name"
+              >
+                {{ signInStatus.nick_name }}
+              </span>
             </button>
           </div>
         </div>
@@ -71,7 +80,7 @@
           <ul class="plan-features">
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="10px" height="10px" viewBox="0 0 16 16"  xmlns="http://www.w3.org/2000/svg" >
+                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
                       <path
@@ -86,7 +95,7 @@
             </li>
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" >
+                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -255,7 +264,7 @@
                   </g>
                 </svg>
               </div>
-              <div class="list-intro">加入价值观纬度 </div>
+              <div class="list-intro">加入价值观纬度</div>
             </li>
             <li class="plan-lists">
               <div class="list-icon">
@@ -447,43 +456,47 @@
       </div>
     </section>
     <!-- ② 科学与人文的双重考量（新模块） -->
-        <section class="home-section theory-section">
-          <div class="container">
-            <header class="section-header">
-              <h2>智择未来算法逻辑：科学与人文的双重考量</h2>
-            </header>
-            <!-- 第一行：圆环图 + 教育发展 & 心理学理论 -->
-            <div class="theory-row">
-              <div class="theory-illus theory-illus-donut"></div>
-              <div class="theory-text">
-                <h3>教育发展理论支撑</h3>
-                <div class="theory-point">
-                  <h4>加德纳的“多元智能理论”</h4>
-                  <p>我们相信，智能是多元的。孩子的优势可能体现在语言、逻辑、数学、空间、人际、自省等多种智能的不同组合上。选科，正是为了聚焦长处的同时，避其短板。</p>
-                </div>
-                <div class="theory-point">
-                  <h4>“T型人才”与“π型人才”</h4>
-                  <p>未来社会需要既具备某一领域的深度（“T”的竖），又拥有广博知识面与跨界合作能力（“T”的横）的人才，甚至是拥有两项专业深度的“π型人才”。我们的评估，正是为了识别并培育这种深度与广度的最佳结合点。</p>
-                </div>
-              </div>
+    <section class="home-section theory-section">
+      <div class="container">
+        <header class="section-header">
+          <h2>智择未来算法逻辑：科学与人文的双重考量</h2>
+        </header>
+        <!-- 第一行：圆环图 + 教育发展 & 心理学理论 -->
+        <div class="theory-row">
+          <div class="theory-illus theory-illus-donut"></div>
+          <div class="theory-text">
+            <h3>教育发展理论支撑</h3>
+            <div class="theory-point">
+              <h4>加德纳的“多元智能理论”</h4>
+              <p>
+                我们相信，智能是多元的。孩子的优势可能体现在语言、逻辑、数学、空间、人际、自省等多种智能的不同组合上。选科，正是为了聚焦长处的同时，避其短板。</p>
             </div>
-            <!-- 第二行：圆环图 + 教育发展 & 心理学理论 -->
-            <div class="theory-row theory-row-right">
-              <div class="theory-illus theory-illus-psych"></div>
-              <div class="theory-text">
-                <h3>心理学理论支撑</h3>
-                <div class="theory-point">
-                  <h4>霍兰德职业兴趣理论</h4>
-                  <p>通过评估孩子在现实型、研究型、艺术型、社会型、企业型、常规型六大类型的倾向，将其兴趣与未来大学专业和职业环境进行匹配，确保内在驱动与外部选择的和谐统一。</p>
-                </div>
-                <div class="theory-point">
-                  <h4>自我决定理论</h4>
-                  <p>我们关注孩子的自主感（是否自己认同）、胜任感（是否觉得自己能学好）和归属感（是否觉得该选择被重要他人支持），因为这是激发持续学习动力的心理基石。</p>
-                </div>
-              </div>
+            <div class="theory-point">
+              <h4>“T型人才”与“π型人才”</h4>
+              <p>
+                未来社会需要既具备某一领域的深度（“T”的竖），又拥有广博知识面与跨界合作能力（“T”的横）的人才，甚至是拥有两项专业深度的“π型人才”。我们的评估，正是为了识别并培育这种深度与广度的最佳结合点。</p>
             </div>
           </div>
-        </section>
+        </div>
+        <!-- 第二行：圆环图 + 教育发展 & 心理学理论 -->
+        <div class="theory-row theory-row-right">
+          <div class="theory-illus theory-illus-psych"></div>
+          <div class="theory-text">
+            <h3>心理学理论支撑</h3>
+            <div class="theory-point">
+              <h4>霍兰德职业兴趣理论</h4>
+              <p>
+                通过评估孩子在现实型、研究型、艺术型、社会型、企业型、常规型六大类型的倾向，将其兴趣与未来大学专业和职业环境进行匹配，确保内在驱动与外部选择的和谐统一。</p>
+            </div>
+            <div class="theory-point">
+              <h4>自我决定理论</h4>
+              <p>
+                我们关注孩子的自主感（是否自己认同）、胜任感（是否觉得自己能学好）和归属感（是否觉得该选择被重要他人支持），因为这是激发持续学习动力的心理基石。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
     <!-- 算法核心考量维度（放在“智择未来算法逻辑”板块后面） -->
     <section class="home-section theory-section theory-dimensions">
       <div class="container">
@@ -611,14 +624,13 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from 'vue'
+import {computed, watch} from 'vue'
 import InviteCodeModal from '@/views/components/InviteCodeModal.vue'
 import {useHomeView} from '@/controller/HomeView'
 
 import {useAuthStore} from '@/controller/wx_auth'
 import {useRouter} from "vue-router";
 import {TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool} from "@/controller/common";
-import {storeToRefs} from "pinia";
 
 const {
   activePlan,
@@ -629,15 +641,36 @@ const {
   startTest,
   handleTabClick,
   handleInviteSuccess,
+  handleUserClick,
 } = useHomeView()
 
 
 const authStore = useAuthStore()
 const router = useRouter()
 
-const { signInStatus } = storeToRefs(authStore)
-// 是否登录
-const isLoggedIn = computed(() => signInStatus.value.status === 'ok')
+const signInStatus = computed(() => authStore.signInStatus)
+
+// ✅ 是否已登录，只看一个字段：status
+const isLoggedIn = computed(
+    () => signInStatus.value.status === 'ok'
+)
+
+// 登录流程完成之后，根据 signInStatus.is_new 决定行为
+watch(
+    () => authStore.loginStatus,
+    (status) => {
+      if (status !== 'success') return
+
+      if (signInStatus.value?.is_new) {
+        // 新用户逻辑：弹补充信息之类
+        console.log('[HomeView] 微信登录成功，新用户，后面可以弹补充信息')
+      } else {
+        // 老用户逻辑：比如直接回首页
+        console.log('[HomeView] 微信登录成功，老用户，跳回首页')
+        router.push('/')
+      }
+    },
+)
 
 </script>
 

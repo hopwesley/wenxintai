@@ -950,3 +950,43 @@ a {
         align-items:flex-start;
     }
 }
+
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.home-user {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.6);
+    background: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.home-user:hover {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 1px rgba(90, 96, 234, 0.08);
+}
+
+.home-user__avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    object-fit: cover;
+    border: 1px solid rgba(148, 163, 184, 0.5);
+}
+
+.home-user__name {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

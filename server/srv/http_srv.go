@@ -101,36 +101,9 @@ func (s *HttpSrv) initRouter() error {
 	mux.HandleFunc(apiWeChatSignInCallBack, s.wechatSignInCallBack)
 	mux.HandleFunc(apiWeChatLogOut, s.wechatLogout)
 
-	// ======= SPA 静态文件 + history fallback =======
-	staticDir := s.cfg.StaticDir
-	if stat, err := os.Stat(staticDir); err != nil || !stat.IsDir() {
-		if err == nil {
-			return fmt.Errorf("%s is not a directory", staticDir)
-		}
+	if err := s.registerSpaStatic(mux); err != nil {
 		return err
 	}
-
-	// 对所有非 /api/ 路径：
-	//   1. 先尝试当作真实静态文件；
-	//   2. 如果不存在，则 fallback 到 index.html，让前端路由接管。
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// 清理 path，避免 "../" 等奇怪路径
-		cleanPath := filepath.Clean(r.URL.Path)
-
-		// 拼出静态文件在磁盘上的路径
-		// 例如请求 /assets/xxx.js -> {staticDir}/assets/xxx.js
-		p := filepath.Join(staticDir, cleanPath)
-
-		if info, err := os.Stat(p); err == nil && !info.IsDir() {
-			// 找到对应文件，直接返回
-			http.ServeFile(w, r, p)
-			return
-		}
-
-		// 没有找到对应文件（或者是目录），一律回退到 index.html
-		indexPath := filepath.Join(staticDir, "index.html")
-		http.ServeFile(w, r, indexPath)
-	})
 
 	handler := s.loggingMiddleware(mux)
 	srv := &http.Server{
@@ -174,6 +147,41 @@ func (s *HttpSrv) Shutdown(ctx context.Context) error {
 		}
 		s.srv = nil
 	}
+
+	return nil
+}
+
+// registerSpaStatic 挂载前端 SPA 静态文件，并做 history fallback：
+// 1. 先检查 staticDir 是否存在且为目录；
+// 2. 对所有非 /api/ 路径：
+//   - 如果有对应静态文件，直接返回；
+//   - 否则一律 fallback 到 index.html，由前端路由接管。
+func (s *HttpSrv) registerSpaStatic(mux *http.ServeMux) error {
+	staticDir := s.cfg.StaticDir
+	if stat, err := os.Stat(staticDir); err != nil || !stat.IsDir() {
+		if err == nil {
+			return fmt.Errorf("%s is not a directory", staticDir)
+		}
+		return err
+	}
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// 清理 path，避免 "../" 等异常路径
+		cleanPath := filepath.Clean(r.URL.Path)
+
+		// 拼出静态文件路径，例如 /assets/xxx.js -> {staticDir}/assets/xxx.js
+		p := filepath.Join(staticDir, cleanPath)
+
+		if info, err := os.Stat(p); err == nil && !info.IsDir() {
+			// 找到文件，直接返回
+			http.ServeFile(w, r, p)
+			return
+		}
+
+		// 找不到对应文件（或是目录），统一回退到 index.html
+		indexPath := filepath.Join(staticDir, "index.html")
+		http.ServeFile(w, r, indexPath)
+	})
 
 	return nil
 }

@@ -620,17 +620,22 @@
     </section>
 
     <InviteCodeModal v-model:open="inviteModalOpen" @success="handleInviteSuccess"/>
+    <NewUserInfoDialog
+        v-model:open="newUserDialogOpen"
+        @never-remind="handleNeverRemindNewUser"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import {computed, watch} from 'vue'
+import {computed, ref, watch} from 'vue'
 import InviteCodeModal from '@/views/components/InviteCodeModal.vue'
 import {useHomeView} from '@/controller/HomeView'
 
 import {useAuthStore} from '@/controller/wx_auth'
 import {useRouter} from "vue-router";
 import {TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool} from "@/controller/common";
+import NewUserInfoDialog from "@/views/components/NewUserInfoDialog.vue";
 
 const {
   activePlan,
@@ -649,8 +654,7 @@ const authStore = useAuthStore()
 const router = useRouter()
 
 const signInStatus = computed(() => authStore.signInStatus)
-
-// ✅ 是否已登录，只看一个字段：status
+const newUserDialogOpen = ref(false)
 const isLoggedIn = computed(
     () => signInStatus.value.status === 'ok'
 )
@@ -660,17 +664,23 @@ watch(
     () => authStore.loginStatus,
     (status) => {
       if (status !== 'success') return
+      const isNew = signInStatus.value?.is_new === true
 
-      if (signInStatus.value?.is_new) {
-        // 新用户逻辑：弹补充信息之类
-        console.log('[HomeView] 微信登录成功，新用户，后面可以弹补充信息')
+      console.log("------>>> newUserInfoDismissed value:", authStore.newUserInfoDismissed)
+      if (isNew && !authStore.newUserInfoDismissed) {
+        // ✅ 只有“新用户”且“没选过不再提醒”才弹
+        console.log('[HomeView] 微信登录成功，新用户，打开补充信息弹窗')
+        newUserDialogOpen.value = true
       } else {
-        // 老用户逻辑：比如直接回首页
-        console.log('[HomeView] 微信登录成功，老用户，跳回首页')
+        console.log('[HomeView] 微信登录成功，老用户或已关闭提醒，跳回首页')
         router.push('/')
       }
     },
 )
+
+function handleNeverRemindNewUser() {
+  authStore.dismissNewUserInfoHint()
+}
 
 </script>
 

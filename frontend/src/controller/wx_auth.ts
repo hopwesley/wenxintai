@@ -3,7 +3,7 @@ import {defineStore} from 'pinia'
 import {apiRequest} from '@/api'
 
 export type WxLoginStatus = 'idle' | 'pending' | 'success' | 'error' | 'expired'
-
+const NEW_USER_HINT_KEY = 'wenxintai:newUserInfoDismissed'
 /**
  * 对应 Go 里的 wxStatusResponse：
  * type wxStatusResponse struct {
@@ -47,6 +47,18 @@ export const useAuthStore = defineStore('auth', () => {
     const signInStatus = ref<WxLoginStatusResponse>({
         status: 'signOut',
     })
+
+    const newUserInfoDismissed = ref(false)
+    if (typeof window !== 'undefined') {
+        const stored = window.localStorage.getItem(NEW_USER_HINT_KEY)
+        newUserInfoDismissed.value = stored === '1'
+    }
+    function dismissNewUserInfoHint() {
+        newUserInfoDismissed.value = true
+        if (typeof window !== 'undefined') {
+            window.localStorage.setItem(NEW_USER_HINT_KEY, '1')
+        }
+    }
 
     function clearTimer() {
         if (pollTimer !== null) {
@@ -145,7 +157,6 @@ export const useAuthStore = defineStore('auth', () => {
                 clearTimer()
             } else if (res.status === 'expired') {
                 loginStatus.value = 'expired'
-                // 这里你也可以顺手把 signInStatus 当成 signOut，视业务需求而定
                 clearTimer()
             } else {
                 // pending -> 继续轮询
@@ -238,5 +249,7 @@ export const useAuthStore = defineStore('auth', () => {
         cancelWeChatLogin,
         fetchSignInStatus,
         logout,
+        newUserInfoDismissed,
+        dismissNewUserInfoHint,
     }
 })

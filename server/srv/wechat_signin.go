@@ -37,6 +37,20 @@ type wxStatusResponse struct {
 	RedirectURI string `json:"redirect_uri,omitempty"` // 微信扫码登录回调地址
 }
 
+type wechatUserInfoResp struct {
+	OpenID     string `json:"openid"`
+	Nickname   string `json:"nickname"`
+	Sex        int    `json:"sex"`
+	Province   string `json:"province"`
+	City       string `json:"city"`
+	Country    string `json:"country"`
+	HeadImgURL string `json:"headimgurl"`
+	UnionID    string `json:"unionid"`
+
+	ErrCode int    `json:"errcode"`
+	ErrMsg  string `json:"errmsg"`
+}
+
 func (s *HttpSrv) wechatSignInCallBack(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -200,20 +214,6 @@ func (s *HttpSrv) wechatSignStatus(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(resp)
-}
-
-type wechatUserInfoResp struct {
-	OpenID     string `json:"openid"`
-	Nickname   string `json:"nickname"`
-	Sex        int    `json:"sex"`
-	Province   string `json:"province"`
-	City       string `json:"city"`
-	Country    string `json:"country"`
-	HeadImgURL string `json:"headimgurl"`
-	UnionID    string `json:"unionid"`
-
-	ErrCode int    `json:"errcode"`
-	ErrMsg  string `json:"errmsg"`
 }
 
 func (s *HttpSrv) fetchWeChatUserInfo(ctx context.Context, accessToken, openID string) (*wechatUserInfoResp, error) {

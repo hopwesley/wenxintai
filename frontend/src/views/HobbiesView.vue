@@ -1,4 +1,4 @@
-<template>
+ <template>
   <div class="hobbies">
     <h1>选择爱好</h1>
     <ul>

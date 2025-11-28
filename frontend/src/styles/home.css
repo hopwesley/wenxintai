@@ -760,9 +760,13 @@ a {
 }
 .dimension-icon-cognitive {
     background-image: url('/img/3-3.png');
+    width: 66px;
+    height: 66px;
 }
 .dimension-icon-context {
     background-image: url('/img/3-4.png');
+    width: 66px;
+    height: 66px;
 }
 
 .dimension-card h3 {

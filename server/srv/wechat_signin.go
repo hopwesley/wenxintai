@@ -29,8 +29,9 @@ type wechatTokenResp struct {
 }
 
 type wxStatusResponse struct {
-	Status      string `json:"status"`              // "pending" | "ok" | "expired"
-	IsNew       *bool  `json:"is_new,omitempty"`    // 只有 status == "ok" 时才会有
+	Status      string `json:"status"`           // "pending" | "ok" | "expired"
+	IsNew       *bool  `json:"is_new,omitempty"` // 只有 status == "ok" 时才会有
+	Uid         string `json:"uid,omitempty"`
 	NickName    string `json:"nick_name,omitempty"` // 登录后返回
 	AvatarURL   string `json:"avatar_url,omitempty"`
 	AppID       string `json:"appid,omitempty"`        // 微信扫码登录用的 appid
@@ -189,7 +190,7 @@ func (s *HttpSrv) wechatSignStatus(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.currentUserFromCookie(ctx, r)
 	if err != nil {
-		s.log.Error().Err(err).Msg("wechatSignStatus: currentUserFromCookie failed")
+		s.log.Err(err).Msg("wechatSignStatus: currentUserFromCookie failed")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -210,6 +211,7 @@ func (s *HttpSrv) wechatSignStatus(w http.ResponseWriter, r *http.Request) {
 		}
 		resp.NickName = user.NickName
 		resp.AvatarURL = user.AvatarUrl
+		resp.Uid = user.Uid
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -283,4 +285,27 @@ func (s *HttpSrv) wechatLogout(w http.ResponseWriter, r *http.Request) {
 	})
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type UsrProfileExtra struct {
+	Uid        string `json:"uid"`
+	City       string `json:"city"`
+	Province   string `json:"province"`
+	Mobile     string `json:"mobile,omitempty"`
+	StudyId    string `json:"study_id,omitempty"`
+	SchoolName string `json:"school_name"`
+}
+
+func (s *HttpSrv) apiWeChatUpdateProfile(w http.ResponseWriter, r *http.Request) {
+	//ctx := r.Context()
+	//user, err := s.currentUserFromCookie(ctx, r)
+	//if err != nil {
+	//	s.log.Err(err).Msg("apiWeChatUpdateProfile: currentUserFromCookie failed")
+	//	http.Error(w, "internal error", http.StatusInternalServerError)
+	//	return
+	//}
+	//
+	//var extraData UsrProfileExtra{}
+	//extraData.parseObj(r)
+	//err = dbSrv.Instance().UpdateUserProfileExtra(uid, mobile, studyId, schoolName, location)
 }

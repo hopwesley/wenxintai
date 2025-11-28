@@ -1,9 +1,9 @@
-import {ref, nextTick} from 'vue'
+import {ref, nextTick, computed, watch} from 'vue'
 import {defineStore} from 'pinia'
 import {apiRequest} from '@/api'
 
 export type WxLoginStatus = 'idle' | 'pending' | 'success' | 'error' | 'expired'
-const NEW_USER_HINT_KEY = 'wenxintai:newUserInfoDismissed'
+const NEW_USER_HINT_KEY_PREFIX = 'wenxintai:newUserInfoDismissed:'
 /**
  * 对应 Go 里的 wxStatusResponse：
  * type wxStatusResponse struct {
@@ -17,6 +17,7 @@ const NEW_USER_HINT_KEY = 'wenxintai:newUserInfoDismissed'
  */
 export interface WxLoginStatusResponse {
     status: 'pending' | 'ok' | 'expired' | 'signOut'
+    uid?:string
     is_new?: boolean
     nick_name?: string
     avatar_url?: string
@@ -49,15 +50,27 @@ export const useAuthStore = defineStore('auth', () => {
     })
 
     const newUserInfoDismissed = ref(false)
-    if (typeof window !== 'undefined') {
-        const stored = window.localStorage.getItem(NEW_USER_HINT_KEY)
+    // 当前用户的本地存储 key
+    const currentUserKey = computed(() => {
+        const id = signInStatus.value.uid || ''
+        return id ? NEW_USER_HINT_KEY_PREFIX + id : ''
+    })
+
+// 每当登录用户变了，就重新从 localStorage 读取这一位用户的设置
+    watch(currentUserKey, (key) => {
+        if (!key || typeof window === 'undefined') {
+            newUserInfoDismissed.value = false
+            return
+        }
+        const stored = window.localStorage.getItem(key)
         newUserInfoDismissed.value = stored === '1'
-    }
+    })
+
+// 勾选“下次不再提醒”时，只对当前 userKey 写入
     function dismissNewUserInfoHint() {
         newUserInfoDismissed.value = true
-        if (typeof window !== 'undefined') {
-            window.localStorage.setItem(NEW_USER_HINT_KEY, '1')
-        }
+        if (!currentUserKey.value || typeof window === 'undefined') return
+        window.localStorage.setItem(currentUserKey.value, '1')
     }
 
     function clearTimer() {

@@ -10,27 +10,35 @@
 
       <!-- 头像 / 昵称区域 -->
       <div class="profile-box">
-        <div class="avatar"></div>
+        <div class="avatar">
+          <img
+              v-if="avatarUrl"
+              :src="avatarUrl"
+              alt="微信头像"
+              class="avatar__img"
+          />
+        </div>
 
         <div class="profile-info">
-          <div class="nickname">昵称</div>
-          <div class="wechat-id">微信ID: XXXXXXXX</div>
+          <div class="nickname">{{ nickName || '昵称' }}</div>
+          <div class="wechat-id">微信账号</div>
         </div>
       </div>
+
 
       <!-- 表单区域 -->
       <div class="form-area">
 
         <!-- 所在地区：省 / 市（都可空） -->
         <div class="form-group">
-          <label class="form-label">所在地区（可不填）</label>
+          <label class="form-label">所在地区</label>
           <div class="form-input-row">
             <!-- 省份选择 -->
             <select
                 v-model="selectedProvince"
                 class="form-select"
             >
-              <option value="">请选择省份（可不填）</option>
+              <option value="">请选择省份</option>
               <option
                   v-for="prov in provinces"
                   :key="prov.name"
@@ -46,7 +54,7 @@
                 class="form-select form-select--mini"
                 :disabled="!selectedProvince"
             >
-              <option value="">请选择市级（可不填）</option>
+              <option value="">请选择市级</option>
               <option
                   v-for="city in currentCities"
                   :key="city"
@@ -108,6 +116,7 @@
 <script setup lang="ts">
 import {ref, computed, watch} from 'vue'
 import {chinaProvinces} from '@/views/components/chinaRegions'   // ✅ 省市数据文件，下面给
+import {useAuthStore} from '@/controller/wx_auth'
 
 const props = defineProps<{
   open: boolean
@@ -119,6 +128,9 @@ const emit = defineEmits<{
 }>()
 
 const dontRemind = ref(false)
+const authStore = useAuthStore()
+const avatarUrl = computed(() => authStore.signInStatus.avatar_url || '')
+const nickName = computed(() => authStore.signInStatus.nick_name || '')
 
 // 省市选择状态（可为空）
 const provinces = chinaProvinces
@@ -269,14 +281,11 @@ function handleConfirm() {
   border: 1px solid #ddd;
   padding: 0 10px;
   font-size: 14px;
-  background: #fff;
   outline: none;
   appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, #c0c4cc 50%),
-  linear-gradient(135deg, #c0c4cc 50%, transparent 50%);
-  background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%;
   background-size: 6px 6px, 6px 6px;
-  background-repeat: no-repeat;
+  background: #fff linear-gradient(45deg, transparent 50%, #c0c4cc 50%),
+  linear-gradient(135deg, #c0c4cc 50%, transparent 50%) no-repeat calc(100% - 15px) 50%, calc(100% - 10px) 50%;
 }
 
 .form-select:disabled {
@@ -339,4 +348,21 @@ function handleConfirm() {
   border-color: #aaa;
   color: #666;
 }
+
+.avatar {
+  width: 52px;
+  height: 52px;
+  background: #e0dcf4;
+  border-radius: 50%;
+}
+
+/* ✅ 新增：让头像图铺满圆形区域 */
+.avatar__img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
 </style>

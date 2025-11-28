@@ -5,7 +5,7 @@
       <!-- 顶部标题 + 关闭按钮 -->
       <div class="dialog-header">
         <h2 class="dialog-title">完善资料</h2>
-        <button class="dialog-close" @click="handleConfirm">✕</button>
+        <button class="dialog-close" @click="handleConfirm('skip')">✕</button>
       </div>
 
       <!-- 头像 / 昵称区域 -->
@@ -31,7 +31,7 @@
 
         <!-- 所在地区：省 / 市（都可空） -->
         <div class="form-group">
-          <label class="form-label">所在地区</label>
+          <label class="form-label required">所在地区</label>
           <div class="form-input-row">
             <!-- 省份选择 -->
             <select
@@ -64,6 +64,7 @@
               </option>
             </select>
           </div>
+          <p v-if="locationError" class="form-error">{{ locationError }}</p>
         </div>
 
         <!-- 学校名称 -->
@@ -105,8 +106,8 @@
 
       <!-- 底部按钮 -->
       <div class="dialog-footer">
-        <button class="btn-confirm" @click="handleConfirm">确定</button>
-        <button class="btn-skip" @click="handleConfirm">跳过</button>
+        <button class="btn-confirm" @click="handleConfirm('confirm')">确定</button>
+        <button class="btn-skip" @click="handleConfirm('skip')">跳过</button>
       </div>
 
     </div>
@@ -117,6 +118,7 @@
 import {ref, computed, watch} from 'vue'
 import {chinaProvinces} from '@/views/components/chinaRegions'   // ✅ 省市数据文件，下面给
 import {useAuthStore} from '@/controller/wx_auth'
+import {apiRequest} from "@/api";
 
 const props = defineProps<{
   open: boolean
@@ -137,6 +139,14 @@ const provinces = chinaProvinces
 const selectedProvince = ref<string>('')
 const selectedCity = ref<string>('')
 
+// ✅ 额外表单字段
+const schoolName = ref('')
+const studentId = ref('')
+const parentPhone = ref('')
+
+// ✅ 所在地区的错误提示
+const locationError = ref('')
+
 watch(selectedProvince, () => {
   selectedCity.value = ''
 })
@@ -146,12 +156,41 @@ const currentCities = computed(() => {
   return prov ? prov.cities : []
 })
 
-function handleConfirm() {
+
+async function handleConfirm(action: 'confirm' | 'skip' = 'confirm') {
+  // 如果是“确定”，需要校验 + 提交
+  if (action === 'confirm') {
+    // 1) 校验省市必选
+    if (!selectedProvince.value || !selectedCity.value) {
+      locationError.value = '请选择所在地区和市级'
+      return
+    }
+    locationError.value = ''
+
+    try {
+      await apiRequest('/api/user/basic_info', {
+        method: 'POST',
+        body: {
+          province: selectedProvince.value,
+          city: selectedCity.value,
+          school_name: schoolName.value || undefined,
+          student_id: studentId.value || undefined,
+          parent_phone: parentPhone.value || undefined,
+        },
+      })
+    } catch (e) {
+      console.error('[NewUserInfoDialog] 提交基础信息失败', e)
+      return
+    }
+  }
+
+  // 无论“确定”还是“跳过”，都按勾选状态决定是否不再提醒
   if (dontRemind.value) {
-    emit('never-remind')   // 外层写 localStorage
+    emit('never-remind')
   }
   emit('update:open', false)
 }
+
 </script>
 
 <style scoped>

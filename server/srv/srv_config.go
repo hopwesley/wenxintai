@@ -24,9 +24,6 @@ func (cfg *Config) Validate() error {
 	if cfg.Port == "" {
 		cfg.Port = "8080"
 	}
-	if cfg.StaticDir == "" {
-		cfg.StaticDir = "./static"
-	}
 
 	if cfg.ReadTimeout <= 0 {
 		cfg.ReadTimeout = 10

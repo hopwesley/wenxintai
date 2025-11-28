@@ -103,9 +103,9 @@ func (s *HttpSrv) initRouter() error {
 	mux.HandleFunc(apiWeChatLogOut, s.wechatLogout)
 	mux.HandleFunc(apiWeChatUpdateProfile, s.apiWeChatUpdateProfile)
 
-	if err := s.registerSpaStatic(mux); err != nil {
-		return err
-	}
+	//if err := s.registerSpaStatic(mux); err != nil {
+	//	return err
+	//}
 
 	handler := s.loggingMiddleware(mux)
 	srv := &http.Server{
@@ -153,11 +153,6 @@ func (s *HttpSrv) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// registerSpaStatic 挂载前端 SPA 静态文件，并做 history fallback：
-// 1. 先检查 staticDir 是否存在且为目录；
-// 2. 对所有非 /api/ 路径：
-//   - 如果有对应静态文件，直接返回；
-//   - 否则一律 fallback 到 index.html，由前端路由接管。
 func (s *HttpSrv) registerSpaStatic(mux *http.ServeMux) error {
 	staticDir := s.cfg.StaticDir
 	if stat, err := os.Stat(staticDir); err != nil || !stat.IsDir() {

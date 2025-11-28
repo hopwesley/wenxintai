@@ -15,7 +15,8 @@ type UserProfile struct {
 	Mobile      string    `json:"mobile,omitempty"`      // 手机号（可空）
 	StudyId     string    `json:"study_id,omitempty"`    // 学号（可空）
 	SchoolName  string    `json:"school_name,omitempty"` // 学校名称（可空）
-	Location    string    `json:"location,omitempty"`    // 所在地区（可空）
+	Province    string    `json:"province,omitempty"`    // 所在地区省（可空）
+	City        string    `json:"city,omitempty"`        // 所在地区省（可空）
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 	LastLoginAt time.Time `json:"last_login_at"` // 最近登录时间
@@ -70,7 +71,8 @@ func (pdb *psDatabase) UpdateUserProfileExtra(
 	mobile string,
 	studyId string,
 	schoolName string,
-	location string,
+	province string,
+	city string,
 ) error {
 	if uid == "" {
 		return errors.New("uid must be non-empty")
@@ -88,7 +90,8 @@ func (pdb *psDatabase) UpdateUserProfileExtra(
 			mobile      = $2,
 			study_id    = $3,
 			school_name = $4,
-			location    = $5,
+			province    = $5,
+			city    = $6,
 			updated_at  = now()
 		WHERE uid = $1
 	`
@@ -98,7 +101,8 @@ func (pdb *psDatabase) UpdateUserProfileExtra(
 		mobile,
 		studyId,
 		schoolName,
-		location,
+		province,
+		city,
 	)
 	if err != nil {
 		log.Err(err).Msg("UpdateUserProfileExtra: exec failed")
@@ -143,7 +147,8 @@ func (pdb *psDatabase) FindUserProfileByUid(
         COALESCE(mobile, ''),
         COALESCE(study_id, ''),
         COALESCE(school_name, ''),
-        COALESCE(location, ''),
+        COALESCE(province, ''),
+        COALESCE(city, ''),
         created_at,
         updated_at,
         last_login_at
@@ -163,7 +168,8 @@ func (pdb *psDatabase) FindUserProfileByUid(
 		&u.Mobile,
 		&u.StudyId,
 		&u.SchoolName,
-		&u.Location,
+		&u.Province,
+		&u.City,
 		&u.CreatedAt,
 		&u.UpdatedAt,
 		&u.LastLoginAt,

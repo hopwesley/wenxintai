@@ -28,4 +28,5 @@ type DbService interface {
 	FindTestReportByPublicId(ctx context.Context, publicId string) (*TestReport, error)
 	FindUserProfileByUid(ctx context.Context, uid string) (*UserProfile, error)
 	InsertOrUpdateUserProfileBasic(ctx context.Context, id string, name string, url string) error
+	UpdateUserProfileExtra(ctx context.Context, uid, mobile, studentId, schoolName, province, city string) error
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -100,15 +101,36 @@ func (s *HttpSrv) initRouter() error {
 	mux.HandleFunc(apiWeChatSignInCallBack, s.wechatSignInCallBack)
 	mux.HandleFunc(apiWeChatLogOut, s.wechatLogout)
 
-	if stat, err := os.Stat(s.cfg.StaticDir); err != nil || !stat.IsDir() {
+	// ======= SPA 静态文件 + history fallback =======
+	staticDir := s.cfg.StaticDir
+	if stat, err := os.Stat(staticDir); err != nil || !stat.IsDir() {
 		if err == nil {
-			return fmt.Errorf("%s is not a directory", s.cfg.StaticDir)
+			return fmt.Errorf("%s is not a directory", staticDir)
 		}
 		return err
 	}
 
-	fileServer := http.FileServer(http.Dir(s.cfg.StaticDir))
-	mux.Handle("/", fileServer)
+	// 对所有非 /api/ 路径：
+	//   1. 先尝试当作真实静态文件；
+	//   2. 如果不存在，则 fallback 到 index.html，让前端路由接管。
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// 清理 path，避免 "../" 等奇怪路径
+		cleanPath := filepath.Clean(r.URL.Path)
+
+		// 拼出静态文件在磁盘上的路径
+		// 例如请求 /assets/xxx.js -> {staticDir}/assets/xxx.js
+		p := filepath.Join(staticDir, cleanPath)
+
+		if info, err := os.Stat(p); err == nil && !info.IsDir() {
+			// 找到对应文件，直接返回
+			http.ServeFile(w, r, p)
+			return
+		}
+
+		// 没有找到对应文件（或者是目录），一律回退到 index.html
+		indexPath := filepath.Join(staticDir, "index.html")
+		http.ServeFile(w, r, indexPath)
+	})
 
 	handler := s.loggingMiddleware(mux)
 	srv := &http.Server{

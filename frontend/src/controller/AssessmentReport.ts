@@ -536,12 +536,14 @@ export function useReportPage() {
     function handleSseDone(raw: string) {
         try {
             let parsed = JSON.parse(raw)
-            parsed = JSON.parse(parsed) as AIReportPayload
+            if (typeof parsed === "string"){
+                parsed = JSON.parse(parsed) as AIReportPayload
+            }
             console.log('------>>> parsed object:', parsed)
             aiReportData.value = parsed
 
         } catch (e) {
-            showAlert('获取测试题目失败，请稍后再试' + e)
+            showAlert('解析报告数据失败，请稍后再试' + e)
         } finally {
             aiLoading.value = false;
         }

@@ -295,11 +295,11 @@ type UsrProfileExtra struct {
 	SchoolName  string `json:"school_name"`
 }
 
-func (upe *UsrProfileExtra) parseObj(req *http.Request) *ApiErr {
-	if req.Method != http.MethodPost {
+func (upe *UsrProfileExtra) parseObj(r *http.Request) *ApiErr {
+	if r.Method != http.MethodPost {
 		return ApiMethodInvalid
 	}
-	if err := json.NewDecoder(req.Body).Decode(req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(upe); err != nil {
 		return ApiInvalidReq("invalid request body", err)
 	}
 	if len(upe.Province) == 0 {

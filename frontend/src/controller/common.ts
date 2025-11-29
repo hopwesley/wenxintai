@@ -60,6 +60,30 @@ function eventToError(ev: Event, message = '[SSE] connection error'): Error {
     return err
 }
 
+export function isValidChinaMobile(input: string): boolean {
+    if (!input) return false
+
+    // 去掉空格和连字符等
+    let phone = input.replace(/[\s-]/g, '')
+
+    // 处理前缀：+86 / 0086 / 86
+    if (phone.startsWith('+86')) {
+        phone = phone.slice(3)
+    } else if (phone.startsWith('0086')) {
+        phone = phone.slice(4)
+    } else if (phone.startsWith('86') && phone.length > 11) {
+        phone = phone.slice(2)
+    }
+
+    // 现在应该只剩下 11 位本地号码
+    if (!/^\d{11}$/.test(phone)) {
+        return false
+    }
+
+    // 中国大陆手机号段：1 开头，第 2 位 3-9
+    return /^1[3-9]\d{9}$/.test(phone)
+}
+
 export function useSubscriptBySSE(
     url: string,
     options: UseSSEOptions = {},
@@ -235,3 +259,4 @@ export function useSseLogs(
         resetLogs,
     }
 }
+

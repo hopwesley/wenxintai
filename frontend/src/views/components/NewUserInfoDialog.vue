@@ -64,7 +64,6 @@
               </option>
             </select>
           </div>
-          <p v-if="locationError" class="form-error">{{ locationError }}</p>
         </div>
 
         <!-- 学校名称 -->
@@ -74,6 +73,7 @@
               type="text"
               class="form-input"
               placeholder="填写所在学校名称"
+              v-model="schoolName"
           />
         </div>
 
@@ -83,7 +83,8 @@
           <input
               type="text"
               class="form-input"
-              placeholder="填写所属学号"
+              placeholder="填写学生学号"
+              v-model="studentId"
           />
         </div>
 
@@ -94,6 +95,7 @@
               type="tel"
               class="form-input"
               placeholder="填写家长常用手机号"
+              v-model="parentPhone"
           />
         </div>
 
@@ -103,7 +105,7 @@
           <span>下次不再提醒</span>
         </label>
       </div>
-
+      <p v-if="locationError" class="form-error">{{ locationError }}</p>
       <!-- 底部按钮 -->
       <div class="dialog-footer">
         <button class="btn-confirm" @click="handleConfirm('confirm')">确定</button>
@@ -119,6 +121,7 @@ import {ref, computed, watch} from 'vue'
 import {chinaProvinces} from '@/views/components/chinaRegions'   // ✅ 省市数据文件，下面给
 import {useAuthStore} from '@/controller/wx_auth'
 import {apiRequest} from "@/api";
+import {isValidChinaMobile} from "@/controller/common";
 
 const props = defineProps<{
   open: boolean
@@ -146,7 +149,6 @@ const parentPhone = ref('')
 
 // ✅ 所在地区的错误提示
 const locationError = ref('')
-
 watch(selectedProvince, () => {
   selectedCity.value = ''
 })
@@ -159,27 +161,42 @@ const currentCities = computed(() => {
 
 async function handleConfirm(action: 'confirm' | 'skip' = 'confirm') {
   // 如果是“确定”，需要校验 + 提交
+  locationError.value = ''
   if (action === 'confirm') {
     // 1) 校验省市必选
     if (!selectedProvince.value || !selectedCity.value) {
       locationError.value = '请选择所在地区和市级'
       return
     }
-    locationError.value = ''
+
+    if (parentPhone.value && !isValidChinaMobile(parentPhone.value)) {
+      locationError.value = '请输入有效的中国大陆手机号码'
+      return
+    }
 
     try {
-      await apiRequest('/api/user/basic_info', {
+      await apiRequest('/api/user/update_profile', {
         method: 'POST',
         body: {
           province: selectedProvince.value,
           city: selectedCity.value,
           school_name: schoolName.value || undefined,
-          student_id: studentId.value || undefined,
+          study_id: studentId.value || undefined,
           parent_phone: parentPhone.value || undefined,
         },
       })
     } catch (e) {
+
       console.error('[NewUserInfoDialog] 提交基础信息失败', e)
+
+      const msg =
+          (e && typeof e === 'object' && ((e as any).message) || ((e as any).body)) ||
+          (e as Error).message ||
+          '提交失败，请稍后重试'
+
+      // 这里也用同一个 locationError 显示接口异常
+      locationError.value = msg
+
       return
     }
   }
@@ -402,6 +419,31 @@ async function handleConfirm(action: 'confirm' | 'skip' = 'confirm') {
   border-radius: 50%;
   object-fit: cover;
   display: block;
+}
+
+.form-error {
+  margin-top: 8px;
+  margin-bottom: 4px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #e02424; /* 红色提示 */
+  display: flex;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.form-error::before {
+  content: "⚠";
+  display: inline-block;
+  font-size: 14px;
+  margin-right: 6px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* 如果你的对话框主体有内边距，可以适当缩进一点 */
+.dialog-body .form-error {
+  padding-left: 2px;
 }
 
 </style>

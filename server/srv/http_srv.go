@@ -28,7 +28,7 @@ const (
 	apiWeChatSignIn         = "/api/auth/wx/status"
 	apiWeChatSignInCallBack = "/api/wechat_signin"
 	apiWeChatLogOut         = "/api/auth/logout"
-	apiWeChatUpdateProfile  = "/api/auth/update_profile"
+	apiWeChatUpdateProfile  = "/api/user/update_profile"
 )
 
 var (

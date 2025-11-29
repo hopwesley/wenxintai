@@ -604,7 +604,7 @@
               <h2>开始你的测试</h2>
               <p>用10~20分钟，获取专属于你的《智择未来 · AI选科全景分析报告》。 </p>
             </div>
-            <button class="btn btn-primary" @click="startTest('basic')">
+            <button class="btn btn-primary" @click="scrollToStartTest">
               开始测试
             </button>
           </div>
@@ -659,7 +659,6 @@ const isLoggedIn = computed(
     () => signInStatus.value.status === 'ok'
 )
 
-// 登录流程完成之后，根据 signInStatus.is_new 决定行为
 watch(
     () => authStore.loginStatus,
     (status) => {
@@ -667,8 +666,8 @@ watch(
       const isNew = signInStatus.value?.is_new === true
 
       console.log("------>>> newUserInfoDismissed value:", authStore.newUserInfoDismissed)
+
       if (isNew && !authStore.newUserInfoDismissed) {
-        // ✅ 只有“新用户”且“没选过不再提醒”才弹
         console.log('[HomeView] 微信登录成功，新用户，打开补充信息弹窗')
         newUserDialogOpen.value = true
       } else {
@@ -680,6 +679,12 @@ watch(
 
 function handleNeverRemindNewUser() {
   authStore.dismissNewUserInfoHint()
+}
+
+const scrollToStartTest = () => {
+  const el = document.getElementById('section-start-test')
+  if (!el) return
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 </script>

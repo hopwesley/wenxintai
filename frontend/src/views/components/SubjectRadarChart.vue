@@ -39,7 +39,6 @@
 import { computed } from 'vue'
 import type { ReportRadarBlock } from '@/controller/AssessmentReport'
 
-// props：直接吃 ReportRadarBlock
 const props = defineProps<{
   radar: ReportRadarBlock | null
 }>()

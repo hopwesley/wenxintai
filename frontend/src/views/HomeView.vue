@@ -145,7 +145,7 @@
               <div class="list-intro">注意问题</div>
             </li>
           </ul>
-          <RouterLink to="/login" class="btn btn-primary w-full" @click.prevent="startTest('basic')">开始测试
+          <RouterLink to="/login" class="btn btn-primary w-full" @click.prevent="startTest(TestTypeBasic)">开始测试
           </RouterLink>
         </div>
         <p class="plan-tip">邀请码免费测试</p>
@@ -232,7 +232,7 @@
               <div class="list-intro">导出PDF报告</div>
             </li>
           </ul>
-          <div class="btn w-full" aria-disabled="true">开始测试</div>
+          <div class="btn w-full" aria-disabled="true"  @click.prevent="startTest(TestTypePro)">开始测试</div>
         </div>
         <p class="plan-tip">需邀请</p>
       </div>
@@ -620,10 +620,7 @@
     </section>
 
     <InviteCodeModal v-model:open="inviteModalOpen" @success="handleInviteSuccess"/>
-    <NewUserInfoDialog
-        v-model:open="newUserDialogOpen"
-        @never-remind="handleNeverRemindNewUser"
-    />
+    <NewUserInfoDialog  v-model:open="newUserDialogOpen"  />
   </div>
 </template>
 

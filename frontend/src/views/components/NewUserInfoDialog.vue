@@ -118,7 +118,7 @@
 
 <script setup lang="ts">
 import {ref, computed, watch} from 'vue'
-import {chinaProvinces} from '@/controll/chinaRegions'
+import {chinaProvinces} from '@/controller/chinaRegions'
 import {useAuthStore} from '@/controller/wx_auth'
 import {apiRequest} from "@/api";
 import {isValidChinaMobile} from "@/controller/common";
@@ -129,7 +129,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
-  (e: 'never-remind'): void
 }>()
 
 const dontRemind = ref(false)
@@ -185,6 +184,7 @@ async function handleConfirm(action: 'confirm' | 'skip' = 'confirm') {
           parent_phone: parentPhone.value || undefined,
         },
       })
+      authStore.dismissNewUserInfoHint()
     } catch (e) {
 
       console.error('[NewUserInfoDialog] 提交基础信息失败', e)
@@ -194,16 +194,14 @@ async function handleConfirm(action: 'confirm' | 'skip' = 'confirm') {
           (e as Error).message ||
           '提交失败，请稍后重试'
 
-      // 这里也用同一个 locationError 显示接口异常
       locationError.value = msg
-
       return
     }
   }
 
   // 无论“确定”还是“跳过”，都按勾选状态决定是否不再提醒
   if (dontRemind.value) {
-    emit('never-remind')
+    authStore.dismissNewUserInfoHint()
   }
   emit('update:open', false)
 }

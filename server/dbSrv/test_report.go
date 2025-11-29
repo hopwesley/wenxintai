@@ -16,7 +16,6 @@ const (
 type TestReport struct {
 	ID            int64           `json:"id"`
 	PublicId      string          `json:"public_id"`
-	BusinessType  string          `json:"business_type"`
 	Mode          string          `json:"mode"`
 	CommonScore   json.RawMessage `json:"common_score"`
 	ModeParam     json.RawMessage `json:"mode_param"`
@@ -31,16 +30,12 @@ type TestReport struct {
 func (pdb *psDatabase) SaveTestReportCore(
 	ctx context.Context,
 	publicId string,
-	businessType string,
 	mode string,
 	commonScoreJSON []byte,
 	modeParamJSON []byte,
 ) error {
 	if publicId == "" {
 		return errors.New("publicId must be non-empty")
-	}
-	if businessType == "" {
-		return errors.New("businessType must be non-empty")
 	}
 	if mode == "" {
 		return errors.New("mode must be non-empty")
@@ -54,7 +49,6 @@ func (pdb *psDatabase) SaveTestReportCore(
 
 	log := pdb.log.With().
 		Str("public_id", publicId).
-		Str("business_type", businessType).
 		Str("mode", mode).
 		Logger()
 
@@ -62,9 +56,9 @@ func (pdb *psDatabase) SaveTestReportCore(
 
 	const q = `
         INSERT INTO app.test_reports (
-            public_id, business_type,  mode, common_score,  mode_param, engine_version
+            public_id, mode, common_score,  mode_param, engine_version
         )
-        VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6)
+        VALUES ($1, $2, $3::jsonb, $4::jsonb, $5)
         ON CONFLICT (public_id)
         DO UPDATE SET
             mode        = EXCLUDED.mode,
@@ -76,7 +70,6 @@ func (pdb *psDatabase) SaveTestReportCore(
 
 	_, err := pdb.db.ExecContext(ctx, q,
 		publicId,
-		businessType,
 		mode,
 		commonScoreJSON,
 		modeParamJSON,
@@ -109,7 +102,6 @@ func (pdb *psDatabase) FindTestReportByPublicId(
         SELECT
             id,
             public_id,
-            business_type,
             mode,
             common_score,
             mode_param,
@@ -131,7 +123,6 @@ func (pdb *psDatabase) FindTestReportByPublicId(
 	if err := row.Scan(
 		&r.ID,
 		&r.PublicId,
-		&r.BusinessType,
 		&r.Mode,
 		&r.CommonScore,
 		&r.ModeParam,

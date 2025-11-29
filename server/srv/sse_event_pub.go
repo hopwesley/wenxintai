@@ -140,7 +140,7 @@ func (s *HttpSrv) handleQuestionSSEEvent(w http.ResponseWriter, r *http.Request)
 
 	msgCh := make(chan *SSEMessage, 64)
 
-	go s.aiQuestionProcess(msgCh, publicId, businessTyp, aiTestType)
+	go s.aiQuestionProcess(msgCh, publicId, aiTestType)
 
 	s.streamSSE(ctx, publicId, msgCh, w, flusher)
 }
@@ -188,14 +188,14 @@ func writeSSE(w http.ResponseWriter, flusher http.Flusher, msg *SSEMessage, log 
 	return nil
 }
 
-func (s *HttpSrv) aiQuestionProcess(msgCh chan *SSEMessage, publicId, businessTyp string, aiTestType ai_api.TestTyp) {
+func (s *HttpSrv) aiQuestionProcess(msgCh chan *SSEMessage, publicId string, aiTestType ai_api.TestTyp) {
 
-	sLog := s.log.With().Str("channel", publicId).Str("business_type", businessTyp).Str("ai_Type", string(aiTestType)).Logger()
+	sLog := s.log.With().Str("channel", publicId).Str("ai_Type", string(aiTestType)).Logger()
 	defer close(msgCh)
 
 	bgCtx := context.Background()
 	sLog.Info().Msg("start ai process")
-	dbQuestion, err := dbSrv.Instance().FindQASession(bgCtx, businessTyp, string(aiTestType), publicId)
+	dbQuestion, err := dbSrv.Instance().FindQASession(bgCtx, string(aiTestType), publicId)
 	if err != nil {
 		sLog.Err(err).Msg("failed when find questions from database")
 		msg := &SSEMessage{Msg: err.Error(), Typ: SSE_MT_ERROR}
@@ -239,7 +239,7 @@ func (s *HttpSrv) aiQuestionProcess(msgCh chan *SSEMessage, publicId, businessTy
 
 	s.log.Info().Msg("AI generate question success")
 
-	if err := dbSrv.Instance().SaveQuestion(bgCtx, businessTyp, string(aiTestType), publicId, json.RawMessage(testContent)); err != nil {
+	if err := dbSrv.Instance().SaveQuestion(bgCtx, string(aiTestType), publicId, json.RawMessage(testContent)); err != nil {
 		sLog.Err(err).Msg("保存 QA 试卷失败")
 		msg := &SSEMessage{Msg: "保存 QA 试卷失败：" + err.Error(), Typ: SSE_MT_ERROR}
 		sendSafe(msgCh, msg, &s.log)

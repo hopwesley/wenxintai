@@ -19,11 +19,11 @@ type DbService interface {
 	NewTestRecord(ctx context.Context, businessType string, inviteCode *string, weChatId *string) (string, error)
 	UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string, status int) (string, error)
 	QueryBasicInfo(ctx context.Context, publicId string) (*ai_api.BasicInfo, error)
-	FindQASession(ctx context.Context, businessType, testType, publicId string) (*QASession, error)
-	SaveQuestion(ctx context.Context, businessType, testType, publicId string, questionsJSON []byte) error
-	SaveAnswer(ctx context.Context, businessType, testType, publicId string, answersJSON []byte, status int) error
-	FindQASessionsForReport(ctx context.Context, businessType string, publicId string) ([]*QASession, error)
-	SaveTestReportCore(ctx context.Context, publicId, businessType, mode string, commonScoreJSON []byte, modeParamJSON []byte) error
+	FindQASession(ctx context.Context, testType, publicId string) (*QASession, error)
+	SaveQuestion(ctx context.Context, testType, publicId string, questionsJSON []byte) error
+	SaveAnswer(ctx context.Context, testType, publicId string, answersJSON []byte, status int) error
+	FindQASessionsForReport(ctx context.Context, publicId string) ([]*QASession, error)
+	SaveTestReportCore(ctx context.Context, publicId, mode string, commonScoreJSON []byte, modeParamJSON []byte) error
 	UpdateTestReportAIContent(ctx context.Context, publicId string, aiContentJSON []byte) error
 	FindTestReportByPublicId(ctx context.Context, publicId string) (*TestReport, error)
 	FindUserProfileByUid(ctx context.Context, uid string) (*UserProfile, error)

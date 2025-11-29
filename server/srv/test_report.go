@@ -147,7 +147,7 @@ func (s *HttpSrv) handleTestReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessions, dbErr := dbSrv.Instance().FindQASessionsForReport(ctx, record.BusinessType, req.TestPublicID)
+	sessions, dbErr := dbSrv.Instance().FindQASessionsForReport(ctx, req.TestPublicID)
 	if dbErr != nil || len(sessions) == 0 {
 		sLog.Err(dbErr).Msg("FindQASessionsForReport failed")
 		writeError(w, ApiInternalErr("未找到问卷测试的题目与答案", dbErr))
@@ -219,7 +219,7 @@ func (s *HttpSrv) handleTestReport(w http.ResponseWriter, r *http.Request) {
 		aiParamForMode, _ = json.Marshal(resp.Recommend312)
 	}
 
-	dbErr = dbSrv.Instance().SaveTestReportCore(ctx, req.TestPublicID, record.BusinessType, record.Mode.String, commonScore, aiParamForMode)
+	dbErr = dbSrv.Instance().SaveTestReportCore(ctx, req.TestPublicID, record.Mode.String, commonScore, aiParamForMode)
 	if dbErr != nil {
 		sLog.Err(dbErr).Msg("failed to save report param")
 		writeError(w, ApiInternalErr("保存 AI 报告需要的参数失败", aiErr))

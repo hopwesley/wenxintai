@@ -11,26 +11,31 @@ const routes: RouteRecordRaw[] = [
         path: '/assessment/:typ/'+StageBasic,
         name: 'test-basic-info',
         component: () => import('@/views/AssessmentBasicInfo.vue'),
+        meta: { stage: StageBasic },
     },
     {
         path: '/assessment/'+TestTypeBasic+'/'+StageReport,
         name: 'test-report-basic',
         component: () => import('@/views/report_basic.vue'),
+        meta: { stage: StageReport },
     },
     {
         path: '/assessment/'+TestTypePro+'/'+StageReport,
         name: 'test-report-pro',
         component: () => import('@/views/AssessmentReport.vue'),
+        meta: { stage: StageReport },
     },
     {
         path: '/assessment/'+TestTypeAdv+'/'+StageReport,
         name: 'test-report-adv',
         component: () => import('@/views/AssessmentReport.vue'),
+        meta: { stage: StageReport },
     },
     {
         path: '/assessment/'+TestTypeSchool+'/'+StageReport,
         name: 'test-report-school',
         component: () => import('@/views/AssessmentReport.vue'),
+        meta: { stage: StageReport },
     },
     {
         path: '/assessment/:businessType/:testStage',

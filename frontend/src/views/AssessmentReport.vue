@@ -278,7 +278,7 @@
       </section>
       <!-- 下半部分：选科组合推荐卡片 -->
 
-      <section class="report-card report-card--recommendation">
+      <section class="report-card report-card--recommendation  page-break-before">
         <header class="report-card__header">
           <div class="report-card__title-row">
             <h2 class="report-card__title">选科组合推荐</h2>
@@ -790,7 +790,7 @@
     <div class="report-page__actions">
       <button
           class="btn btn-secondary report-page__action"
-          @click="handleBackToHome"  >
+          @click="handleBackToHome">
         返回测试首页
       </button>
 
@@ -824,9 +824,6 @@ import ComboScoreChart from '@/views/components/ComboScoreChart.vue'
 import {aiReportData} from '@/controller/AssessmentReport'
 import {subjectLabelMap} from "@/controller/common";
 
-import html2pdf from 'html2pdf.js'
-import {ref} from "vue";
-
 const {
   state,
   route,
@@ -841,6 +838,8 @@ const {
   mode312OverviewStrips,
   finalReport,
   handleBackToHome,
+  reportPageRoot,
+  handleExportPdf,
 } = useReportPage()
 
 
@@ -855,40 +854,6 @@ function formatPercent(p: number | null | undefined): string {
   if (p === null || p === undefined || Number.isNaN(p)) return '--'
   return `${(p * 100).toFixed(1)}%`
 }
-
-// ref 绑定在 <main class="report-page" ref="reportPageRoot">
-const reportPageRoot = ref<HTMLElement | null>(null)
-
-const handleExportPdf = () => {
-  if (!reportPageRoot.value) return
-
-  const opt = {
-    margin: 10,
-    filename: `选科报告-${overview.account || overview.generateDate || 'report'}.pdf`,
-    image: {
-      type: 'jpeg',
-      quality: 0.95,
-    },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-    },
-    jsPDF: {
-      unit: 'mm',
-      format: 'a4',
-      orientation: 'portrait',
-    },
-    pagebreak: {
-      mode: ['css', 'legacy'],
-    },
-  }
-
-  html2pdf()
-      .set(opt as any)
-      .from(reportPageRoot.value as HTMLElement)
-      .save()
-}
-
 
 </script>
 

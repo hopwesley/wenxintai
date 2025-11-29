@@ -364,6 +364,8 @@ const {
   mode312OverviewStrips,
   finalReport,
   handleBackToHome,
+  reportPageRoot,
+  handleExportPdf,
 } = useReportPage()
 
 // --------- 3+3：首选 & 备选组合（只取前两档） ----------
@@ -476,38 +478,6 @@ function formatZ(v: number | null | undefined): string {
   return v.toFixed(3)
 }
 
-// PDF 导出：复用 AssessmentReport.vue 的逻辑
-const reportPageRoot = ref<HTMLElement | null>(null)
-
-const handleExportPdf = () => {
-  if (!reportPageRoot.value) return
-
-  const opt = {
-    margin: 10,
-    filename: `选科精简报告-${overview.account || overview.generateDate || 'report'}.pdf`,
-    image: {
-      type: 'jpeg',
-      quality: 0.95,
-    },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-    },
-    jsPDF: {
-      unit: 'mm',
-      format: 'a4',
-      orientation: 'portrait',
-    },
-    pagebreak: {
-      mode: ['css', 'legacy'],
-    },
-  }
-
-  html2pdf()
-      .set(opt as any)
-      .from(reportPageRoot.value as HTMLElement)
-      .save()
-}
 </script>
 
 <style scoped src="@/styles/assessment-report.css"></style>

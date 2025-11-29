@@ -36,22 +36,11 @@ const steps = computed(() => {
   return state.testRoutes ?? []
 })
 
-/**
- * 根据当前路由，推导“所在阶段”的 stage key
- * - /assessment/:typ/basic-info       -> StageBasic
- * - /assessment/:typ/report           -> StageReport
- * - /assessment/:businessType/:testStage -> route.params.testStage
- */
 function getStageFromRoute(): string {
-  const name = route.name
-
-  if (name === 'test-basic-info') {
-    return StageBasic
+  const metaStage = route.meta?.stage as string | undefined
+  if (metaStage) {
+    return metaStage
   }
-  if (name === 'test-report') {
-    return StageReport
-  }
-
   // 题目阶段：/assessment/:businessType/:testStage
   return String(route.params.testStage ?? '')
 }

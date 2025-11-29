@@ -5,6 +5,7 @@ import {useTestSession} from '@/controller/testSession'
 import {apiRequest} from "@/api";
 import {useAlert} from "@/controller/useAlert";
 import {Mode312, Mode33, ModeOption, subjectLabelMap, useSseLogs, useSubscriptBySSE} from "@/controller/common";
+import html2pdf from "html2pdf.js";
 
 export interface ComboMetric {
     label: string
@@ -603,6 +604,41 @@ export function useReportPage() {
         })
     }
 
+    // const handleExportPdf = () => {
+    //     window.print()
+    // }
+    const reportPageRoot = ref<HTMLElement | null>(null)
+
+    const handleExportPdf = () => {
+        if (!reportPageRoot.value) return
+
+        const opt = {
+            margin: 10,
+            filename: `选科报告-${overview.account || overview.generateDate || 'report'}.pdf`,
+            image: {
+                type: 'jpeg',
+                quality: 0.95,
+            },
+            html2canvas: {
+                scale: 2,
+                useCORS: true,
+            },
+            jsPDF: {
+                unit: 'mm',
+                format: 'a4',
+                orientation: 'portrait',
+            },
+            pagebreak: {
+                mode: ['css', 'legacy'],
+            },
+        }
+
+        html2pdf()
+            .set(opt as any)
+            .from(reportPageRoot.value as HTMLElement)
+            .save()
+    }
+
     return {
         state,
         route,
@@ -618,5 +654,7 @@ export function useReportPage() {
         mode312OverviewStrips,
         finalReport,
         handleBackToHome,
+        reportPageRoot,
+        handleExportPdf,
     }
 }

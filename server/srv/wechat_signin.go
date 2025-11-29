@@ -266,7 +266,7 @@ func (s *HttpSrv) currentUserFromCookie(ctx context.Context, r *http.Request) (*
 	return profile, nil
 }
 
-func (s *HttpSrv) wechatLogout(w http.ResponseWriter, r *http.Request) {
+func (s *HttpSrv) wechatLogout(w http.ResponseWriter, _ *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "wx_user",
 		Value:    "",

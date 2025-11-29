@@ -183,10 +183,25 @@ export function pushStageRoute(
 
     // 特殊路由：测评报告
     if (stage === StageReport) {
-        return router.push({
-            name: 'test-report',
-            params: { typ: businessType },
-        })
+        let name: string
+        switch (businessType) {
+            case TestTypeBasic:
+                name = 'test-report-basic'
+                break
+            case TestTypePro:
+                name = 'test-report-pro'
+                break
+            case TestTypeAdv:
+                name = 'test-report-adv'
+                break
+            case TestTypeSchool:
+                name = 'test-report-school'
+                break
+            default:
+                return router.replace('/').then()
+        }
+
+        return router.push({ name })
     }
 
     // 其它阶段：统一走 test-stage

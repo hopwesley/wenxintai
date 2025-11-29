@@ -111,8 +111,7 @@
             </li>
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="10px" height="10px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -129,8 +128,8 @@
 
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="10px" height="10px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"
+                >
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -154,7 +153,6 @@
           class="plan-card plan-pro"
           :class="{ 'is-active': activePlan === TestTypePro, disabled: true }"
           @click="activePlan = TestTypePro"
-          type="button"
           aria-disabled="true"
       >
         <div class="planA-head">专业版</div>
@@ -165,8 +163,7 @@
           <ul class="plan-features">
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="10px" height="10px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -182,8 +179,7 @@
             </li>
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="10px" height="10px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -199,8 +195,7 @@
             </li>
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="10px" height="10px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" >
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -216,8 +211,7 @@
             </li>
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="10px" height="10px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -232,7 +226,7 @@
               <div class="list-intro">导出PDF报告</div>
             </li>
           </ul>
-          <div class="btn w-full" aria-disabled="true"  @click.prevent="startTest(TestTypePro)">开始测试</div>
+          <div class="btn w-full" aria-disabled="true" @click.prevent="startTest(TestTypePro)">开始测试</div>
         </div>
         <p class="plan-tip">需邀请</p>
       </div>
@@ -240,7 +234,6 @@
           class="plan-card plan-pro"
           :class="{ 'is-active': activePlan === TestTypeAdv, disabled: true }"
           @click="activePlan = TestTypeAdv"
-          type="button"
           aria-disabled="true"
       >
         <div class="planA-head">增强版</div>
@@ -251,8 +244,7 @@
           <ul class="plan-features">
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="10px" height="10px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -268,8 +260,7 @@
             </li>
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="10px" height="10px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -285,8 +276,7 @@
             </li>
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="10px" height="10px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -302,8 +292,7 @@
             </li>
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="10px" height="10px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -326,7 +315,6 @@
           class="plan-card plan-school"
           :class="{ 'is-active': activePlan === TestTypeSchool, disabled: true }"
           @click="activePlan = TestTypeSchool"
-          type="button"
           aria-disabled="true"
       >
         <div class="planA-head">学校版</div>
@@ -337,8 +325,7 @@
           <ul class="plan-features">
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="10px" height="10px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -354,8 +341,7 @@
             </li>
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="10px" height="10px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -371,8 +357,7 @@
             </li>
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="10px" height="10px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -388,8 +373,7 @@
             </li>
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="10px" height="10px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -620,7 +604,7 @@
     </section>
 
     <InviteCodeModal v-model:open="inviteModalOpen" @success="handleInviteSuccess"/>
-    <NewUserInfoDialog  v-model:open="newUserDialogOpen"  />
+    <NewUserInfoDialog v-model:open="newUserDialogOpen"/>
   </div>
 </template>
 
@@ -674,14 +658,10 @@ watch(
     },
 )
 
-function handleNeverRemindNewUser() {
-  authStore.dismissNewUserInfoHint()
-}
-
 const scrollToStartTest = () => {
   const el = document.getElementById('section-start-test')
   if (!el) return
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  el.scrollIntoView({behavior: 'smooth', block: 'start'})
 }
 
 </script>

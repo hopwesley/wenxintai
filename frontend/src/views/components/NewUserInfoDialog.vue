@@ -118,7 +118,7 @@
 
 <script setup lang="ts">
 import {ref, computed, watch} from 'vue'
-import {chinaProvinces} from '@/views/components/chinaRegions'   // ✅ 省市数据文件，下面给
+import {chinaProvinces} from '@/controll/chinaRegions'
 import {useAuthStore} from '@/controller/wx_auth'
 import {apiRequest} from "@/api";
 import {isValidChinaMobile} from "@/controller/common";

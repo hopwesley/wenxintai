@@ -227,8 +227,8 @@ func (dai *DeepSeekApi) GenerateUnifiedReport(ctx context.Context, common *Commo
 		},
 	}
 
-	fmt.Println(systemPrompt)
-	fmt.Println(userPrompt)
+	//fmt.Println(systemPrompt)
+	//fmt.Println(userPrompt)
 
 	return dai.validResult(ctx, reqBody, callback, sLog)
 }

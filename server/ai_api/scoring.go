@@ -190,6 +190,7 @@ func BuildScores(
 	// ---- 5. 一致性 ----
 	cos := cosineSim(IZ, AZ)
 	common.GlobalCosine = round3(cos)
+	common.GlobalCosineScore = NormalizeMetric("common.global_cosine", common.GlobalCosine)
 
 	// ---- 6. 能力占比 ----
 	sumA := 0.0
@@ -206,6 +207,8 @@ func BuildScores(
 	// 动态调整权重。假设 alpha, beta, gamma 是 BuildScores 的输入参数
 	newSW := subWeight.adjustWeights(qualityScore)
 	common.QualityScore = round3(qualityScore)
+	common.QualityScoreScore = NormalizeMetric("common.quality_score", qualityScore)
+	
 	// ---- 7. 每科 Fit ----
 	out := make([]SubjectScores, 0, len(Subjects))
 	for _, s := range Subjects {
@@ -241,13 +244,19 @@ func BuildScores(
 	// ---- 8. 构建 CommonSection.Subjects ----
 	var subjectProfiles []SubjectProfileData
 	for _, s := range Subjects {
+
+		rawFit := findFit(out, s)
+		fitScore := NormalizeMetric("subjects.fit", rawFit)
+
 		subjectProfiles = append(subjectProfiles, SubjectProfileData{
 			Subject:      s,
 			InterestZ:    round3(IZ[s]),
 			AbilityZ:     round3(AZ[s]),
 			AbilityShare: round3(shareA[s]),
 			ZGap:         round3(ZGap[s]),
-			Fit:          round3(findFit(out, s)),
+			Fit:          round3(rawFit),
+
+			FitScore: fitScore,
 		})
 	}
 	common.Subjects = subjectProfiles

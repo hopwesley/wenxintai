@@ -13,9 +13,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { ComboChartItem } from '@/controller/AssessmentReport'
-import { subjectLabelMap } from '@/controller/common'
+import {computed} from 'vue'
+import type {ComboChartItem} from '@/controller/AssessmentReport'
+import {subjectLabelMap} from '@/controller/common'
 
 const props = defineProps<{
   combos: ComboChartItem[] | null
@@ -64,8 +64,7 @@ const option = computed(() => {
       name: metric.label,
       type: 'bar',
       data: list.map(item => {
-        const val = item.metrics[idx]?.value ?? 0
-        return val
+        return item.metrics[idx]?.value ?? 0
       }),
       barWidth: metricCount === 1 ? '45%' : '32%',
       itemStyle: {

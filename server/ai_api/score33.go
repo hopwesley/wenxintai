@@ -61,14 +61,17 @@ func ScoreCombos33(scores []SubjectScores) *Mode33Section {
 			factorWeight33.W4*minA/5.0 -
 			factorWeight33.W5*risk
 
+		recommendScore := NormalizeMetric("combo33.score", score)
+
 		combos = append(combos, Combo33CoreData{
-			Subjects:    [3]string{s1, s2, s3},
-			AvgFit:      round3(avgFit),
-			MinAbility:  round3(minA),
-			Rarity:      round3(rarity), // 虽是离散值，保持统一风格
-			RiskPenalty: round3(risk),
-			ComboCosine: round3(comboCos),
-			Score:       round3(score),
+			Subjects:       [3]string{s1, s2, s3},
+			AvgFit:         round3(avgFit),
+			MinAbility:     round3(minA),
+			Rarity:         round3(rarity),
+			RiskPenalty:    round3(risk),
+			ComboCosine:    round3(comboCos),
+			Score:          round3(score),
+			RecommendScore: recommendScore,
 		})
 	}
 

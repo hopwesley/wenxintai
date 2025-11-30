@@ -170,6 +170,8 @@ func buildAnchor312(anchor string, m map[string]SubjectScores) AnchorCoreData {
 			maxSFinal = SFinal
 		}
 
+		comboScore := NormalizeMetric("combo312.score", SFinal)
+
 		combos = append(combos, ComboCoreData{
 			Aux1:        s2,
 			Aux2:        s3,
@@ -181,6 +183,7 @@ func buildAnchor312(anchor string, m map[string]SubjectScores) AnchorCoreData {
 			MixPenalty:  round3(mixPenalty),
 			S23:         round3(S23),
 			SFinalCombo: round3(SFinal),
+			ComboScore:  comboScore,
 		})
 	}
 
@@ -192,6 +195,7 @@ func buildAnchor312(anchor string, m map[string]SubjectScores) AnchorCoreData {
 		combos = combos[:3]
 	}
 
+	sFinalScore := NormalizeMetric("combo312.score", maxSFinal)
 	return AnchorCoreData{
 		Subject:      anchor,
 		Fit:          round3(fit),
@@ -201,6 +205,7 @@ func buildAnchor312(anchor string, m map[string]SubjectScores) AnchorCoreData {
 		TermCoverage: round3(termCoverage),
 		S1:           round3(S1),
 		SFinal:       round3(maxSFinal),
+		SFinalScore:  sFinalScore,
 		Combos:       combos,
 	}
 }

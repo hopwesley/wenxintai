@@ -7,9 +7,13 @@ type ParamForAIPrompt struct {
 }
 
 type CommonSection struct {
-	GlobalCosine float64              `json:"global_cosine"` // 全局方向一致性
-	QualityScore float64              `json:"quality_score"`
-	Subjects     []SubjectProfileData `json:"subjects"` // 六科详细信息
+	GlobalCosine float64 `json:"global_cosine"` // 全局方向一致性
+	QualityScore float64 `json:"quality_score"`
+
+	GlobalCosineScore float64 `json:"global_cosine_score"` // 方向一致性 0–100
+	QualityScoreScore float64 `json:"quality_score_score"` // 可信度 0–100
+
+	Subjects []SubjectProfileData `json:"subjects"` // 六科详细信息
 }
 
 type SubjectProfileData struct {
@@ -19,6 +23,8 @@ type SubjectProfileData struct {
 	ZGap         float64 `json:"zgap"`          // 差值 z(Aj)-z(Ij)
 	AbilityShare float64 `json:"ability_share"` // 能力占比 Aj / ΣAk
 	Fit          float64 `json:"fit"`           // 该学科最终匹配度 Fitj
+
+	FitScore float64 `json:"fit_score"` // 新增：0–100 标准分
 }
 
 type Mode312Section struct {
@@ -36,6 +42,8 @@ type AnchorCoreData struct {
 	S1           float64         `json:"s1"`            // 阶段一综合得分（主干稳定性）
 	Combos       []ComboCoreData `json:"combos"`        // 阶段二组合结果
 	SFinal       float64         `json:"s_final"`       // 阶段三综合分（用于排序）
+
+	SFinalScore float64 `json:"s_final_score"`
 }
 
 type ComboCoreData struct {
@@ -49,6 +57,8 @@ type ComboCoreData struct {
 	MixPenalty  float64 `json:"mix_penalty"`
 	S23         float64 `json:"s23"`
 	SFinalCombo float64 `json:"s_final_combo"`
+
+	ComboScore float64 `json:"combo_score"`
 }
 
 type Mode33Section struct {
@@ -63,6 +73,8 @@ type Combo33CoreData struct {
 	RiskPenalty float64   `json:"risk_penalty"` // 风险惩罚（原始值 0 或 0.2）
 	Score       float64   `json:"score"`        // 综合推荐得分（最终输出）
 	ComboCosine float64   `json:"combo_cosine"`
+
+	RecommendScore float64 `json:"recommend_score"` // 0–100
 }
 
 type RadarData struct {

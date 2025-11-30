@@ -2,7 +2,6 @@ import {apiRequest} from "@/api";
 import {useTestSession} from "@/controller/testSession";
 
 const api_verify = '/api/invites/verify';
-const api_redeem = '/api/invites/redeem';
 
 export interface VerifyInviteResponse {
     ok: boolean
@@ -14,13 +13,6 @@ export async function verifyInvite(invite_code: string, business_type: string): 
     return apiRequest<VerifyInviteResponse>(api_verify, {
         method: 'POST',
         body: {invite_code, business_type}
-    })
-}
-
-export async function redeemInvite(sessionId?: string) {
-    return apiRequest(api_redeem, {
-        method: 'POST',
-        body: sessionId ? {session_id: sessionId} : {}
     })
 }
 

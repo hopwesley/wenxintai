@@ -1,9 +1,4 @@
 <template>
-  <TestLayout :key="route.fullPath">
-    <template #header>
-      <StepIndicator/>
-    </template>
-
     <main class="report-page" ref="reportPageRoot">
       <!-- 顶部：报告概览卡片 -->
       <section class="report-card report-card--overview">
@@ -896,37 +891,9 @@
       </section>
 
     </main>
-
-    <div class="report-page__actions">
-      <button
-          class="btn btn-secondary report-page__action"
-          @click="handleBackToHome">
-        返回测试首页
-      </button>
-
-      <button class="btn btn-primary report-page__action" @click="handleExportPdf">
-        导出 PDF
-      </button>
-    </div>
-
-    <AiGeneratingOverlay
-        v-if="aiLoading"
-        title="AI 正在为你生成专属报告…"
-        subtitle="正在分析你的测试各项参数，为您全面展示智能分析结果"
-        :log-lines="truncatedLatestMessage"
-        :meta="{
-    mode: overview.mode || '',
-    grade: state.grade || '',
-    stage: '选科报告'
-  }"
-    />
-  </TestLayout>
 </template>
 
 <script setup lang="ts">
-import StepIndicator from '@/views/components/StepIndicator.vue'
-import TestLayout from '@/views/components/TestLayout.vue'
-import AiGeneratingOverlay from '@/views/components/AiGeneratingOverlay.vue'
 import {useReportPage} from '@/controller/AssessmentReport'
 import SubjectRadarChart from "@/views/components/SubjectRadarChart.vue";
 import SubjectAbilityBarChart from '@/views/components/SubjectAbilityBarChart.vue'
@@ -935,11 +902,7 @@ import {aiReportData} from '@/controller/AssessmentReport'
 import {subjectLabelMap} from "@/controller/common";
 
 const {
-  state,
-  route,
   overview,
-  aiLoading,
-  truncatedLatestMessage,
   subjectRadar,
   rawReportData,
   isMode33,
@@ -947,9 +910,7 @@ const {
   mode33View,
   mode312OverviewStrips,
   finalReport,
-  handleBackToHome,
   reportPageRoot,
-  handleExportPdf,
 } = useReportPage()
 
 
@@ -980,7 +941,6 @@ const COVERAGE_312_LIST = [
   { comboKey: 'HIS_CHE_POL', name: '历史 + 化学 + 政治', coverage: 0.44 },
   { comboKey: 'HIS_CHE_BIO', name: '历史 + 化学 + 生物', coverage: 0.46 },
 ];
-
 
 </script>
 

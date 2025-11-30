@@ -1,11 +1,11 @@
 import {onMounted, onBeforeUnmount, getCurrentInstance, computed, ref} from 'vue'
-import type { Router } from 'vue-router'
+import type {Router} from 'vue-router'
 
 export const TestTypeBasic = "basic"
 export const TestTypePro = "pro"
 export const TestTypeAdv = "adv"
 export const TestTypeSchool = "school"
-export type PlanKey = typeof TestTypeBasic | typeof TestTypePro | typeof TestTypeSchool|typeof TestTypeAdv
+export type PlanKey = typeof TestTypeBasic | typeof TestTypePro | typeof TestTypeSchool | typeof TestTypeAdv
 
 export const StageBasic = "basic-info"
 export const StageReport = "report"
@@ -13,10 +13,12 @@ export const StageRiasec = "riasec"
 export const StageAsc = "asc"
 export const StageOcean = "ocean"
 export const StageMotivation = "motivation"
+
 export interface TestFlowStep {
     stage: string      // "basic-info" / "riasec" / "asc" / ...
     title: string      // 展示给用户看的中文文案，如“基础信息”“兴趣测试”
 }
+
 export const Mode33 = '3+3'
 export const Mode312 = '3+1+2'
 export type ModeOption = '3+3' | '3+1+2'
@@ -37,12 +39,14 @@ export const subjectLabelMap: Record<string, string> = {
     HIS: '历史',
     POL: '政治',
 }
+
 export interface CommonResponse {
     ok: boolean
     msg: string | null
     next_route: string | null
     next_route_index: number
 }
+
 export interface UseSSEOptions {
     onMsg?: (data: any) => void
     onOpen?: () => void
@@ -177,31 +181,16 @@ export function pushStageRoute(
     if (stage === StageBasic) {
         return router.push({
             name: 'test-basic-info',
-            params: { typ: businessType },
+            params: {typ: businessType},
         })
     }
 
     // 特殊路由：测评报告
     if (stage === StageReport) {
-        let name: string
-        switch (businessType) {
-            case TestTypeBasic:
-                name = 'test-report-basic'
-                break
-            case TestTypePro:
-                name = 'test-report-pro'
-                break
-            case TestTypeAdv:
-                name = 'test-report-adv'
-                break
-            case TestTypeSchool:
-                name = 'test-report-school'
-                break
-            default:
-                return router.replace('/').then()
-        }
-
-        return router.push({ name })
+        return router.push({
+            name: 'test-report',
+            params: {typ: businessType},
+        })
     }
 
     // 其它阶段：统一走 test-stage

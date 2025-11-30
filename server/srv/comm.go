@@ -92,7 +92,7 @@ const (
 )
 
 var testFlowForBasic = []string{StageBasic, StageRiasec, StageAsc, StageReport}
-var testFlowForPro = []string{StageBasic, StageRiasec, StageAsc, StageOcean, StageMotivation, StageReport}
+var testFlowForPro = []string{StageBasic, StageRiasec, StageAsc, StageReport}
 var testFlowForAdv = []string{StageBasic, StageRiasec, StageAsc, StageOcean, StageMotivation, StageReport}
 var testFlowForSchool = []string{StageBasic, StageRiasec, StageAsc, StageOcean, StageMotivation, StageReport}
 
@@ -163,8 +163,6 @@ var testFlowDescForPro = []string{
 	StageBasicDes,
 	StageRiasecDes,
 	StageAscDes,
-	StageOceanDes,
-	StageMotivationDes,
 	StageReportDes,
 }
 
@@ -328,8 +326,6 @@ func parseAITestTyp(testTyp, businessTyp string) ai_api.TestTyp {
 		switch testTyp {
 		case StageRiasec:
 			return ai_api.TypRIASEC
-		case StageOcean:
-			return ai_api.TypOCEAN
 		case StageAsc:
 			return ai_api.TypASC
 		}

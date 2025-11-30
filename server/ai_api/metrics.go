@@ -16,12 +16,12 @@ var metricRegistry = map[string]MetricDef{
 	},
 	"combo33.score": {
 		RawMin:         -0.1,
-		RawMax:         0.45, // 历史 99% 分位值，可后续调参
+		RawMax:         0.55, // 历史 99% 分位值，可后续调参
 		HigherIsBetter: true,
 	},
 	"combo312.score": {
 		RawMin:         0.0,
-		RawMax:         0.55, // 理论上限约 0.58，留一点余量
+		RawMax:         0.60, // 理论上限约 0.58，留一点余量
 		HigherIsBetter: true,
 	},
 	"common.global_cosine": {

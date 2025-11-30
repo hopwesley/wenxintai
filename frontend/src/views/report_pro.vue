@@ -16,7 +16,9 @@
           </div>
           <!-- 将来可以放一个“生成新报告 / 导出 PDF”之类的小按钮 -->
         </header>
+
         <div class="report-card__divider"></div>
+
         <!-- 1. 个人资料 / 报告基础信息 -->
         <section class="report-section report-section--profile">
           <h2 class="report-section__title">学生基础信息</h2>
@@ -60,21 +62,371 @@
                 {{ overview.expireDate || '——' }}
               </span>
               </div>
+
               <!-- 占位单元，让 4x2 网格视觉更均衡 -->
               <div class="report-field report-field--placeholder"></div>
               <div class="report-field report-field--placeholder"></div>
             </div>
           </div>
         </section>
-        <div class="report-card__divider"></div>
+
+        <!-- 2. 基础分析：雷达 + 柱状图 + 两块简短解读 -->
+        <section class="report-section report-section--basic-analysis">
+          <h2 class="report-section__title">基础能力与兴趣结构</h2>
+
+          <div>
+            <article class="analysis-interpretation">
+              <div class="analysis-interpretation__header">
+                <span class="analysis-interpretation__title">整体匹配度解读</span>
+              </div>
+              <p class="ai-text-block__line">
+                <span class="ai-text-block__label">整体匹配度：</span>
+                <span class="ai-text-block__value"> {{ rawReportData?.common_score.common.global_cosine_score }}  </span>
+                <span>(0–100 标准分，数值越高表示兴趣与能力整体方向越一致)</span>
+              </p>
+              <p class="ai-text-block__line">
+                <span class="ai-text-block__label">数据质量评分：</span>
+                <span class="ai-text-block__value"> {{ rawReportData?.common_score.common.quality_score_score }} </span>
+                <span>(0–100 标准分，约高于 40 分表示本次答题质量较可信)</span>
+              </p>
+              <p class="analysis-interpretation__text">
+                {{ aiReportData?.common_section?.report_validity_text }}
+              </p>
+            </article>
+          </div>
+
+          <div class="basic-analysis-layout__chart basic-analysis-layout__chart--radar">
+            <SubjectRadarChart
+                v-if="subjectRadar"
+                :radar="subjectRadar"
+            />
+            <div
+                v-else
+                class="chart-placeholder chart-placeholder--radar"
+            >
+              雷达图暂无数据
+            </div>
+          </div>
+
+          <div class="basic-analysis-layout__chart basic-analysis-layout__chart--bar">
+            <SubjectAbilityBarChart
+                v-if="rawReportData && rawReportData.common_score && rawReportData.common_score.common"
+                :subjects="rawReportData.common_score.common.subjects"
+            />
+            <div v-else class="chart-placeholder">
+              基础能力柱状图暂无数据
+            </div>
+          </div>
+
+        </section>
+
+        <section class="report-section report-section--concepts">
+          <h2 class="report-section__title">核心指标说明</h2>
+          <p class="report-section__intro">
+            下表对本报告中涉及的关键指标进行简要说明，建议在阅读图表和文字解读前先浏览一遍，
+            方便理解各学科在“兴趣”“能力”“匹配度”等维度上的含义。
+          </p>
+
+          <div class="field-definitions">
+            <table class="field-definitions__table">
+              <thead>
+              <tr>
+                <th class="field-definitions__cell field-definitions__cell--head field-definitions__cell--key">
+                  字段
+                </th>
+                <th class="field-definitions__cell field-definitions__cell--head">
+                  含义
+                </th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">
+                  兴趣z
+                </td>
+                <td class="field-definitions__cell">
+                  兴趣强度的标准化值，表示该学科的内在动机水平（数值越高，代表兴趣驱动越强）。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">
+                  能力z
+                </td>
+                <td class="field-definitions__cell">
+                  能力强度的标准化值，表示该学科的自我效能感水平（数值越高，代表学习信心越强）。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">
+                  fit
+                </td>
+                <td class="field-definitions__cell">
+                  单科兴趣–能力匹配度，数值越高，说明兴趣与能力越协调，学习往往更顺畅且持续性更好。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">
+                  zgap
+                </td>
+                <td class="field-definitions__cell">
+                  兴趣与能力的差距（兴趣z − 能力z）。正值表示能力领先兴趣，负值表示兴趣主导能力。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">
+                  能力占比
+                </td>
+                <td class="field-definitions__cell">
+                  各学科能力在整体中的占比，反映学习信心与精力投入的重心（所有学科之和约为 1）。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">
+                  整体匹配度
+                </td>
+                <td class="field-definitions__cell">
+                  兴趣–能力总体方向一致性。数值越高，说明自我认同越清晰、整体发展方向越稳定。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">
+                  数据质量评分
+                </td>
+                <td class="field-definitions__cell">
+                  本次测评数据的可信度指标，数值越高，代表答题过程越认真、报告结论的可靠性越高。
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="report-table-wrapper">
+            <table class="report-table">
+              <thead>
+              <tr>
+                <th class="report-table__cell report-table__cell--head report-table__cell--subject">
+                  学科
+                </th>
+                <th class="report-table__cell report-table__cell--head">
+                  兴趣 z
+                </th>
+                <th class="report-table__cell report-table__cell--head">
+                  能力 z
+                </th>
+                <th class="report-table__cell report-table__cell--head">
+                  zGap
+                </th>
+                <th class="report-table__cell report-table__cell--head">
+                  能力占比
+                </th>
+                <th class="report-table__cell report-table__cell--head">
+                  fit 标准分（0–100）
+                </th>
+              </tr>
+              </thead>
+
+              <tbody v-if="rawReportData && rawReportData.common_score && rawReportData.common_score.common">
+              <tr
+                  v-for="sub in rawReportData.common_score.common.subjects"
+                  :key="sub.subject"
+              >
+                <td class="report-table__cell report-table__cell--subject">
+                  {{ subjectLabelMap[sub.subject] ?? sub.subject }}
+                </td>
+                <td class="report-table__cell">
+                  {{ formatZ(sub.interest_z) }}
+                </td>
+                <td class="report-table__cell">
+                  {{ formatZ(sub.ability_z) }}
+                </td>
+                <td class="report-table__cell">
+                  {{ formatZ(sub.zgap) }}
+                </td>
+                <td class="report-table__cell">
+                  {{ formatPercent(sub.ability_share) }}
+                </td>
+                <td class="report-table__cell">
+                  {{ formatZ(sub.fit_score) }}
+                </td>
+              </tr>
+              </tbody>
+
+              <!-- 没数据时的兜底行（可选） -->
+              <tbody v-else>
+              <tr>
+                <td class="report-table__cell" colspan="6">
+                  暂无基础参数数据
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </section>
+
+        <section>
+          <article class="analysis-interpretation">
+            <div class="analysis-interpretation__header">
+              <span class="analysis-interpretation__title">能力/兴趣结构综述</span>
+            </div>
+            <p class="analysis-interpretation__text">
+              {{ aiReportData?.common_section?.subjects_summary_text }}
+            </p>
+          </article>
+        </section>
+
+      </section>
+      <!-- 下半部分：选科组合推荐卡片 -->
+
+      <section class="report-card report-card--recommendation  page-break-before">
         <header class="report-card__header">
           <div class="report-card__title-row">
             <h2 class="report-card__title">选科组合推荐</h2>
           </div>
         </header>
-
-
+        <!-- 3+3 模式参数说明：字体偏小、不占太多空间 -->
+        <div class="report-card__divider"></div>
+        <!-- ===================== 3+3 模式：沿用现有结构 ===================== -->
         <div v-if="isMode33">
+          <div class="field-definitions field-definitions--compact">
+            <table class="field-definitions__table">
+              <thead>
+              <tr>
+                <th class="field-definitions__cell field-definitions__cell--head">参数名称</th>
+                <th class="field-definitions__cell field-definitions__cell--head">对选科的影响说明</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">平均匹配度</td>
+                <td class="field-definitions__cell">
+                  反映孩子在这三门科目上兴趣与能力的整体协调程度。数值越高，说明既有兴趣又有相对优势，
+                  更利于长期投入和稳定发挥，是判断“这三科是否适合长期学下去”的核心指标之一。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">最低能力等级</td>
+                <td class="field-definitions__cell">
+                  三门科目中当前能力相对最弱的一门。数值越低，短板越明显，选为组合时需要在备考中为这门科目
+                  预留更多时间和支持，否则整体成绩容易被这一门拖累。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">方向协同性</td>
+                <td class="field-definitions__cell">
+                  衡量三门科目的学习方式、思维特点是否接近。协同性越高，科目之间切换成本越低，
+                  孩子在时间与精力分配上会更顺畅，不容易出现“每天都在完全不同类型学科之间来回换挡”的疲惫感。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">综合得分</td>
+                <td class="field-definitions__cell">
+                  对该组合整体适配度的综合评价，在匹配度、能力基础和风险等多个维度之间做平衡。
+                  分数越高，整体越适合作为优先考虑的选科方案。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">稀有度</td>
+                <td class="field-definitions__cell">
+                  表示在当前地区报考中，该组合被选择的多少程度。数值越高越少见，可能带来竞争对手较少、
+                  但课程资源、志愿填报参考信息相对不足等双重影响，一般需要家长和学生额外关注对应院校的选科要求。
+                </td>
+              </tr>
+              <tr>
+                <td class="field-definitions__cell field-definitions__cell--key">风险惩罚</td>
+                <td class="field-definitions__cell">
+                  综合考虑学科短板、兴趣冲突和组合稀有带来的不稳定因素。值越高，说明在时间精力分配、
+                  成绩波动或志愿填报上需要更谨慎，更适合作为备选方案，而不是唯一依赖的组合。
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 3+3：组合稀有度扣分明细（面向用户的固定表） -->
+          <section class="report-section report-section--rarity">
+            <h3 class="report-section__title">组合稀有度扣分说明</h3>
+            <p class="report-section__intro">
+                  我国正在实施教育强国建设规划纲要 (2024‑2035)，强调基础学科、理工与科技教育，对 STEM 和基础学科有国家战略支持。
+              因此，我们在推荐三科组合时，不仅考虑孩子的兴趣与能力，也结合社会需求、资源分布与未来就业前景等现实因素。
+              对于国家、社会支持力度较弱或现实资源较少、招生/专业覆盖较少的“少见组合”，系统会做<strong>固定扣分</strong>，以帮助家长和学生更务实地判断未来发展稳定性。
+            </p>
+
+            <div class="report-table-wrapper">
+              <table class="report-table report-table--compact">
+                <thead>
+                <tr>
+                  <th class="report-table__cell report-table__cell--head">组合类型</th>
+                  <th class="report-table__cell report-table__cell--head">包含的三科组合</th>
+                  <th class="report-table__cell report-table__cell--head">在 0–100 综合得分中的固定扣分</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- 强烈推荐组合：不扣分 -->
+                <tr>
+                  <td class="report-table__cell">
+                    强烈推荐组合
+                  </td>
+                  <td class="report-table__cell">
+                    物理 + 化学 + 生物<br>
+                    物理 + 化学 + 政治<br>
+                    物理 + 化学 + 地理<br>
+                    历史 + 地理 + 政治
+                  </td>
+                  <td class="report-table__cell">
+                    <strong>不扣分（0 分）</strong>
+                  </td>
+                </tr>
+
+                <!-- 谨慎考虑组合：扣 9 分 -->
+                <tr>
+                  <td class="report-table__cell">
+                    需谨慎考虑的组合
+                  </td>
+                  <td class="report-table__cell">
+                    物理 + 生物 + 地理<br>
+                    物理 + 生物 + 政治<br>
+                    化学 + 生物 + 地理<br>
+                    历史 + 地理 + 生物<br>
+                    物理 + 地理 + 政治
+                  </td>
+                  <td class="report-table__cell">
+                    固定扣 <strong>9 分</strong>
+                  </td>
+                </tr>
+
+                <!-- 建议避免组合：扣 15 分 -->
+                <tr>
+                  <td class="report-table__cell">
+                    建议避免的组合
+                  </td>
+                  <td class="report-table__cell">
+                    历史 + 政治 + 生物<br>
+                    历史 + 化学 + 生物
+                  </td>
+                  <td class="report-table__cell">
+                    固定扣 <strong>15 分</strong>
+                  </td>
+                </tr>
+
+                <!-- 其他所有少见组合：扣 22 分 -->
+                <tr>
+                  <td class="report-table__cell">
+                    其他较少见的三科组合
+                  </td>
+                  <td class="report-table__cell">
+                    不属于以上三类的所有其他三科组合
+                  </td>
+                  <td class="report-table__cell">
+                    固定扣 <strong>22 分</strong>
+                  </td>
+                </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- 5. 推荐概览（将来可以放两张小图） -->
           <section class="report-section report-section--recommend-analysis">
             <h3 class="report-section__title">整体推荐概览（3+3 模式）</h3>
 
@@ -108,6 +460,7 @@
             </div>
 
           </section>
+
           <!-- 6. 分档组合列表（3+3：仍然用原来的 recommendedCombos） -->
           <section class="report-section report-section--combos">
             <h3 class="report-section__title">分档组合详情（3+3 模式）</h3>
@@ -175,6 +528,7 @@
         </div>
         <!-- ===================== 3+1+2 模式：物理组 + 历史组 ===================== -->
         <div v-else-if="isMode312">
+
           <section class="report-section report-section--mode312-intro">
             <h3 class="report-section__title">物理 / 历史方向说明</h3>
             <p class="mode312-intro__text">
@@ -188,7 +542,7 @@
               由你和家长结合兴趣、目标专业和学校情况做最终选择。
             </p>
           </section>
-          <!-- 全局说明：为什么不直接替你选物理 / 历史 -->
+
           <div class="field-definitions field-definitions--compact">
             <table class="field-definitions__table">
               <thead>
@@ -250,6 +604,35 @@
               </tbody>
             </table>
           </div>
+
+          <section class="report-section report-section--coverage-static">
+            <h3 class="report-section__title">三科组合 — 全国本科专业覆盖率说明</h3>
+            <p class="report-section__intro">
+              为贯彻实施国家“教育强国”“科教兴国”战略，提升高校结构与科教资源配置效率，
+              部分科目组合与专业方向在当前高考和高校招生政策框架下具备更高的专业覆盖率。
+              系统在推荐三科组合时，除了考虑学生兴趣与能力，也参考该组合对应的全国本科专业覆盖空间。
+              高覆盖率意味着该选科方案未来能报考的专业 / 专业方向更多、选择更灵活；
+              覆盖率较低的组合可能限制专业方向与学校选择空间，本报告已据此提醒您谨慎评估。。
+            </p>
+            <div class="report-table-wrapper">
+              <table class="report-table report-table--compact">
+                <thead>
+                <tr>
+                  <th class="report-table__cell report-table__cell--head">组合名称</th>
+                  <th class="report-table__cell report-table__cell--head">专业覆盖率</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="item in COVERAGE_312_LIST" :key="item.comboKey">
+                  <td class="report-table__cell">{{ item.name }}</td>
+                  <td class="report-table__cell">{{ (item.coverage * 100).toFixed(0) }}%</td>
+                </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+
           <!-- ===================== 3+1+2 · 物理组 ===================== -->
           <section class="report-section report-section--mode312-group">
             <!-- 物理组标题 + 概述 -->
@@ -355,6 +738,7 @@
               </div>
             </section>
           </section>
+
           <!-- ===================== 3+1+2 · 历史组 ===================== -->
           <section class="report-section report-section--mode312-group">
             <!-- 历史组标题 + 概述 -->
@@ -461,66 +845,8 @@
             </section>
           </section>
         </div>
-
-        <!-- 2. 基础分析：雷达 + 柱状图 + 两块简短解读 -->
-        <section class="report-section report-section--basic-analysis">
-          <h2 class="report-section__title">基础能力与兴趣结构</h2>
-
-          <div>
-            <article class="analysis-interpretation">
-              <div class="analysis-interpretation__header">
-                <span class="analysis-interpretation__title">整体匹配度解读</span>
-              </div>
-              <p class="ai-text-block__line">
-                <span class="ai-text-block__label">整体匹配度：</span>
-                <span class="ai-text-block__value"> {{ rawReportData?.common_score.common.global_cosine_score }}  </span>
-                <span>(0–100 标准分，数值越高表示兴趣与能力整体方向越一致)</span>
-              </p>
-              <p class="ai-text-block__line">
-                <span class="ai-text-block__label">数据质量评分：</span>
-                <span class="ai-text-block__value"> {{ rawReportData?.common_score.common.quality_score_score }} </span>
-                <span>(0–100 标准分，约高于 40 分表示本次答题质量较可信)</span>
-              </p>
-              <p class="analysis-interpretation__text">
-                {{ aiReportData?.common_section?.report_validity_text }}
-              </p>
-            </article>
-          </div>
-
-          <div class="basic-analysis-layout__chart basic-analysis-layout__chart--radar">
-            <SubjectRadarChart
-                v-if="subjectRadar"
-                :radar="subjectRadar"
-            />
-            <div
-                v-else
-                class="chart-placeholder chart-placeholder--radar"
-            >
-              雷达图暂无数据
-            </div>
-          </div>
-
-          <div class="basic-analysis-layout__chart basic-analysis-layout__chart--bar">
-            <SubjectAbilityBarChart
-                v-if="rawReportData && rawReportData.common_score && rawReportData.common_score.common"
-                :subjects="rawReportData.common_score.common.subjects"
-            />
-            <div v-else class="chart-placeholder">
-              基础能力柱状图暂无数据
-            </div>
-          </div>
-        </section>
-        <section>
-          <article class="analysis-interpretation">
-            <div class="analysis-interpretation__header">
-              <span class="analysis-interpretation__title">能力/兴趣结构综述</span>
-            </div>
-            <p class="analysis-interpretation__text">
-              {{ aiReportData?.common_section?.subjects_summary_text }}
-            </p>
-          </article>
-        </section>
       </section>
+
       <section class="report-section report-section--summary">
         <h3 class="report-section__title">报告摘要</h3>
         <div
@@ -568,6 +894,7 @@
           </article>
         </div>
       </section>
+
     </main>
 
     <div class="report-page__actions">
@@ -581,6 +908,7 @@
         导出 PDF
       </button>
     </div>
+
     <AiGeneratingOverlay
         v-if="aiLoading"
         title="AI 正在为你生成专属报告…"
@@ -636,6 +964,22 @@ function formatPercent(p: number | null | undefined): string {
   if (p === null || p === undefined || Number.isNaN(p)) return '--'
   return `${(p * 100).toFixed(1)}%`
 }
+
+
+// front-end 常量，放在一个 utils 或 constants 文件里
+const COVERAGE_312_LIST = [
+  { comboKey: 'PHY_CHE_POL', name: '物理 + 化学 + 政治', coverage: 0.99 },
+  { comboKey: 'PHY_CHE_BIO', name: '物理 + 化学 + 生物', coverage: 0.96 },
+  { comboKey: 'PHY_CHE_GEO', name: '物理 + 化学 + 地理', coverage: 0.95 },
+  { comboKey: 'PHY_BIO_GEO', name: '物理 + 生物 + 地理', coverage: 0.88 },
+  { comboKey: 'PHY_BIO_POL', name: '物理 + 生物 + 政治', coverage: 0.85 },
+  { comboKey: 'PHY_GEO_POL', name: '物理 + 地理 + 政治', coverage: 0.83 },
+  { comboKey: 'HIS_GEO_POL', name: '历史 + 地理 + 政治', coverage: 0.50 },
+  { comboKey: 'HIS_GEO_BIO', name: '历史 + 地理 + 生物', coverage: 0.48 },
+  { comboKey: 'HIS_POL_BIO', name: '历史 + 政治 + 生物', coverage: 0.46 },
+  { comboKey: 'HIS_CHE_POL', name: '历史 + 化学 + 政治', coverage: 0.44 },
+  { comboKey: 'HIS_CHE_BIO', name: '历史 + 化学 + 生物', coverage: 0.46 },
+];
 
 
 </script>

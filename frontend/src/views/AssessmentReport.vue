@@ -81,13 +81,13 @@
               </div>
               <p class="ai-text-block__line">
                 <span class="ai-text-block__label">整体匹配度：</span>
-                <span class="ai-text-block__value"> {{ rawReportData?.common_score.common.global_cosine }}  </span>
-                <span>(-1.0表示兴趣与能力完全不匹配，1.0表示兴趣与能力完全匹配)</span>
+                <span class="ai-text-block__value"> {{ rawReportData?.common_score.common.global_cosine_score }}  </span>
+                <span>(0–100 标准分，数值越高表示兴趣与能力整体方向越一致)</span>
               </p>
               <p class="ai-text-block__line">
                 <span class="ai-text-block__label">数据质量评分：</span>
-                <span class="ai-text-block__value"> {{ rawReportData?.common_score.common.quality_score }} </span>
-                <span>(高于 0.4表示答题可信，低于 0.4表示答题内容不可信)</span>
+                <span class="ai-text-block__value"> {{ rawReportData?.common_score.common.quality_score_score }} </span>
+                <span>(0–100 标准分，约高于 40 分表示本次答题质量较可信)</span>
               </p>
               <p class="analysis-interpretation__text">
                 {{ aiReportData?.common_section?.report_validity_text }}

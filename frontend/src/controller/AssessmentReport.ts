@@ -31,12 +31,15 @@ export interface ReportSubjectScore {
     zgap: number
     ability_share: number
     fit: number
+    fit_score?: number
 }
 
 // common_score.common
 export interface ReportCommonBlock {
     global_cosine: number
     quality_score: number
+    global_cosine_score?: number
+    quality_score_score?: number
     subjects: ReportSubjectScore[]
 }
 
@@ -65,6 +68,7 @@ export interface Report312Combo {
     mix_penalty: number
     s23: number
     s_final_combo: number
+    combo_score?: number
 }
 
 // recommend_312 里每个 anchor_* 块
@@ -78,6 +82,7 @@ export interface Report312Anchor {
     s1: number
     combos: Report312Combo[]
     s_final: number
+    s_final_score?: number
 }
 
 // recommend_312 顶层：key 例如 "anchor_phy" / "anchor_his"…
@@ -92,6 +97,7 @@ export interface Recommend33Combo {
     risk_penalty: number        // 风险惩罚
     score: number               // 综合推荐得分
     combo_cosine: number        // 兴趣/能力方向一致性
+    recommend_score?: number
 }
 
 export interface ReportRecommend33 {
@@ -300,9 +306,9 @@ export function useReportPage() {
                 comboKey: buildComboKey(anchor, c),
                 metrics: [
                     {
-                        key: 's_final',
+                        key: 'score',
                         label: '综合得分',
-                        value: c.s_final_combo,
+                        value: c.combo_score!,
                     },
                 ],
             }))
@@ -372,7 +378,7 @@ export function useReportPage() {
                 return {
                     rankLabel,
                     name,
-                    score: c.s_final_combo.toFixed(3),
+                    score: Math.round(c.combo_score!).toString(),
                     theme,
                     metrics: [
                         {label: '辅科平均匹配度', value: c.avg_fit},
@@ -455,7 +461,7 @@ export function useReportPage() {
                 {
                     key: 'score',
                     label: '综合得分',       // 图表 legend / tooltip 显示
-                    value: c.score,
+                    value: c.recommend_score!,
                 },
             ],
         }))
@@ -476,14 +482,14 @@ export function useReportPage() {
             ],
         }))
 
-        const sortedCombos = [...combosRaw].sort((a, b) => b.score - a.score)
+        const sortedCombos = [...combosRaw].sort((a, b) => b.recommend_score! - a.recommend_score!)
         const topCombos: ReportCombo[] = sortedCombos.map((c, index) => {
             const comboKey = c.subjects.join('_')
             const ai_combo_detail = section?.mode33_combo_details[comboKey]
             return {
                 rankLabel: rankLabelFor33(index),            // 第一档 / 第二档 / 第三档...
                 name: formatComboName33(c.subjects),        // 物理 + 化学 + 生物 / 历史 + 地理 + 生物...
-                score: c.score.toFixed(3),                  // 展示用分数，先保留三位小数
+                score: Math.round(c.recommend_score!).toString(),// c.score.toFixed(3),                  // 展示用分数，先保留三位小数
                 theme: themeFor33(index),                   // primary / blue / yellow
                 recommendExplain: ai_combo_detail?.combo_description,
                 recommendAdvice:ai_combo_detail?.combo_advice,

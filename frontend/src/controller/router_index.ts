@@ -22,7 +22,7 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/assessment/'+TestTypePro+'/'+StageReport,
         name: 'test-report-pro',
-        component: () => import('@/views/AssessmentReport.vue'),
+        component: () => import('@/views/report_pro.vue'),
         meta: { stage: StageReport },
     },
     {

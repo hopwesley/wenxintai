@@ -1,11 +1,10 @@
-import {ref, computed, onMounted, reactive, nextTick} from 'vue'
+import {ref, computed, onMounted, reactive} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useGlobalLoading} from '@/controller/useGlobalLoading'
 import {useTestSession} from '@/controller/testSession'
 import {apiRequest} from "@/api";
 import {useAlert} from "@/controller/useAlert";
 import {Mode312, Mode33, ModeOption, subjectLabelMap, useSseLogs, useSubscriptBySSE} from "@/controller/common";
-import html2pdf from "html2pdf.js";
 
 export interface ComboMetric {
     label: string

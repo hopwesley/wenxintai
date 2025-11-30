@@ -1,0 +1,42 @@
+/* 导出 PDF 时的收缩布局 */
+.report-page--pdf {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 8mm 8mm 8mm;
+    gap: 16px;
+}
+
+/* 卡片在 PDF 里不要悬浮太夸张，避免看起来像“小卡片贴在纸上” */
+.report-page--pdf .report-card {
+    box-shadow: none;
+    border-radius: 12px;
+    page-break-inside: avoid;
+    break-inside: avoid-page;
+}
+
+/* 图表容器不要被拆页，背景保持纯色，避免截图时有奇怪阴影 */
+.report-page--pdf .basic-analysis-layout__chart,
+.report-page--pdf .recommend-analysis__chart {
+    page-break-inside: avoid;
+    break-inside: avoid-page;
+    background: #f9fafb;
+}
+
+/* 一些关键 section 尽量作为整体留在同页 */
+.report-page--pdf .report-section--recommend-analysis,
+.report-page--pdf .report-section--mode312-analysis,
+.report-page--pdf .report-section--summary {
+    page-break-inside: avoid;
+    break-inside: avoid-page;
+}
+
+/* 如果你希望 Summary 一定从新的一页开始，可以打开这个 */
+.report-page--pdf .report-section--summary {
+    page-break-before: always;
+    break-before: page;
+}
+
+/* 导出时如果有操作按钮之类，直接隐藏 */
+.report-page--pdf .report-page__actions {
+    display: none !important;
+}

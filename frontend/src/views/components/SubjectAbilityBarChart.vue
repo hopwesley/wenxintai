@@ -77,6 +77,9 @@ const option = computed(() => {
   }))
 
   return {
+    animation: false,
+    animationDuration: 0,
+    animationDurationUpdate: 0,
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },

@@ -1,4 +1,4 @@
-import {ref, computed, onMounted, reactive} from 'vue'
+import {ref, computed, onMounted, reactive, nextTick} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useGlobalLoading} from '@/controller/useGlobalLoading'
 import {useTestSession} from '@/controller/testSession'
@@ -609,19 +609,24 @@ export function useReportPage() {
     // }
     const reportPageRoot = ref<HTMLElement | null>(null)
 
-    const handleExportPdf = () => {
-        if (!reportPageRoot.value) return
+    const handleExportPdf = async () => {
+        const el = reportPageRoot.value
+        if (!el) return
+        el.classList.add('report-page--pdf')
+        await nextTick()
+        await new Promise(r => setTimeout(r, 300))
+
 
         const opt = {
-            margin: 10,
+            margin: [5, 5, 5, 5],
             filename: `选科报告-${overview.account || overview.generateDate || 'report'}.pdf`,
-            image: {
-                type: 'jpeg',
-                quality: 0.95,
-            },
+            image: { type: 'jpeg', quality: 0.98 },
             html2canvas: {
-                scale: 2,
+                scale: 3,
                 useCORS: true,
+                windowWidth: el.scrollWidth,
+                windowHeight: el.scrollHeight,
+                letterRendering: true,
             },
             jsPDF: {
                 unit: 'mm',
@@ -630,13 +635,27 @@ export function useReportPage() {
             },
             pagebreak: {
                 mode: ['css', 'legacy'],
+                avoid: [
+                    '.report-card',
+                    '.basic-analysis-layout__chart',
+                    '.recommend-analysis__chart',
+                    '.report-section--recommend-analysis',
+                    '.report-section--mode312-analysis',
+                    '.report-section--summary',
+                ],
             },
         }
 
-        html2pdf()
-            .set(opt as any)
-            .from(reportPageRoot.value as HTMLElement)
-            .save()
+        showLoading("正在导出报表.....")
+        try {
+            await (html2pdf() as any)
+                .set(opt)
+                .from(el as HTMLElement)
+                .save()
+        } finally {
+            el.classList.remove('report-page--pdf')
+            hideLoading()
+        }
     }
 
     return {

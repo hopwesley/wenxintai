@@ -12,6 +12,7 @@ import {
     type TestFlowStep,
     pushStageRoute, PlanKey,
 } from "@/controller/common";
+import {useGlobalLoading} from "@/controller/useGlobalLoading";
 
 
 export interface FetchTestFlowRequest {
@@ -99,7 +100,7 @@ export function useHomeView() {
     onBeforeUnmount(() => {
         window.removeEventListener('scroll', handleScroll)
     })
-
+    const {showLoading, hideLoading} = useGlobalLoading()
     async function handleInviteSuccess(payload: VerifyInviteResponse) {
         // 当前业务类型（兜底用）
         const fallbackBusinessType = state.businessType || TestTypeBasic
@@ -108,6 +109,8 @@ export function useHomeView() {
         setPublicID(payload.public_id)
 
         const req = {public_id: payload.public_id}
+
+        showLoading("正在进入问卷测试环节......")
 
         try {
             const resp = await fetchTestFlow(req)
@@ -136,6 +139,8 @@ export function useHomeView() {
         } catch (err) {
             console.error('fetch test flow failed:', err)
             handleFlowError('获取测试流程失败，请稍后再试')
+        }finally {
+            hideLoading()
         }
     }
 

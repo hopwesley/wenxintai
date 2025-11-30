@@ -858,3 +858,4 @@ function formatPercent(p: number | null | undefined): string {
 </script>
 
 <style scoped src="@/styles/assessment-report.css"></style>
+<style scoped src="@/styles/pdf.css"></style>

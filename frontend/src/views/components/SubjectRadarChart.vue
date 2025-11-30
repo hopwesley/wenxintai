@@ -76,6 +76,9 @@ const option = computed(() => {
   if (!r || !r.subjects || !r.subjects.length) return null
 
   return {
+    animation: false,
+    animationDuration: 0,
+    animationDurationUpdate: 0,
     // 备用色盘（可以不写，只用下面的显式颜色）
     // color: ['#1d9bf0', '#a855f7'],
 

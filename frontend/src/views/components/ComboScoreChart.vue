@@ -88,6 +88,11 @@ const option = computed(() => {
   })
 
   return {
+
+    animation: false,
+    animationDuration: 0,
+    animationDurationUpdate: 0,
+
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
@@ -104,7 +109,6 @@ const option = computed(() => {
         return `${label}<br/>${lines.join('<br/>')}`
       },
     },
-    // ✅ 无论 1 个指标还是 2 个指标，都显示 legend，便于说明含义
     legend: {
       data: legendData,
       bottom: 4,

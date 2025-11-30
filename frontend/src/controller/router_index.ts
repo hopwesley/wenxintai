@@ -1,5 +1,5 @@
 import {createRouter, createWebHistory, RouteRecordRaw} from 'vue-router'
-import {StageBasic, StageReport, TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool} from "@/controller/common";
+import {StageBasic, StageReport} from "@/controller/common";
 
 const routes: RouteRecordRaw[] = [
     {

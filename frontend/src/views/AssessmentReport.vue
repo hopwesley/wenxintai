@@ -39,7 +39,6 @@ import {computed} from "vue";
 import ReportBasic from '@/views/report_basic.vue'
 import ReportPro from '@/views/report_pro.vue'
 import {TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool} from "@/controller/common";
-import {log} from "echarts/types/src/util/log";
 
 const {
   state,

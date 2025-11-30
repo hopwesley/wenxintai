@@ -188,68 +188,6 @@
               由你和家长结合兴趣、目标专业和学校情况做最终选择。
             </p>
           </section>
-          <!-- 全局说明：为什么不直接替你选物理 / 历史 -->
-          <div class="field-definitions field-definitions--compact">
-            <table class="field-definitions__table">
-              <thead>
-              <tr>
-                <th class="field-definitions__cell field-definitions__cell--head">参数名称</th>
-                <th class="field-definitions__cell field-definitions__cell--head">对选科的影响说明</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr>
-                <td class="field-definitions__cell field-definitions__cell--key">综合得分</td>
-                <td class="field-definitions__cell">
-                  综合反映主干科目与两门辅科的整体适配情况，结合兴趣、能力和风险等多维因素得出。
-                  分数越高，说明该三科组合更稳、更契合学生当前的兴趣和学习实力，适合作为优先考虑方案。
-                </td>
-              </tr>
-              <tr>
-                <td class="field-definitions__cell field-definitions__cell--key">专业覆盖率</td>
-                <td class="field-definitions__cell">
-                  表示该三科组合在当前省份规则下能覆盖的专业范围。覆盖率越高，说明未来志愿选择空间更大，
-                  可报考专业更丰富，升学灵活度更高。
-                </td>
-              </tr>
-              <tr>
-                <td class="field-definitions__cell field-definitions__cell--key">组合风险</td>
-                <td class="field-definitions__cell">
-                  衡量该组合在文理跨度、学习方式冲突或短板科目影响下的潜在不稳定性。
-                  数值偏高时，说明需要在时间分配和备考节奏上更谨慎，建议作为备选组合。
-                </td>
-              </tr>
-              <tr>
-                <td class="field-definitions__cell field-definitions__cell--key">辅科平均匹配度</td>
-                <td class="field-definitions__cell">
-                  反映两门辅科在兴趣与能力上的整体协调性。数值越高，说明这两门课更贴合学生的学习风格，
-                  同时具备一定的兴趣驱动和学习信心。
-                </td>
-              </tr>
-              <tr>
-                <td class="field-definitions__cell field-definitions__cell--key">辅科平均能力值</td>
-                <td class="field-definitions__cell">
-                  表示学生在两门辅科上的平均能力水平。数值越高，说明在非主干科目上学习基础更扎实，
-                  具备较好的扩展潜力和学习稳健度。
-                </td>
-              </tr>
-              <tr>
-                <td class="field-definitions__cell field-definitions__cell--key">辅科最低匹配度</td>
-                <td class="field-definitions__cell">
-                  两门辅科中相对较弱的一门在兴趣与能力上的匹配度，用来识别潜在短板。
-                  如果该值明显偏低，需要在后续学习中对该科目给予更多关注与支持。
-                </td>
-              </tr>
-              <tr>
-                <td class="field-definitions__cell field-definitions__cell--key">辅科一致性</td>
-                <td class="field-definitions__cell">
-                  衡量两门辅科在学习方式与思维风格上的一致程度。数值越高，说明两门课在复习节奏、
-                  思维模式上更协调，切换成本更低，整体学习更顺畅。
-                </td>
-              </tr>
-              </tbody>
-            </table>
-          </div>
           <!-- ===================== 3+1+2 · 物理组 ===================== -->
           <section class="report-section report-section--mode312-group">
             <!-- 物理组标题 + 概述 -->

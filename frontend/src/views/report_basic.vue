@@ -604,7 +604,6 @@ import SubjectRadarChart from "@/views/components/SubjectRadarChart.vue";
 import SubjectAbilityBarChart from '@/views/components/SubjectAbilityBarChart.vue'
 import ComboScoreChart from '@/views/components/ComboScoreChart.vue'
 import {aiReportData} from '@/controller/AssessmentReport'
-import {subjectLabelMap} from "@/controller/common";
 
 const {
   state,

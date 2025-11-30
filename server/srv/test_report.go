@@ -243,5 +243,6 @@ func (s *HttpSrv) handleTestReport(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *HttpSrv) finishReport(w http.ResponseWriter, r *http.Request) {
-
+	writeJSON(w, http.StatusOK,
+		&CommonRes{Ok: true, Msg: "完成报告设计"})
 }

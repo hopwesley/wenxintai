@@ -185,6 +185,7 @@ export interface ModeSectionItem {
 export interface Mode312Section {
     [modeKey: string]: ModeSectionItem
 }
+
 export interface Mode33ComboExplain {
     combo_description: string
     combo_advice: string
@@ -245,7 +246,7 @@ export const aiReportData = ref<AIReportPayload | null>(null)
 export function useReportPage() {
     const {showLoading, hideLoading} = useGlobalLoading()
     const route = useRoute()
-    const {state,resetSession} = useTestSession()
+    const {state, resetSession} = useTestSession()
     const {showAlert} = useAlert()
     const router = useRouter()
 
@@ -491,8 +492,8 @@ export function useReportPage() {
                 score: Math.round(c.recommend_score!).toString(),// c.score.toFixed(3),                  // 展示用分数，先保留三位小数
                 theme: themeFor33(index),                   // primary / blue / yellow
                 recommendExplain: ai_combo_detail?.combo_description,
-                recommendAdvice:ai_combo_detail?.combo_advice,
-                metrics:[{
+                recommendAdvice: ai_combo_detail?.combo_advice,
+                metrics: [{
                     label: '平均匹配度',
                     value: c.avg_fit,
                 },
@@ -542,7 +543,7 @@ export function useReportPage() {
     function handleSseDone(raw: string) {
         try {
             let parsed = JSON.parse(raw)
-            if (typeof parsed === "string"){
+            if (typeof parsed === "string") {
                 parsed = JSON.parse(parsed) as AIReportPayload
             }
             console.log('------>>> parsed object:', parsed)
@@ -597,16 +598,26 @@ export function useReportPage() {
         return ai.final_report
     })
 
-    const handleBackToHome = () => {
-        resetSession();
-        const public_id = state.recordPublicID
-        return apiRequest<ReportRawData>('/api/finish_report', {
-            method: 'POST',
-            body: {
-                public_id:public_id,
-                business_type:businessType.value,
-            },
-        })
+    const handleBackToHome = async () => {
+        showLoading("正在结束您的报告之旅返回首页")
+        try {
+            resetSession();
+            const public_id = state.recordPublicID
+            await apiRequest<ReportRawData>('/api/finish_report', {
+                method: 'POST',
+                body: {
+                    public_id: public_id,
+                    business_type: businessType.value,
+                },
+            });
+
+        } catch (e) {
+            // showAlert("")
+            console.error("结束报告失败：" + e)
+        } finally {
+            router.replace('/').then()
+            hideLoading()
+        }
     }
 
     const handleExportPdf = () => {
@@ -616,7 +627,7 @@ export function useReportPage() {
         const date = overview.generateDate || ''
 
         // 例子：选科报告-张三-2025-11-30
-        document.title = `选科报告-${ account || '报告'}${date ? '-' + date : ''}`
+        document.title = `选科报告-${account || '报告'}${date ? '-' + date : ''}`
 
         // 触发浏览器打印
         window.print()

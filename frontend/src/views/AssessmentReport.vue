@@ -32,7 +32,7 @@
               </span>
               </div>
               <div class="report-field">
-                <span class="report-field__label">学生号</span>
+                <span class="report-field__label">学号</span>
                 <span class="report-field__value">
                 {{ overview.studentNo || '——' }}
               </span>
@@ -220,7 +220,7 @@
                   能力占比
                 </th>
                 <th class="report-table__cell report-table__cell--head">
-                  fit
+                  fit 标准分（0–100）
                 </th>
               </tr>
               </thead>
@@ -246,7 +246,7 @@
                   {{ formatPercent(sub.ability_share) }}
                 </td>
                 <td class="report-table__cell">
-                  {{ formatZ(sub.fit) }}
+                  {{ formatZ(sub.fit_score) }}
                 </td>
               </tr>
               </tbody>
@@ -342,6 +342,89 @@
               </tbody>
             </table>
           </div>
+
+          <!-- 3+3：组合稀有度扣分明细（面向用户的固定表） -->
+          <section class="report-section report-section--rarity">
+            <h3 class="report-section__title">组合稀有度扣分说明</h3>
+            <p class="report-section__intro">
+              我国正在实施教育强国建设规划纲要 (2024‑2035)，强调基础学科、理工与科技教育，对 STEM 和基础学科有国家战略支持。
+              因此，我们在推荐三科组合时，不仅考虑孩子的兴趣与能力，也结合社会需求、资源分布与未来就业前景等现实因素。
+              对于国家、社会支持力度较弱或现实资源较少、招生/专业覆盖较少的“少见组合”，系统会做<strong>固定扣分</strong>，以帮助家长和学生更务实地判断未来发展稳定性。
+            </p>
+
+            <div class="report-table-wrapper">
+              <table class="report-table report-table--compact">
+                <thead>
+                <tr>
+                  <th class="report-table__cell report-table__cell--head">组合类型</th>
+                  <th class="report-table__cell report-table__cell--head">包含的三科组合</th>
+                  <th class="report-table__cell report-table__cell--head">在 0–100 综合得分中的固定扣分</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- 强烈推荐组合：不扣分 -->
+                <tr>
+                  <td class="report-table__cell">
+                    强烈推荐组合
+                  </td>
+                  <td class="report-table__cell">
+                    物理 + 化学 + 生物<br>
+                    物理 + 化学 + 政治<br>
+                    物理 + 化学 + 地理<br>
+                    历史 + 地理 + 政治
+                  </td>
+                  <td class="report-table__cell">
+                    <strong>不扣分（0 分）</strong>
+                  </td>
+                </tr>
+
+                <!-- 谨慎考虑组合：扣 9 分 -->
+                <tr>
+                  <td class="report-table__cell">
+                    需谨慎考虑的组合
+                  </td>
+                  <td class="report-table__cell">
+                    物理 + 生物 + 地理<br>
+                    物理 + 生物 + 政治<br>
+                    化学 + 生物 + 地理<br>
+                    历史 + 地理 + 生物<br>
+                    物理 + 地理 + 政治
+                  </td>
+                  <td class="report-table__cell">
+                    固定扣 <strong>9 分</strong>
+                  </td>
+                </tr>
+
+                <!-- 建议避免组合：扣 15 分 -->
+                <tr>
+                  <td class="report-table__cell">
+                    建议避免的组合
+                  </td>
+                  <td class="report-table__cell">
+                    历史 + 政治 + 生物<br>
+                    历史 + 化学 + 生物
+                  </td>
+                  <td class="report-table__cell">
+                    固定扣 <strong>15 分</strong>
+                  </td>
+                </tr>
+
+                <!-- 其他所有少见组合：扣 22 分 -->
+                <tr>
+                  <td class="report-table__cell">
+                    其他较少见的三科组合
+                  </td>
+                  <td class="report-table__cell">
+                    不属于以上三类的所有其他三科组合
+                  </td>
+                  <td class="report-table__cell">
+                    固定扣 <strong>22 分</strong>
+                  </td>
+                </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
 
           <!-- 5. 推荐概览（将来可以放两张小图） -->
           <section class="report-section report-section--recommend-analysis">
@@ -460,7 +543,6 @@
             </p>
           </section>
 
-          <!-- 全局说明：为什么不直接替你选物理 / 历史 -->
           <div class="field-definitions field-definitions--compact">
             <table class="field-definitions__table">
               <thead>
@@ -522,6 +604,34 @@
               </tbody>
             </table>
           </div>
+
+          <section class="report-section report-section--coverage-static">
+            <h3 class="report-section__title">三科组合 — 全国本科专业覆盖率说明</h3>
+            <p class="report-section__intro">
+              为贯彻实施国家“教育强国”“科教兴国”战略，提升高校结构与科教资源配置效率，
+              部分科目组合与专业方向在当前高考和高校招生政策框架下具备更高的专业覆盖率。
+              系统在推荐三科组合时，除了考虑学生兴趣与能力，也参考该组合对应的全国本科专业覆盖空间。
+              高覆盖率意味着该选科方案未来能报考的专业 / 专业方向更多、选择更灵活；
+              覆盖率较低的组合可能限制专业方向与学校选择空间，本报告已据此提醒您谨慎评估。。
+            </p>
+            <div class="report-table-wrapper">
+              <table class="report-table report-table--compact">
+                <thead>
+                <tr>
+                  <th class="report-table__cell report-table__cell--head">组合名称</th>
+                  <th class="report-table__cell report-table__cell--head">专业覆盖率</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="item in COVERAGE_312_LIST" :key="item.comboKey">
+                  <td class="report-table__cell">{{ item.name }}</td>
+                  <td class="report-table__cell">{{ (item.coverage * 100).toFixed(0) }}%</td>
+                </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
 
           <!-- ===================== 3+1+2 · 物理组 ===================== -->
           <section class="report-section report-section--mode312-group">
@@ -854,6 +964,23 @@ function formatPercent(p: number | null | undefined): string {
   if (p === null || p === undefined || Number.isNaN(p)) return '--'
   return `${(p * 100).toFixed(1)}%`
 }
+
+
+// front-end 常量，放在一个 utils 或 constants 文件里
+const COVERAGE_312_LIST = [
+  { comboKey: 'PHY_CHE_POL', name: '物理 + 化学 + 政治', coverage: 0.99 },
+  { comboKey: 'PHY_CHE_BIO', name: '物理 + 化学 + 生物', coverage: 0.96 },
+  { comboKey: 'PHY_CHE_GEO', name: '物理 + 化学 + 地理', coverage: 0.95 },
+  { comboKey: 'PHY_BIO_GEO', name: '物理 + 生物 + 地理', coverage: 0.88 },
+  { comboKey: 'PHY_BIO_POL', name: '物理 + 生物 + 政治', coverage: 0.85 },
+  { comboKey: 'PHY_GEO_POL', name: '物理 + 地理 + 政治', coverage: 0.83 },
+  { comboKey: 'HIS_GEO_POL', name: '历史 + 地理 + 政治', coverage: 0.50 },
+  { comboKey: 'HIS_GEO_BIO', name: '历史 + 地理 + 生物', coverage: 0.48 },
+  { comboKey: 'HIS_POL_BIO', name: '历史 + 政治 + 生物', coverage: 0.46 },
+  { comboKey: 'HIS_CHE_POL', name: '历史 + 化学 + 政治', coverage: 0.44 },
+  { comboKey: 'HIS_CHE_BIO', name: '历史 + 化学 + 生物', coverage: 0.46 },
+];
+
 
 </script>
 

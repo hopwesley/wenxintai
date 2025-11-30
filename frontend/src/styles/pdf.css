@@ -40,3 +40,35 @@
 .report-page--pdf .report-page__actions {
     display: none !important;
 }
+
+
+
+/* ========== 打印模式 ========== */
+@media print {
+
+    /* 1. 默认所有元素不打印 */
+    body * {
+        visibility: hidden !important;
+    }
+
+    /* 2. 仅打印报告区域 */
+    .report-page,
+    .report-page * {
+        visibility: visible !important;
+    }
+
+    /* 3. 报告区域定位为打印窗口的左上角 */
+    .report-page {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* 4. 隐藏操作按钮 */
+    .report-page__actions {
+        display: none !important;
+    }
+}

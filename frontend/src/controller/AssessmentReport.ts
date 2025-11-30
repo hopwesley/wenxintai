@@ -610,59 +610,74 @@ export function useReportPage() {
         })
     }
 
-    // const handleExportPdf = () => {
-    //     window.print()
-    // }
+    const handleExportPdf = () => {
+        const oldTitle = document.title
+
+        const account = overview.account || ''
+        const date = overview.generateDate || ''
+
+        // 例子：选科报告-张三-2025-11-30
+        document.title = `选科报告-${ account || '报告'}${date ? '-' + date : ''}`
+
+        // 触发浏览器打印
+        window.print()
+
+        // 打印窗口已经弹出来了，稍微晚一点把标题恢复
+        setTimeout(() => {
+            document.title = oldTitle
+        }, 1000)
+    }
+
     const reportPageRoot = ref<HTMLElement | null>(null)
 
-    const handleExportPdf = async () => {
-        const el = reportPageRoot.value
-        if (!el) return
-        el.classList.add('report-page--pdf')
-        await nextTick()
-        await new Promise(r => setTimeout(r, 300))
-
-
-        const opt = {
-            margin: [5, 5, 5, 5],
-            filename: `选科报告-${overview.account || overview.generateDate || 'report'}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: {
-                scale: 3,
-                useCORS: true,
-                windowWidth: el.scrollWidth,
-                windowHeight: el.scrollHeight,
-                letterRendering: true,
-            },
-            jsPDF: {
-                unit: 'mm',
-                format: 'a4',
-                orientation: 'portrait',
-            },
-            pagebreak: {
-                mode: ['css', 'legacy'],
-                avoid: [
-                    '.report-card',
-                    '.basic-analysis-layout__chart',
-                    '.recommend-analysis__chart',
-                    '.report-section--recommend-analysis',
-                    '.report-section--mode312-analysis',
-                    '.report-section--summary',
-                ],
-            },
-        }
-
-        showLoading("正在导出报表.....")
-        try {
-            await (html2pdf() as any)
-                .set(opt)
-                .from(el as HTMLElement)
-                .save()
-        } finally {
-            el.classList.remove('report-page--pdf')
-            hideLoading()
-        }
-    }
+    // const handleExportPdf = async () => {
+    //     const el = reportPageRoot.value
+    //     if (!el) return
+    //     el.classList.add('report-page--pdf')
+    //     await nextTick()
+    //     await new Promise(r => setTimeout(r, 300))
+    //
+    //
+    //     const opt = {
+    //         margin: [5, 5, 5, 5],
+    //         filename: `选科报告-${overview.account || overview.generateDate || 'report'}.pdf`,
+    //         image: { type: 'jpeg', quality: 0.98 },
+    //         html2canvas: {
+    //             scale: 3,
+    //             useCORS: true,
+    //             windowWidth: el.scrollWidth,
+    //             windowHeight: el.scrollHeight,
+    //             letterRendering: true,
+    //         },
+    //         jsPDF: {
+    //             unit: 'mm',
+    //             format: 'a4',
+    //             orientation: 'portrait',
+    //         },
+    //         pagebreak: {
+    //             mode: ['css', 'legacy'],
+    //             avoid: [
+    //                 '.report-card',
+    //                 '.basic-analysis-layout__chart',
+    //                 '.recommend-analysis__chart',
+    //                 '.report-section--recommend-analysis',
+    //                 '.report-section--mode312-analysis',
+    //                 '.report-section--summary',
+    //             ],
+    //         },
+    //     }
+    //
+    //     showLoading("正在导出报表.....")
+    //     try {
+    //         await (html2pdf() as any)
+    //             .set(opt)
+    //             .from(el as HTMLElement)
+    //             .save()
+    //     } finally {
+    //         el.classList.remove('report-page--pdf')
+    //         hideLoading()
+    //     }
+    // }
 
     return {
         state,

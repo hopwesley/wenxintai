@@ -30,6 +30,7 @@ const (
 	apiWeChatLogOut         = "/api/auth/logout"
 	apiWeChatUpdateProfile  = "/api/user/update_profile"
 	apiWeChatMyProfile      = "/api/auth/profile"
+	apiWeChatPayment        = "/api/pay/"
 )
 
 var (
@@ -104,6 +105,7 @@ func (s *HttpSrv) initRouter() error {
 	mux.HandleFunc(apiWeChatLogOut, s.wechatLogout)
 	mux.HandleFunc(apiWeChatUpdateProfile, s.apiWeChatUpdateProfile)
 	mux.HandleFunc(apiWeChatMyProfile, s.apiWeChatMyProfile)
+	mux.HandleFunc(apiWeChatPayment, s.apiWeChatPayCallBack)
 
 	//if err := s.registerSpaStatic(mux); err != nil {
 	//	return err

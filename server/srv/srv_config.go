@@ -9,6 +9,8 @@ type Config struct {
 	WeChatAppID          string `json:"we_chat_app_id"`
 	WeChatAppSecret      string `json:"we_chat_app_sec"`
 	WeChatRedirectDomain string `json:"we_chat_redirect_domain"`
+	LoginForward         string `json:"login_forward,omitempty"`
+	PaymentForward       string `json:"payment_forward,omitempty"`
 }
 
 func (cfg *Config) srvAddr() string {

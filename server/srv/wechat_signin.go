@@ -52,7 +52,7 @@ type wechatUserInfoResp struct {
 	ErrMsg  string `json:"errmsg"`
 }
 
-func (s *HttpSrv) wechatSignInCallBack(w http.ResponseWriter, r *http.Request) {
+func (s *HttpSrv) processWechatSignIn(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	code := r.URL.Query().Get("code")
@@ -147,6 +147,20 @@ func (s *HttpSrv) wechatSignInCallBack(w http.ResponseWriter, r *http.Request) {
 	})
 
 	http.Redirect(w, r, "/home", http.StatusFound)
+}
+
+//const loginForwardURL = "https://sharp-happy-grouse.ngrok-free.app/api/wechat_signin"
+
+func (s *HttpSrv) wechatSignInCallBack(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if len(s.cfg.LoginForward) > 0 {
+		s.forwardCallback(w, r, s.cfg.LoginForward)
+		return
+	}
+	s.processWechatSignIn(w, r)
 }
 
 func (s *HttpSrv) exchangeWeChatCode(ctx context.Context, code string) (*wechatTokenResp, error) {

@@ -1,11 +1,15 @@
 package srv
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"regexp"
+	"strings"
 
 	"github.com/hopwesley/wenxintai/server/ai_api"
 	"github.com/hopwesley/wenxintai/server/dbSrv"
@@ -356,4 +360,86 @@ func parseAITestTyp(testTyp, businessTyp string) ai_api.TestTyp {
 	}
 
 	return ai_api.TypUnknown
+}
+
+// 通用转发：保留 method + query + headers + body
+func (s *HttpSrv) forwardCallback(w http.ResponseWriter, r *http.Request, target string) {
+	log := s.log.With().
+		Str("handler", "forwardCallback").
+		Str("target", target).
+		Logger()
+
+	// 1. 读 body（有就读，没有也没事）
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20)) // 1MB 限制
+	if err != nil {
+		log.Error().Err(err).Msg("read body failed")
+		http.Error(w, "read body failed", http.StatusInternalServerError)
+		return
+	}
+	_ = r.Body.Close()
+
+	// 2. 拼接 query 到目标 URL 上
+	u, err := url.Parse(target)
+	if err != nil {
+		log.Error().Err(err).Msg("parse target url failed")
+		http.Error(w, "bad target", http.StatusInternalServerError)
+		return
+	}
+	u.RawQuery = r.URL.RawQuery
+
+	// 3. 用原始 method 转发（GET/POST 都适用）
+	forwardReq, err := http.NewRequestWithContext(
+		r.Context(),
+		r.Method,
+		u.String(),
+		bytes.NewReader(body),
+	)
+	if err != nil {
+		log.Error().Err(err).Msg("create forward request failed")
+		http.Error(w, "forward init failed", http.StatusInternalServerError)
+		return
+	}
+
+	// 4. 拷贝 header（保留 Wechatpay-* 等签名头）
+	for name, values := range r.Header {
+		if strings.EqualFold(name, "Host") ||
+			strings.EqualFold(name, "Content-Length") ||
+			strings.EqualFold(name, "Content-Encoding") {
+			continue
+		}
+		for _, v := range values {
+			forwardReq.Header.Add(name, v)
+		}
+	}
+
+	resp, err := http.DefaultClient.Do(forwardReq)
+	if err != nil {
+		log.Error().Err(err).Msg("forward request failed")
+		http.Error(w, "forward failed", http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error().Err(err).Msg("read forward response body failed")
+		http.Error(w, "read forward response failed", http.StatusInternalServerError)
+		return
+	}
+
+	for name, values := range resp.Header {
+		if strings.EqualFold(name, "Content-Length") ||
+			strings.EqualFold(name, "Transfer-Encoding") {
+			continue
+		}
+		for _, v := range values {
+			w.Header().Add(name, v)
+		}
+	}
+
+	w.WriteHeader(resp.StatusCode)
+	if _, err := w.Write(respBody); err != nil {
+		log.Error().Err(err).Msg("write response to client failed")
+		return
+	}
 }

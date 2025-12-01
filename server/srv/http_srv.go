@@ -15,22 +15,24 @@ import (
 )
 
 const (
-	apiHealthy              = "/api/health"
-	apiLoadHobbies          = "/api/hobbies"
-	apiInviteVerify         = "/api/invites/verify"
-	apiTestFlow             = "/api/test_flow"
-	apiTestBasicInfo        = "/api/tests/basic_info"
-	apiSSEQuestionSub       = "/api/sub/question/"
-	apiSSEReportSub         = "/api/sub/report/"
-	apiSubmitTest           = "/api/test_submit"
-	apiGenerateReport       = "/api/generate_report"
-	apiFinishReport         = "/api/finish_report"
-	apiWeChatSignIn         = "/api/auth/wx/status"
-	apiWeChatSignInCallBack = "/api/wechat_signin"
-	apiWeChatLogOut         = "/api/auth/logout"
-	apiWeChatUpdateProfile  = "/api/user/update_profile"
-	apiWeChatMyProfile      = "/api/auth/profile"
-	apiWeChatPayment        = "/api/pay/"
+	apiHealthy                 = "/api/health"
+	apiLoadHobbies             = "/api/hobbies"
+	apiInviteVerify            = "/api/invites/verify"
+	apiTestFlow                = "/api/test_flow"
+	apiTestBasicInfo           = "/api/tests/basic_info"
+	apiSSEQuestionSub          = "/api/sub/question/"
+	apiSSEReportSub            = "/api/sub/report/"
+	apiSubmitTest              = "/api/test_submit"
+	apiGenerateReport          = "/api/generate_report"
+	apiFinishReport            = "/api/finish_report"
+	apiWeChatSignIn            = "/api/auth/wx/status"
+	apiWeChatSignInCallBack    = "/api/wechat_signin"
+	apiWeChatLogOut            = "/api/auth/logout"
+	apiWeChatUpdateProfile     = "/api/user/update_profile"
+	apiWeChatMyProfile         = "/api/auth/profile"
+	apiWeChatPayment           = "/api/pay/"
+	apiWeChatCreateNativeOrder = "/api/pay/wechat/native/create"
+	apiWeChatNativeOrderStatus = "/api/pay/wechat/order-status"
 )
 
 var (
@@ -39,9 +41,11 @@ var (
 )
 
 type HttpSrv struct {
-	log zerolog.Logger
-	cfg *Config
-	srv *http.Server
+	log        zerolog.Logger
+	cfg        *Config
+	payment    *WeChatPayConfig
+	srv        *http.Server
+	httpClient *http.Client
 }
 
 func Instance() *HttpSrv {
@@ -59,8 +63,9 @@ func newBusinessService() *HttpSrv {
 	}
 }
 
-func (s *HttpSrv) Init(cfg *Config) error {
+func (s *HttpSrv) Init(cfg *Config, payment *WeChatPayConfig) error {
 	s.cfg = cfg
+	s.payment = payment
 	if err := s.initHobbies(); err != nil {
 		s.log.Err(err).Msg("init hobbies failed")
 		return err
@@ -106,6 +111,8 @@ func (s *HttpSrv) initRouter() error {
 	mux.HandleFunc(apiWeChatUpdateProfile, s.apiWeChatUpdateProfile)
 	mux.HandleFunc(apiWeChatMyProfile, s.apiWeChatMyProfile)
 	mux.HandleFunc(apiWeChatPayment, s.apiWeChatPayCallBack)
+	mux.HandleFunc(apiWeChatCreateNativeOrder, s.apiWeChatCreateNativeOrder)
+	mux.HandleFunc(apiWeChatNativeOrderStatus, s.apiWeChatPayCallBack)
 
 	//if err := s.registerSpaStatic(mux); err != nil {
 	//	return err

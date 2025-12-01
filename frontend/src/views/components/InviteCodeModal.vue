@@ -17,17 +17,32 @@
         </div>
 
         <!-- 微信支付主操作 -->
+        <!-- 微信支付主操作 / 二维码区域 -->
         <div class="pay-section">
+          <!-- 还没创建订单时，显示按钮 -->
           <button
+              v-if="!payOrder"
               type="button"
               class="btn btn-primary pay-btn"
-              :disabled="payLoading"
-              @click="handleWeChatPay"
+              :disabled="paying"
+              @click="handleWeChatPayClick"
           >
-            <span v-if="payLoading">唤起微信支付…</span>
-            <span v-else>微信支付并开始测试</span>
+            <span v-if="paying">创建订单中…</span>
+            <span v-else>微信扫码支付并开始测试</span>
           </button>
-          <p class="pay-hint">使用微信完成支付后，将自动进入测试</p>
+
+          <!-- 已经有订单（有 code_url），显示二维码 -->
+          <div v-else class="qrcode-wrapper">
+            <!-- 这里用任何二维码库都行，比如 qrcode.vue；演示用 <img> 调第三方服务 -->
+            <img
+                class="qrcode-img"
+                :src="`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(payOrder.code_url)}`"
+                alt="微信支付二维码"
+            />
+            <p class="qrcode-tip">请使用微信“扫一扫”完成支付</p>
+          </div>
+
+          <p class="pay-hint">支付成功后，将自动进入测试</p>
         </div>
 
         <!-- 分隔 -->
@@ -72,6 +87,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { VerifyInviteResponse, verifyInviteWithMessage } from '@/controller/InviteCode'
 import { useTestSession } from '@/controller/testSession'
+import {NativeCreateOrderResponse} from "@/controller/WeChatNativePay";
 
 const { setInviteCode } = useTestSession()
 
@@ -80,6 +96,9 @@ const props = defineProps<{
   productName: string
   productPrice: number // 假设单位“元”，如果是分，这里注意换算
   productDesc?: string
+
+  payOrder?: NativeCreateOrderResponse | null
+  paying?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -88,6 +107,9 @@ const emit = defineEmits<{
   (e: 'pay'): void
 }>()
 
+function handleWeChatPayClick() {
+  emit('pay')
+}
 // 邀请码相关状态
 const code = ref('')
 const inviteLoading = ref(false)
@@ -125,19 +147,6 @@ function reset() {
 
 function handleCancel() {
   emit('update:open', false)
-}
-
-// 点击微信支付按钮
-function handleWeChatPay() {
-  if (payLoading.value) return
-  payLoading.value = true
-  errorMessage.value = ''
-
-  // 把真正的支付逻辑交给父组件
-  emit('pay')
-
-  // 父组件可以在支付完成或失败后，通过 v-model:open 关闭 / 重开弹窗
-  // 或者你也可以后面扩展一个事件，通知支付完成再重置 payLoading
 }
 
 // 提交邀请码

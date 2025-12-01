@@ -54,7 +54,7 @@ func main() {
 		panic(fmt.Sprintf("create database: %v", err))
 	}
 
-	err = srv.Instance().Init(cfg.Server)
+	err = srv.Instance().Init(cfg.Server, cfg.PaymentCfg)
 	if err != nil {
 		panic(fmt.Sprintf("create http service: %v", err))
 	}

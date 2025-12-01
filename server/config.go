@@ -13,10 +13,11 @@ import (
 )
 
 type appConfig struct {
-	DebugLevel string            `json:"debug_level,omitempty"`
-	Server     *srv.Config       `json:"server"`
-	Database   *dbSrv.PSDBConfig `json:"database"`
-	AIApi      *ai_api.Cfg       `json:"ai_api"`
+	DebugLevel string               `json:"debug_level,omitempty"`
+	Server     *srv.Config          `json:"server"`
+	PaymentCfg *srv.WeChatPayConfig `json:"payment_cfg"`
+	Database   *dbSrv.PSDBConfig    `json:"database"`
+	AIApi      *ai_api.Cfg          `json:"ai_api"`
 }
 
 // 根据 env 选择不同的配置文件名：
@@ -76,6 +77,10 @@ func loadAppConfig(env string) (*appConfig, error) {
 	}
 
 	if err := cfg.Server.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := cfg.PaymentCfg.Validate(); err != nil {
 		return nil, err
 	}
 

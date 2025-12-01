@@ -3,6 +3,7 @@ package dbSrv
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/hopwesley/wenxintai/server/ai_api"
 )
@@ -30,4 +31,15 @@ type DbService interface {
 	UpdateUserProfileExtra(ctx context.Context, uid, mobile, studentId, schoolName, province, city string) error
 	FinalizedTest(ctx context.Context, publicID string, businessType string) error
 	QueryTestInfos(ctx context.Context, uid string) ([]*TestItem, error)
+	FindWeChatOrderByID(ctx context.Context, id string) (*WeChatOrder, error)
+	UpdateWeChatOrderStatus(
+		ctx context.Context,
+		orderID string,
+		tradeState string,
+		transactionID *string,
+		payerOpenID *string,
+		paidAt *time.Time,
+		notifyRaw []byte,
+	) error
+	InsertWeChatOrder(ctx context.Context, d *WeChatOrder) error
 }

@@ -626,9 +626,12 @@
         :product-name="currentPlan?.name || ''"
         :product-price="currentPlan?.price || 0"
         :product-desc="currentPlan?.desc || ''"
+        :pay-order="payOrder"
+        :paying="paying"
         @pay="handleWeChatPay"
         @success="handleInviteSuccess"
     />
+
 
     <NewUserInfoDialog v-model:open="newUserDialogOpen"/>
   </div>
@@ -661,6 +664,8 @@ const {
   currentPlan,
   handleWeChatPay,
   planMap,
+  payOrder,
+  paying,
 } = useHomeView()
 
 

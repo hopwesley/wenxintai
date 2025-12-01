@@ -1,19 +1,23 @@
 // 单个测试步骤
 import {apiRequest} from "@/api";
-import {ref, onMounted, onBeforeUnmount, watch} from 'vue'
+import {onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useTestSession} from '@/controller/testSession'
 import {useAlert} from '@/controller/useAlert'
 import {VerifyInviteResponse} from "@/controller/InviteCode";
 import {useAuthStore} from '@/controller/wx_auth'
 import {
+    PlanKey,
+    pushStageRoute,
     StageBasic,
-    TestTypeBasic,
     type TestFlowStep,
-    pushStageRoute, PlanKey, TestTypePro, TestTypeAdv, TestTypeSchool,
+    TestTypeAdv,
+    TestTypeBasic,
+    TestTypePro,
+    TestTypeSchool,
 } from "@/controller/common";
 import {useGlobalLoading} from "@/controller/useGlobalLoading";
-
+import {createNativeOrder, NativeCreateOrderResponse, queryOrderStatus} from "@/controller/WeChatNativePay";
 
 export interface FetchTestFlowRequest {
     public_id: string;
@@ -73,6 +77,11 @@ export function useHomeView() {
     const currentPlan = ref<PlanInfo | null>(null)
 
     function startTest(typ: PlanKey) {
+        if (!authStore.isLoggedIn) {
+            openLogin()
+            return
+        }
+
         setBusinessType(typ)
         const plan = planMap[typ]
         if (plan) {
@@ -210,24 +219,73 @@ export function useHomeView() {
         }
     }
 
+
+
+    const paying = ref(false)              // 点击“微信支付”后，按钮 loading
+    const payOrder = ref<NativeCreateOrderResponse | null>(null)  // 当前订单信息（包括 code_url）
+    const payPollingTimer = ref<number | null>(null)              // 轮询定时器 id
+    const paySucceeded = ref(false)
     async function handleWeChatPay() {
+        if (!currentPlan.value) {
+            showAlert('请选择测试方案')
+            return
+        }
+
+        if (paying.value) {
+            return
+        }
+
         try {
-            // 1. 调用后端创建订单，拿到微信支付参数
-            // const res = await apiRequest('/api/pay/wechat/create-order', { ... })
+            paying.value = true
+            paySucceeded.value = false
 
-            // 2. 在微信内环境调起支付（WeixinJSBridge 或 JSSDK）
-            // await callWeChatPay(res.data)
+            // 1. 调后端创建 native 订单
+            const order = await createNativeOrder(currentPlan.value.key)
 
-            // 3. 支付成功后：关闭弹窗 + 进入测试（跟邀请码成功后的流程类似）
-            inviteModalOpen.value = false
-            // 这里可以直接 push 到测试页，或者调用你已有的 handlePaySuccess 之类
-        } catch (e) {
-            // 支付失败 / 取消：你可以选择：
-            // - 提示错误，但不关弹窗
-            // - 或者关闭弹窗，让用户重新点击支付
-            console.error(e)
-            // 如果你希望允许重试，可以让弹窗重新打开一次
-            // inviteModalOpen.value = true
+            payOrder.value = order
+
+            // 2. 不要立刻关弹窗，而是在弹窗里展示二维码
+            //   -> InviteCodeModal 需要根据是否有 payOrder 来切换 UI（输入邀请码 vs 显示二维码）
+            //   -> 这里只负责把 payOrder 设置好
+
+            // 3. 开始轮询订单状态
+            startPayPolling(order.order_id)
+        } catch (err: any) {
+            console.error('[Pay] handleWeChatPay failed', err)
+            showAlert(err?.message || '创建支付订单失败，请稍后再试')
+        } finally {
+            paying.value = false
+        }
+    }
+
+    function startPayPolling(orderId: string) {
+        stopPayPolling() // 防止重复
+
+        // 每 2 秒查一次支付状态，视情况调节
+        payPollingTimer.value = window.setInterval(async () => {
+            try {
+                const status = await queryOrderStatus(orderId)
+                if (status.paid) {
+                    paySucceeded.value = true
+                    stopPayPolling()
+
+                    // 支付成功：关闭弹窗 + 进入测试
+                    inviteModalOpen.value = false
+
+                    // TODO: 在这里触发你原来进入测试的逻辑
+                    // 例如：router.push(...) 或者调用 handlePaySuccess()
+                }
+            } catch (err) {
+                console.error('[Pay] queryOrderStatus error', err)
+                // 轮询失败可以先不打断，下次继续查
+            }
+        }, 2000)
+    }
+
+    function stopPayPolling() {
+        if (payPollingTimer.value !== null) {
+            window.clearInterval(payPollingTimer.value)
+            payPollingTimer.value = null
         }
     }
 
@@ -297,5 +355,7 @@ export function useHomeView() {
         handleWeChatPay,
         planMap,
         currentPlan,
+        payOrder,
+        paying,
     }
 }

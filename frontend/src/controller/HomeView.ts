@@ -60,7 +60,7 @@ export function useHomeView() {
 
     const {showAlert} = useAlert()
     const router = useRouter()
-    const {state, setPublicID, setBusinessType, setTestFlow, setNextRouteItem} = useTestSession()
+    const {state, setPublicID, setBusinessType, setTestFlow, setNextRouteItem, resetSession} = useTestSession()
 
     const authStore = useAuthStore()
     const inviteModalOpen = ref(false)
@@ -108,9 +108,9 @@ export function useHomeView() {
     // “退出登录”
     function handleLogout() {
         isUserMenuOpen.value = false
-        // 根据你的 authStore 实现来改：
-        // 如果有 logout 方法，就直接调用：
-        // authStore.logout()
+        authStore.logout().then(()=>{
+            resetSession();
+        })
         console.log('[HomeView] logout clicked')
     }
 
@@ -125,6 +125,7 @@ export function useHomeView() {
         window.removeEventListener('scroll', handleScroll)
     })
     const {showLoading, hideLoading} = useGlobalLoading()
+
     async function handleInviteSuccess(payload: VerifyInviteResponse) {
         // 当前业务类型（兜底用）
         const fallbackBusinessType = state.businessType || TestTypeBasic
@@ -163,7 +164,7 @@ export function useHomeView() {
         } catch (err) {
             console.error('fetch test flow failed:', err)
             handleFlowError('获取测试流程失败，请稍后再试')
-        }finally {
+        } finally {
             hideLoading()
         }
     }

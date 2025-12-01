@@ -1,7 +1,7 @@
 // 单个测试步骤
 import {apiRequest} from "@/api";
-import {ref, onMounted, onBeforeUnmount} from 'vue'
-import {useRouter} from 'vue-router'
+import {ref, onMounted, onBeforeUnmount, watch} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
 import {useTestSession} from '@/controller/testSession'
 import {useAlert} from '@/controller/useAlert'
 import {VerifyInviteResponse} from "@/controller/InviteCode";
@@ -60,6 +60,7 @@ export function useHomeView() {
 
     const {showAlert} = useAlert()
     const router = useRouter()
+    const route = useRoute()
     const {state, setPublicID, setBusinessType, setTestFlow, setNextRouteItem, resetSession} = useTestSession()
 
     const authStore = useAuthStore()
@@ -88,20 +89,26 @@ export function useHomeView() {
 
     function handleScroll() {
         scrollY.value = window.scrollY || window.pageYOffset || 0
+
+        if (isUserMenuOpen.value) {
+            isUserMenuOpen.value = false
+        }
     }
 
     const isUserMenuOpen = ref(false)
+    const userMenuWrapperRef = ref<HTMLElement | null>(null)
 
-    function handleUserClick() {
+    function handleUserClick(event?: MouseEvent) {
+        // 防止点击头像时触发 document 的点击监听，导致立刻关闭
+        if (event) {
+            event.stopPropagation()
+        }
         isUserMenuOpen.value = !isUserMenuOpen.value
     }
 
     // “我的测试”
     function handleGoMyTests() {
         isUserMenuOpen.value = false
-        // TODO: 这里改成你真实的路由 name/path
-        // 例如：
-        // router.push({ name: 'my-tests' })
         console.log('[HomeView] go to my tests')
     }
 
@@ -114,8 +121,33 @@ export function useHomeView() {
         console.log('[HomeView] logout clicked')
     }
 
+    function handleGlobalClick(e: MouseEvent) {
+        if (!isUserMenuOpen.value) return
+
+        const rootEl = userMenuWrapperRef.value
+        if (!rootEl) return
+
+        const target = e.target as Node | null
+        if (target && rootEl.contains(target)) {
+            // 点击在头像/菜单区域内，不关闭
+            return
+        }
+        // 点击在外面，关闭菜单
+        isUserMenuOpen.value = false
+    }
+
+    watch(
+        () => route.fullPath,
+        () => {
+            if (isUserMenuOpen.value) {
+                isUserMenuOpen.value = false
+            }
+        }
+    )
+
     onMounted(() => {
         window.addEventListener('scroll', handleScroll)
+        document.addEventListener('click', handleGlobalClick)
         authStore.fetchSignInStatus().then().catch(err => {
             console.error('[HomeView] fetchSignInStatus failed', err)
         })
@@ -123,6 +155,7 @@ export function useHomeView() {
 
     onBeforeUnmount(() => {
         window.removeEventListener('scroll', handleScroll)
+        document.removeEventListener('click', handleGlobalClick)
     })
     const {showLoading, hideLoading} = useGlobalLoading()
 
@@ -183,6 +216,7 @@ export function useHomeView() {
         handleInviteSuccess,
         handleUserClick,
         isUserMenuOpen,
+        userMenuWrapperRef,
         handleGoMyTests,
         handleLogout,
     }

@@ -18,7 +18,6 @@
             </button>
           </nav>
           <div class="header-right">
-            <!-- 未登录：status !== 'ok' 的时候显示按钮 -->
             <button
                 v-if="!isLoggedIn"
                 class="btn btn-ghost login-btn"
@@ -27,9 +26,13 @@
             >
               微信登录
             </button>
+            <div
+                v-else
+                class="home-user-wrapper"
+                ref="userMenuWrapperRef"
+            >
             <!-- 已登录：用 signInStatus 里的头像 & 昵称 -->
             <button
-                v-else
                 type="button"
                 class="home-user"
                 @click="handleUserClick"
@@ -47,7 +50,6 @@
                 {{ signInStatus.nick_name }}
               </span>
             </button>
-
             <!-- 下拉菜单 -->
             <div
                 v-if="isUserMenuOpen"
@@ -68,7 +70,7 @@
                 退出登录
               </button>
             </div>
-
+            </div>
           </div>
         </div>
       </div>
@@ -249,7 +251,7 @@
           </ul>
           <div class="btn w-full" aria-disabled="true" @click.prevent="startTest(TestTypePro)">开始测试</div>
         </div>
-        <p class="plan-tip">需邀请</p>
+        <p class="plan-tip">邀请码免费测试</p>
       </div>
       <div
           class="plan-card plan-pro"
@@ -425,7 +427,6 @@
             与智能，终结选科焦虑，为每一个家庭、每一个孩子拓宽理想之路。
           </p>
         </header>
-
         <div class="value-grid">
           <article class="value-card">
             <div class="value-illus value-illus-eval">
@@ -554,7 +555,6 @@
         </div>
       </div>
     </section>
-
     <!-- ③ 致亲爱的学生和家长（仅信件内容，带背景图） -->
     <section id="section-parent-letter" class="home-section letter-section">
       <div class="letter-bg">
@@ -585,7 +585,6 @@
         </div>
       </div>
     </section>
-
     <!-- ④ 关于数据隐私的严正声明（独立板块） -->
     <section id="section-privacy" class="home-section privacy-section value-section">
       <div class="container">
@@ -599,7 +598,6 @@
         </div>
       </div>
     </section>
-
     <!-- ⑤ 开始你的测试（独立 CTA 板块） -->
     <section id="section-start-test" class=" cta-section value-section" style="padding-top: 0">
       <div class="container">
@@ -616,7 +614,6 @@
         </div>
       </div>
     </section>
-
     <section id="icp-area">
       <div
           style="margin: 0 auto;color: #b0b1b3; text-align: center;padding: 16px;border-top: 1px solid #ECECEE; font-size: 14px">
@@ -650,6 +647,7 @@ const {
   handleInviteSuccess,
   handleUserClick,
   isUserMenuOpen,
+  userMenuWrapperRef,
   handleGoMyTests,
   handleLogout,
 } = useHomeView()

@@ -95,10 +95,10 @@
           :class="{ 'is-active': activePlan === TestTypeBasic }"
           @click="activePlan = TestTypeBasic"
       >
-        <div class="planA-head">基础版</div>
+        <div class="planA-head"> {{ planMap[TestTypeBasic].name }}</div>
         <div class="plan-card-content">
           <div class="plan-head">
-            <div class="price"><span class="currency">¥</span>19.9</div>
+            <div class="price"><span class="currency">¥</span>{{ planMap[TestTypeBasic].price }}</div>
           </div>
           <ul class="plan-features">
             <li class="plan-lists">
@@ -148,7 +148,6 @@
               </div>
               <div class="list-intro">综合建议</div>
             </li>
-
             <li class="plan-lists">
               <div class="list-icon">
                 <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"
@@ -178,10 +177,10 @@
           @click="activePlan = TestTypePro"
           aria-disabled="true"
       >
-        <div class="planA-head">专业版</div>
+        <div class="planA-head">{{ planMap[TestTypePro].name }}</div>
         <div class="plan-card-content">
           <div class="plan-head">
-            <div class="price"><span class="currency">¥</span>49.9</div>
+            <div class="price"><span class="currency">¥</span>{{ planMap[TestTypePro].price }}</div>
           </div>
           <ul class="plan-features">
             <li class="plan-lists">
@@ -259,10 +258,10 @@
           @click="activePlan = TestTypeAdv"
           aria-disabled="true"
       >
-        <div class="planA-head">增强版</div>
+        <div class="planA-head">{{ planMap[TestTypeAdv].name }}</div>
         <div class="plan-card-content">
           <div class="plan-head">
-            <div class="price price-gray"><span class="currency">¥</span>79.9</div>
+            <div class="price price-gray"><span class="currency">¥</span>{{ planMap[TestTypeAdv].price }}</div>
           </div>
           <ul class="plan-features">
             <li class="plan-lists">
@@ -340,10 +339,10 @@
           @click="activePlan = TestTypeSchool"
           aria-disabled="true"
       >
-        <div class="planA-head">学校版</div>
+        <div class="planA-head">{{ planMap[TestTypeSchool].name }}</div>
         <div class="plan-card-content">
           <div class="plan-head">
-            <div class="price price-gray"><span class="currency">¥</span>49.9</div>
+            <div class="price price-gray"><span class="currency">¥</span>{{ planMap[TestTypeSchool].price }}</div>
           </div>
           <ul class="plan-features">
             <li class="plan-lists">
@@ -614,6 +613,7 @@
         </div>
       </div>
     </section>
+
     <section id="icp-area">
       <div
           style="margin: 0 auto;color: #b0b1b3; text-align: center;padding: 16px;border-top: 1px solid #ECECEE; font-size: 14px">
@@ -621,7 +621,15 @@
       </div>
     </section>
 
-    <InviteCodeModal v-model:open="inviteModalOpen" @success="handleInviteSuccess"/>
+    <InviteCodeModal
+        v-model:open="inviteModalOpen"
+        :product-name="currentPlan?.name || ''"
+        :product-price="currentPlan?.price || 0"
+        :product-desc="currentPlan?.desc || ''"
+        @pay="handleWeChatPay"
+        @success="handleInviteSuccess"
+    />
+
     <NewUserInfoDialog v-model:open="newUserDialogOpen"/>
   </div>
 </template>
@@ -650,6 +658,9 @@ const {
   userMenuWrapperRef,
   handleGoMyTests,
   handleLogout,
+  currentPlan,
+  handleWeChatPay,
+  planMap,
 } = useHomeView()
 
 

@@ -10,7 +10,7 @@ import {
     StageBasic,
     TestTypeBasic,
     type TestFlowStep,
-    pushStageRoute, PlanKey,
+    pushStageRoute, PlanKey, TestTypePro, TestTypeAdv, TestTypeSchool,
 } from "@/controller/common";
 import {useGlobalLoading} from "@/controller/useGlobalLoading";
 
@@ -70,8 +70,16 @@ export function useHomeView() {
         authStore.startWeChatLogin().then()
     }
 
+    const currentPlan = ref<PlanInfo | null>(null)
+
     function startTest(typ: PlanKey) {
         setBusinessType(typ)
+        const plan = planMap[typ]
+        if (plan) {
+            currentPlan.value = plan
+        } else {
+            currentPlan.value = null
+        }
         inviteModalOpen.value = true
     }
 
@@ -202,6 +210,73 @@ export function useHomeView() {
         }
     }
 
+    async function handleWeChatPay() {
+        try {
+            // 1. 调用后端创建订单，拿到微信支付参数
+            // const res = await apiRequest('/api/pay/wechat/create-order', { ... })
+
+            // 2. 在微信内环境调起支付（WeixinJSBridge 或 JSSDK）
+            // await callWeChatPay(res.data)
+
+            // 3. 支付成功后：关闭弹窗 + 进入测试（跟邀请码成功后的流程类似）
+            inviteModalOpen.value = false
+            // 这里可以直接 push 到测试页，或者调用你已有的 handlePaySuccess 之类
+        } catch (e) {
+            // 支付失败 / 取消：你可以选择：
+            // - 提示错误，但不关弹窗
+            // - 或者关闭弹窗，让用户重新点击支付
+            console.error(e)
+            // 如果你希望允许重试，可以让弹窗重新打开一次
+            // inviteModalOpen.value = true
+        }
+    }
+
+
+    interface PlanInfo {
+        key: PlanKey
+        name: string
+        price: number       // 单位元；如果你用分自己改成 number of cents
+        desc: string
+        tag?: string        // 如果某些卡片有“推荐”“热门”之类的小标签可以放这里
+    }
+
+// 1) 把你当前 <section> 里写死的 4 个产品信息拷到这里来：名称、价格、简介
+    const basicPlan: PlanInfo = {
+        key: TestTypeBasic,
+        name: '基础版',
+        price: 29.9,
+        desc: '组合推荐 + 学科优势评估',
+    }
+
+    const proPlan: PlanInfo = {
+        key: TestTypePro,
+        name: '专业版',
+        price: 49.9,
+        desc: '基础版+更加全面的参数解读',
+        tag: '推荐',
+    }
+
+    const advPlan: PlanInfo = {
+        key: TestTypeAdv,
+        name: '增强版',
+        price: 79.9,
+        desc: '专业版 +专业选择推荐+职业规划建议',
+    }
+
+    const schoolPlan: PlanInfo = {
+        key: TestTypeSchool,
+        name: '校本定制版',
+        price: 59.9,
+        desc: '结合校园真是数据，精准报告，多维对比',
+    }
+
+    const planMap: Record<PlanKey, PlanInfo> = {
+        [TestTypeBasic]: basicPlan,
+        [TestTypePro]: proPlan,
+        [TestTypeAdv]: advPlan,
+        [TestTypeSchool]: schoolPlan,
+    }
+
     return {
         // 状态
         activePlan,
@@ -219,5 +294,8 @@ export function useHomeView() {
         userMenuWrapperRef,
         handleGoMyTests,
         handleLogout,
+        handleWeChatPay,
+        planMap,
+        currentPlan,
     }
 }

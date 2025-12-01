@@ -102,7 +102,7 @@ func (s *HttpSrv) handleInviteVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if inv.Status == dbSrv.InviteStatusUnused {
+	if inv.Status != dbSrv.InviteStatusUnused {
 		resp := inviteVerifyResponse{
 			OK:     false,
 			Reason: "问卷状态异常",

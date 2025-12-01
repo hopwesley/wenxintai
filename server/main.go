@@ -36,7 +36,13 @@ func bumpRlimitNoFile() {
 func main() {
 	bumpRlimitNoFile()
 
-	cfg, err := loadAppConfig()
+	env := "prod"
+	if len(os.Args) > 1 && os.Args[1] == "dev" {
+		env = "dev"
+	}
+	fmt.Printf("\n[main] starting server with env=%s\n", env)
+
+	cfg, err := loadAppConfig(env)
 	if err != nil {
 		panic(fmt.Sprintf("load config: %v", err))
 	}

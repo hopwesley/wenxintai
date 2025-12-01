@@ -38,6 +38,5 @@ go.work.sum
 /frontend/node_modules/
 /release/
 /server/config/
-/server/config/
-/config/conf.json
 .idea
+/config/

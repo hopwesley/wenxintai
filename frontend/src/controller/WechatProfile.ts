@@ -129,7 +129,7 @@ export function useWechatProfile() {
         showLoading('正在加载你的测评记录…')
         try {
             // 后端实现：GET /api/tests/my -> MyTestsResponse
-            const resp = await apiRequest<MyTestsResponse>('/api/tests/profile')
+            const resp = await apiRequest<MyTestsResponse>('/api/auth/profile')
             if (resp) {
                 profile.value = resp.profile
                 list.value = resp.tests || []

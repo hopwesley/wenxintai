@@ -29,6 +29,7 @@ const (
 	apiWeChatSignInCallBack = "/api/wechat_signin"
 	apiWeChatLogOut         = "/api/auth/logout"
 	apiWeChatUpdateProfile  = "/api/user/update_profile"
+	apiWeChatMyProfile      = "/api/auth/profile"
 )
 
 var (
@@ -102,6 +103,7 @@ func (s *HttpSrv) initRouter() error {
 	mux.HandleFunc(apiWeChatSignInCallBack, s.wechatSignInCallBack)
 	mux.HandleFunc(apiWeChatLogOut, s.wechatLogout)
 	mux.HandleFunc(apiWeChatUpdateProfile, s.apiWeChatUpdateProfile)
+	mux.HandleFunc(apiWeChatMyProfile, s.apiWeChatMyProfile)
 
 	//if err := s.registerSpaStatic(mux); err != nil {
 	//	return err

@@ -340,3 +340,32 @@ func (s *HttpSrv) apiWeChatUpdateProfile(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, &CommonRes{Ok: true, Msg: "更新用户基本信息成功"})
 	s.log.Info().Msg("apiWeChatUpdateProfile: update user profile success")
 }
+
+type TestResponse struct {
+	Profile *dbSrv.UserProfile `json:"profile"`
+	Tests   []*dbSrv.TestItem  `json:"tests,omitempty"`
+}
+
+func (s *HttpSrv) apiWeChatMyProfile(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	user, err := s.currentUserFromCookie(ctx, r)
+	if err != nil || user == nil {
+		s.log.Err(err).Msg("apiWeChatMyProfile: no uid in cookie or no such user")
+		writeError(w, ApiInvalidReq("请先登录", err))
+		return
+	}
+
+	tests, dbErr := dbSrv.Instance().QueryTestInfos(ctx, user.Uid)
+	if dbErr != nil {
+		s.log.Err(dbErr).Msg("apiWeChatMyProfile: query test records and reports failed")
+		writeError(w, ApiInternalErr("查询问卷数据失败", dbErr))
+		return
+	}
+	var resp = &TestResponse{
+		Profile: user,
+		Tests:   tests,
+	}
+	writeJSON(w, http.StatusOK, resp)
+	s.log.Info().Str("wechat_id", user.Uid).Msg("apiWeChatMyProfile: query user profile success")
+}

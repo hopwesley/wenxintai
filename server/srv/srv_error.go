@@ -41,6 +41,7 @@ func ApiInvalidTestSequence(err error) *ApiErr {
 func ApiInvalidNoTestRecord(err error) *ApiErr {
 	return NewApiError(http.StatusInternalServerError, ErrorCodeInternal, "未找到问卷数据", err)
 }
+
 func (e *ApiErr) Error() string {
 	if e.Message != "" {
 		return e.Message

@@ -109,7 +109,7 @@ export function useHomeView() {
     // “我的测试”
     function handleGoMyTests() {
         isUserMenuOpen.value = false
-        console.log('[HomeView] go to my tests')
+        router.push({ name: 'my-tests' })
     }
 
     // “退出登录”

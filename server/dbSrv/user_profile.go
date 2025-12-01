@@ -18,8 +18,9 @@ type UserProfile struct {
 	Province    string    `json:"province,omitempty"`    // 所在地区省（可空）
 	City        string    `json:"city,omitempty"`        // 所在地区省（可空）
 	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	LastLoginAt time.Time `json:"last_login_at"` // 最近登录时间
+	UpdatedAt   time.Time `json:"updated_at,omitempty"`
+	LastLoginAt time.Time `json:"last_login_at,omitempty"` // 最近登录时间
+	ReportNo    int       `json:"report_no"`
 }
 
 func (pdb *psDatabase) InsertOrUpdateUserProfileBasic(
@@ -151,7 +152,8 @@ func (pdb *psDatabase) FindUserProfileByUid(
         COALESCE(city, ''),
         created_at,
         updated_at,
-        last_login_at
+        last_login_at,
+        report_no
     FROM app.user_profile
     WHERE uid = $1
     LIMIT 1
@@ -173,6 +175,7 @@ func (pdb *psDatabase) FindUserProfileByUid(
 		&u.CreatedAt,
 		&u.UpdatedAt,
 		&u.LastLoginAt,
+		&u.ReportNo,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Warn().Msg("FindUserProfileByUid: no record")
@@ -184,4 +187,93 @@ func (pdb *psDatabase) FindUserProfileByUid(
 
 	log.Debug().Msg("FindUserProfileByUid: done")
 	return &u, nil
+}
+
+type TestItem struct {
+	PublicID          string `json:"public_id"`
+	BusinessType      string `json:"business_type"`
+	Mode              string `json:"mode"`
+	Status            string `json:"status"`
+	CreateAt          string `json:"create_at"`
+	CompletedAt       string `json:"completed_at,omitempty"`
+	ReportGeneratedAt string `json:"report_generated_at,omitempty"`
+}
+
+func (pdb *psDatabase) QueryTestInfos(ctx context.Context, uid string) ([]*TestItem, error) {
+	// 注意：这里假设 tests_record.wechat_openid 存的就是这个 uid
+	// 如果你实际是别的字段（例如 uid），只需要把 WHERE 条件里的列名改掉即可。
+	const q = `
+SELECT
+    r.public_id,
+    r.business_type,
+    COALESCE(r.mode, '') AS mode,
+    CASE
+        WHEN r.completed_at IS NULL THEN 'RUNNING'
+        WHEN rep.id IS NULL OR rep.status = 0 THEN 'COMPLETED_NO_REPORT'
+        ELSE 'COMPLETED_WITH_REPORT'
+    END AS status,
+    r.created_at,
+    r.completed_at,
+    rep.generated_at
+FROM app.tests_record AS r
+LEFT JOIN app.test_reports AS rep
+    ON rep.public_id = r.public_id
+WHERE r.wechat_openid = $1
+ORDER BY r.created_at DESC;
+`
+
+	rows, err := pdb.db.QueryContext(ctx, q, uid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []*TestItem
+
+	for rows.Next() {
+		var (
+			publicID     string
+			businessType string
+			mode         string
+			status       string
+			createdAt    time.Time
+			completedAt  sql.NullTime
+			reportAt     sql.NullTime
+		)
+
+		if err := rows.Scan(
+			&publicID,
+			&businessType,
+			&mode,
+			&status,
+			&createdAt,
+			&completedAt,
+			&reportAt,
+		); err != nil {
+			return nil, err
+		}
+
+		item := &TestItem{
+			PublicID:     publicID,
+			BusinessType: businessType,
+			Mode:         mode,
+			Status:       status,
+			CreateAt:     createdAt.Format(time.RFC3339),
+		}
+
+		if completedAt.Valid {
+			item.CompletedAt = completedAt.Time.Format(time.RFC3339)
+		}
+		if reportAt.Valid {
+			item.ReportGeneratedAt = reportAt.Time.Format(time.RFC3339)
+		}
+
+		items = append(items, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return items, nil
 }

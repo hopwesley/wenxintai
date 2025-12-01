@@ -29,4 +29,5 @@ type DbService interface {
 	InsertOrUpdateUserProfileBasic(ctx context.Context, id string, name string, url string) error
 	UpdateUserProfileExtra(ctx context.Context, uid, mobile, studentId, schoolName, province, city string) error
 	FinalizedTest(ctx context.Context, publicID string, businessType string) error
+	QueryTestInfos(ctx context.Context, uid string) ([]*TestItem, error)
 }

@@ -27,7 +27,6 @@
             >
               微信登录
             </button>
-
             <!-- 已登录：用 signInStatus 里的头像 & 昵称 -->
             <button
                 v-else
@@ -48,6 +47,28 @@
                 {{ signInStatus.nick_name }}
               </span>
             </button>
+
+            <!-- 下拉菜单 -->
+            <div
+                v-if="isUserMenuOpen"
+                class="home-user-menu"
+            >
+              <button
+                  type="button"
+                  class="home-user-menu__item"
+                  @click="handleGoMyTests"
+              >
+                我的测试
+              </button>
+              <button
+                  type="button"
+                  class="home-user-menu__item home-user-menu__item--danger"
+                  @click="handleLogout"
+              >
+                退出登录
+              </button>
+            </div>
+
           </div>
         </div>
       </div>
@@ -628,6 +649,9 @@ const {
   handleTabClick,
   handleInviteSuccess,
   handleUserClick,
+  isUserMenuOpen,
+  handleGoMyTests,
+  handleLogout,
 } = useHomeView()
 
 

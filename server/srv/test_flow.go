@@ -56,10 +56,16 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 	sLog := s.log.With().Str("public_id", req.TestPublicID).Logger()
 	s.log.Info().Msg("query test flow")
 
-	record, dbErr := dbSrv.Instance().FindTestRecordByPublicId(ctx, req.TestPublicID)
+	record, dbErr := dbSrv.Instance().QueryUnfinishedTest(ctx, req.TestPublicID)
 	if dbErr != nil {
 		sLog.Err(dbErr).Msg("failed find test record")
 		writeError(w, ApiInternalErr("查询文件数据库操作失败", dbErr))
+		return
+	}
+
+	if record == nil {
+		sLog.Err(dbErr).Msg("no such test record")
+		writeError(w, ApiInternalErr("没有问卷相关数据库记录", nil))
 		return
 	}
 

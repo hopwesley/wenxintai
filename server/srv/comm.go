@@ -217,9 +217,13 @@ func parseStatusToRoute(record *dbSrv.TestRecord, routes []string) string {
 }
 
 func (s *HttpSrv) checkTestSequence(ctx context.Context, publicID, testType string) (*dbSrv.TestRecord, error) {
-	record, dbErr := dbSrv.Instance().FindTestRecordByPublicId(ctx, publicID)
+	record, dbErr := dbSrv.Instance().QueryUnfinishedTest(ctx, publicID)
 	if dbErr != nil {
 		return nil, dbErr
+	}
+
+	if record == nil {
+		return nil, fmt.Errorf("没有找到当前测试问卷")
 	}
 
 	flow := getTestRoutes(record.BusinessType)

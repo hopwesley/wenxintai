@@ -598,10 +598,9 @@ export function useReportPage() {
         return ai.final_report
     })
 
-    const handleBackToHome = async () => {
-        showLoading("正在结束您的报告之旅返回首页")
+    const showFinishLetter = ref(false)
+    const handleLetterConfirm = async () => {
         try {
-            resetSession();
             const public_id = state.recordPublicID
             await apiRequest<ReportRawData>('/api/finish_report', {
                 method: 'POST',
@@ -610,15 +609,16 @@ export function useReportPage() {
                     business_type: businessType.value,
                 },
             });
-
         } catch (e) {
-            // showAlert("")
             console.error("结束报告失败：" + e)
         } finally {
-            router.replace('/').then()
-            hideLoading()
+            resetSession();
         }
+
+        showFinishLetter.value = false
+        router.replace('/').then()
     }
+
 
     const handleExportPdf = () => {
         const oldTitle = document.title
@@ -703,8 +703,9 @@ export function useReportPage() {
         mode33View,
         mode312OverviewStrips,
         finalReport,
-        handleBackToHome,
         reportPageRoot,
         handleExportPdf,
+        showFinishLetter,
+        handleLetterConfirm,
     }
 }

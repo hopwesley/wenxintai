@@ -958,6 +958,11 @@ a {
     gap: 12px;
 }
 
+.home-user-wrapper {
+    position: relative;
+    display: inline-flex;
+}
+
 .home-user {
     display: inline-flex;
     align-items: center;
@@ -989,4 +994,46 @@ a {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+
+/* 下拉菜单容器 */
+.home-user-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    min-width: 140px;
+    padding: 6px 0;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    z-index: 30;
+}
+
+/* 菜单项按钮 */
+.home-user-menu__item {
+    width: 100%;
+    padding: 8px 14px;
+    text-align: left;
+    font-size: 14px;
+    line-height: 22px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.home-user-menu__item:hover {
+    background: rgba(90, 96, 234, 0.06); /* 轻微品牌色高亮 */
+    color: var(--text-primary);
+}
+
+.home-user-menu__item--danger {
+    color: #ef4444;
+}
+
+.home-user-menu__item--danger:hover {
+    background: rgba(248, 113, 113, 0.06);
+    color: #b91c1c;
 }

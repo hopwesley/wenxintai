@@ -7,8 +7,8 @@
     <div class="report-page__actions">
       <button
           class="btn btn-secondary report-page__action"
-          @click="handleBackToHome">
-        返回测试首页
+          @click="showFinishLetter = true">
+        完成报告
       </button>
 
       <button class="btn btn-primary report-page__action" @click="handleExportPdf">
@@ -26,6 +26,11 @@
     stage: '选科报告'
   }"
     />
+    <ReportFinishLetter
+        :visible="showFinishLetter"
+        @close="showFinishLetter = false"
+        @confirm="handleLetterConfirm"
+    />
   </TestLayout>
 </template>
 
@@ -39,6 +44,7 @@ import {computed} from "vue";
 import ReportBasic from '@/views/report_basic.vue'
 import ReportPro from '@/views/report_pro.vue'
 import {TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool} from "@/controller/common";
+import ReportFinishLetter from "@/views/components/ReportFinishLetter.vue";
 
 const {
   state,
@@ -46,8 +52,9 @@ const {
   overview,
   aiLoading,
   truncatedLatestMessage,
-  handleBackToHome,
   handleExportPdf,
+  showFinishLetter,
+  handleLetterConfirm,
 } = useReportPage()
 
 console.log(route.params.typ);

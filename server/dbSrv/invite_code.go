@@ -12,7 +12,6 @@ type Invite struct {
 	Status    int16
 	PublicID  sql.NullString
 	ExpiresAt sql.NullTime
-	UsedBy    sql.NullString
 	UsedAt    sql.NullTime
 	CreatedAt time.Time
 }
@@ -20,15 +19,14 @@ type Invite struct {
 const (
 	InviteStatusUnused int16 = 0
 	InviteStatusInUse  int16 = 1
-	// InviteStatusUsed    int16 = 1
-	// InviteStatusBlocked int16 = 3
+	InviteStatusUsed   int16 = 2
 )
 
 // GetInviteByCode 按 code 查邀请码，不存在时返回 (nil, nil)。
 func (pdb *psDatabase) GetInviteByCode(ctx context.Context, code string) (*Invite, error) {
 	pdb.log.Debug().Str("code", code).Msg("GetInviteByCode")
 	const q = `
-		SELECT code, status, expires_at, used_by, used_at, created_at, public_id
+		SELECT code, status, expires_at, used_at, created_at, public_id
 		FROM app.invites
 		WHERE code = $1
 	`
@@ -40,7 +38,6 @@ func (pdb *psDatabase) GetInviteByCode(ctx context.Context, code string) (*Invit
 		&inv.Code,
 		&inv.Status,
 		&inv.ExpiresAt,
-		&inv.UsedBy,
 		&inv.UsedAt,
 		&inv.CreatedAt,
 		&inv.PublicID,

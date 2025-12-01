@@ -222,7 +222,7 @@ func (s *HttpSrv) handleTestReport(w http.ResponseWriter, r *http.Request) {
 	dbErr = dbSrv.Instance().SaveTestReportCore(ctx, req.TestPublicID, record.Mode.String, commonScore, aiParamForMode)
 	if dbErr != nil {
 		sLog.Err(dbErr).Msg("failed to save report param")
-		writeError(w, ApiInternalErr("保存 AI 报告需要的参数失败", aiErr))
+		writeError(w, ApiInternalErr("保存 AI 报告需要的参数失败", dbErr))
 		return
 	}
 
@@ -243,6 +243,28 @@ func (s *HttpSrv) handleTestReport(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *HttpSrv) finishReport(w http.ResponseWriter, r *http.Request) {
+
+	var req tesReportRequest
+	err := req.parseObj(r)
+	if err != nil {
+		s.log.Err(err).Msgf("invalid test report request")
+		writeError(w, err)
+		return
+	}
+
+	sLog := s.log.With().
+		Str("business_type", req.BusinessType).
+		Str("public_id", req.TestPublicID).Logger()
+
+	ctx := r.Context()
+
+	var dbErr = dbSrv.Instance().FinalizedTest(ctx, req.TestPublicID, req.BusinessType)
+	if dbErr != nil {
+		sLog.Err(dbErr).Msg("failed to finalized test")
+		writeError(w, ApiInternalErr("保存 AI 报告需要的参数失败", dbErr))
+		return
+	}
+
 	writeJSON(w, http.StatusOK,
 		&CommonRes{Ok: true, Msg: "完成报告设计"})
 }

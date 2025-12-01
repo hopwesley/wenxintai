@@ -192,3 +192,120 @@ func (pdb *psDatabase) UpdateTestReportAIContent(
 	log.Debug().Int64("rows", affected).Msg("UpdateTestReportAIContent: done")
 	return nil
 }
+
+func (pdb *psDatabase) FinalizedTest(ctx context.Context, publicID string, businessType string) error {
+	if publicID == "" {
+		return errors.New("publicID must be non-empty")
+	}
+	if businessType == "" {
+		return errors.New("businessType must be non-empty")
+	}
+
+	log := pdb.log.With().
+		Str("public_id", publicID).
+		Str("business_type", businessType).
+		Logger()
+
+	log.Debug().Msg("FinalizedTest: start")
+
+	const updateRecordSQL = `
+		UPDATE app.tests_record
+		SET 
+			completed_at = now(),
+			updated_at   = now()
+		WHERE public_id = $1
+		  AND business_type = $2
+		RETURNING invite_code, wechat_openid
+	`
+
+	const incReportNoSQL = `
+		UPDATE app.user_profile
+		SET 
+			report_no  = COALESCE(report_no, 0) + 1,
+			updated_at = now()
+		WHERE uid = $1
+	`
+
+	const markInviteUsedSQL = `
+		UPDATE app.invites
+		SET 
+			status = 2,
+			used_at = now()
+		WHERE code = $1
+	`
+
+	const updateReportSQL = `
+		UPDATE app.test_reports
+		SET 
+			status     = 2,
+			updated_at = now()
+		WHERE public_id = $1
+	`
+
+	err := pdb.WithTx(ctx, func(tx *sql.Tx) error {
+		var inviteCode sql.NullString
+		var wechatOpenID sql.NullString
+
+		// 1) 更新 tests_record.completed_at 并拿到 invite_code / wechat_openid
+		if err := tx.QueryRowContext(
+			ctx,
+			updateRecordSQL,
+			publicID,
+			businessType,
+		).Scan(&inviteCode, &wechatOpenID); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				log.Warn().Msg("FinalizedTest: no tests_record row matched")
+			} else {
+				log.Err(err).Msg("FinalizedTest: update tests_record failed")
+			}
+			return err
+		}
+
+		// 2) 分支：优先使用 wechat_openid 自增 user_profile.report_no
+		if wechatOpenID.Valid && wechatOpenID.String != "" {
+			res, err := tx.ExecContext(ctx, incReportNoSQL, wechatOpenID.String)
+			if err != nil {
+				log.Err(err).
+					Str("wechat_openid", wechatOpenID.String).
+					Msg("FinalizedTest: update user_profile.report_no failed")
+				return err
+			}
+			if rows, _ := res.RowsAffected(); rows == 0 {
+				// 没有 user_profile 的话这里我只是打个日志，不认为是致命错误
+				log.Warn().
+					Str("wechat_openid", wechatOpenID.String).
+					Msg("FinalizedTest: no user_profile row updated")
+			}
+		} else if inviteCode.Valid && inviteCode.String != "" {
+			// 2') 否则，如果 wechat_openid 为空但 invite_code 有值，则标记邀请码已使用
+			res, err := tx.ExecContext(ctx, markInviteUsedSQL, inviteCode.String)
+			if err != nil {
+				log.Err(err).
+					Str("invite_code", inviteCode.String).
+					Msg("FinalizedTest: update invites failed")
+				return err
+			}
+			if rows, _ := res.RowsAffected(); rows == 0 {
+				log.Warn().
+					Str("invite_code", inviteCode.String).
+					Msg("FinalizedTest: no invites row updated")
+			}
+		}
+
+		// 3) 更新 test_reports.status = 2
+		if _, err := tx.ExecContext(ctx, updateReportSQL, publicID); err != nil {
+			log.Err(err).Msg("FinalizedTest: update test_reports failed")
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		log.Err(err).Msg("FinalizedTest: failed")
+		return err
+	}
+
+	log.Debug().Msg("FinalizedTest: done")
+	return nil
+}

@@ -14,8 +14,7 @@ type DbService interface {
 
 	ListHobbies(ctx context.Context) ([]string, error)
 	GetInviteByCode(ctx context.Context, code string) (*Invite, error)
-	FindTestRecordByPublicId(ctx context.Context, publicId string) (*TestRecord, error)
-	FindTestRecordByUid(ctx context.Context, inviteCode, weChatID string) (*TestRecord, error)
+	QueryUnfinishedTest(ctx context.Context, publicId string) (*TestRecord, error)
 	NewTestRecord(ctx context.Context, businessType string, inviteCode *string, weChatId *string) (string, error)
 	UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string, status int) (string, error)
 	QueryBasicInfo(ctx context.Context, publicId string) (*ai_api.BasicInfo, error)
@@ -29,4 +28,5 @@ type DbService interface {
 	FindUserProfileByUid(ctx context.Context, uid string) (*UserProfile, error)
 	InsertOrUpdateUserProfileBasic(ctx context.Context, id string, name string, url string) error
 	UpdateUserProfileExtra(ctx context.Context, uid, mobile, studentId, schoolName, province, city string) error
+	FinalizedTest(ctx context.Context, publicID string, businessType string) error
 }

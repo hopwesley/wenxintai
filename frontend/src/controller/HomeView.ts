@@ -90,6 +90,30 @@ export function useHomeView() {
         scrollY.value = window.scrollY || window.pageYOffset || 0
     }
 
+    const isUserMenuOpen = ref(false)
+
+    function handleUserClick() {
+        isUserMenuOpen.value = !isUserMenuOpen.value
+    }
+
+    // “我的测试”
+    function handleGoMyTests() {
+        isUserMenuOpen.value = false
+        // TODO: 这里改成你真实的路由 name/path
+        // 例如：
+        // router.push({ name: 'my-tests' })
+        console.log('[HomeView] go to my tests')
+    }
+
+    // “退出登录”
+    function handleLogout() {
+        isUserMenuOpen.value = false
+        // 根据你的 authStore 实现来改：
+        // 如果有 logout 方法，就直接调用：
+        // authStore.logout()
+        console.log('[HomeView] logout clicked')
+    }
+
     onMounted(() => {
         window.addEventListener('scroll', handleScroll)
         authStore.fetchSignInStatus().then().catch(err => {
@@ -144,10 +168,6 @@ export function useHomeView() {
         }
     }
 
-    function handleUserClick() {
-        console.log('[HomeView] user avatar clicked')
-    }
-
     return {
         // 状态
         activePlan,
@@ -161,5 +181,8 @@ export function useHomeView() {
         handleTabClick,
         handleInviteSuccess,
         handleUserClick,
+        isUserMenuOpen,
+        handleGoMyTests,
+        handleLogout,
     }
 }

@@ -186,9 +186,8 @@ func (s *HttpSrv) exchangeWeChatCode(ctx context.Context, code string) (*wechatT
 }
 
 func (s *HttpSrv) wechatSignStatus(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
 
-	user, err := s.currentUserFromCookie(ctx, r)
+	uid, err := s.currentUserFromCookie(r)
 	if err != nil {
 		s.log.Err(err).Msg("wechatSignStatus: currentUserFromCookie failed")
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -201,10 +200,16 @@ func (s *HttpSrv) wechatSignStatus(w http.ResponseWriter, r *http.Request) {
 		AppID:       s.cfg.WeChatAppID,
 		RedirectURI: redirectUrl,
 	}
+	if len(uid) == 0 {
+		writeJSON(w, http.StatusOK, resp)
+		return
+	}
 
-	if user != nil {
+	user, dbErr := dbSrv.Instance().FindUserProfileByUid(r.Context(), uid)
+	if dbErr != nil || user == nil {
+		resp.Status = "expired"
+	} else {
 		resp.Status = "ok"
-
 		if c, err := r.Cookie("wx_is_new"); err == nil {
 			v := c.Value == "1"
 			resp.IsNew = &v
@@ -213,9 +218,7 @@ func (s *HttpSrv) wechatSignStatus(w http.ResponseWriter, r *http.Request) {
 		resp.AvatarURL = user.AvatarUrl
 		resp.Uid = user.Uid
 	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	_ = json.NewEncoder(w).Encode(resp)
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func (s *HttpSrv) fetchWeChatUserInfo(ctx context.Context, accessToken, openID string) (*wechatUserInfoResp, error) {
@@ -249,21 +252,13 @@ func (s *HttpSrv) fetchWeChatUserInfo(ctx context.Context, accessToken, openID s
 	return &ui, nil
 }
 
-func (s *HttpSrv) currentUserFromCookie(ctx context.Context, r *http.Request) (*dbSrv.UserProfile, error) {
+func (s *HttpSrv) currentUserFromCookie(r *http.Request) (string, error) {
 	c, err := r.Cookie("wx_user")
 	if err != nil || c.Value == "" {
-		return nil, nil
+		return "", nil
 	}
 	uid := c.Value
-
-	profile, err := dbSrv.Instance().FindUserProfileByUid(ctx, uid)
-	if err != nil {
-		return nil, err
-	}
-	if profile == nil {
-		return nil, nil
-	}
-	return profile, nil
+	return uid, nil
 }
 
 func (s *HttpSrv) wechatLogout(w http.ResponseWriter, _ *http.Request) {
@@ -315,8 +310,8 @@ func (s *HttpSrv) apiWeChatUpdateProfile(w http.ResponseWriter, r *http.Request)
 
 	ctx := r.Context()
 
-	user, err := s.currentUserFromCookie(ctx, r)
-	if err != nil || user == nil {
+	uid, err := s.currentUserFromCookie(r)
+	if err != nil {
 		s.log.Err(err).Msg("apiWeChatUpdateProfile: no uid in cookie or no such user")
 		writeError(w, ApiInvalidReq("请先登录", err))
 		return
@@ -329,7 +324,7 @@ func (s *HttpSrv) apiWeChatUpdateProfile(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err = dbSrv.Instance().UpdateUserProfileExtra(ctx, user.Uid, extraData.ParentPhone, extraData.StudyId,
+	err = dbSrv.Instance().UpdateUserProfileExtra(ctx, uid, extraData.ParentPhone, extraData.StudyId,
 		extraData.SchoolName, extraData.Province, extraData.City)
 	if err != nil {
 		s.log.Err(err).Msg("apiWeChatUpdateProfile: update user profile failed")
@@ -349,23 +344,30 @@ type TestResponse struct {
 func (s *HttpSrv) apiWeChatMyProfile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	user, err := s.currentUserFromCookie(ctx, r)
-	if err != nil || user == nil {
+	uid, err := s.currentUserFromCookie(r)
+	if err != nil {
 		s.log.Err(err).Msg("apiWeChatMyProfile: no uid in cookie or no such user")
 		writeError(w, ApiInvalidReq("请先登录", err))
 		return
 	}
 
-	tests, dbErr := dbSrv.Instance().QueryTestInfos(ctx, user.Uid)
+	tests, dbErr := dbSrv.Instance().QueryTestInfos(ctx, uid)
 	if dbErr != nil {
 		s.log.Err(dbErr).Msg("apiWeChatMyProfile: query test records and reports failed")
 		writeError(w, ApiInternalErr("查询问卷数据失败", dbErr))
 		return
 	}
+	user, pDBErr := dbSrv.Instance().FindUserProfileByUid(ctx, uid)
+	if pDBErr != nil {
+		s.log.Err(pDBErr).Msg("apiWeChatMyProfile: query user profile failed")
+		writeError(w, ApiInternalErr("查询用户数据失败", dbErr))
+		return
+	}
+
 	var resp = &TestResponse{
 		Profile: user,
 		Tests:   tests,
 	}
 	writeJSON(w, http.StatusOK, resp)
-	s.log.Info().Str("wechat_id", user.Uid).Msg("apiWeChatMyProfile: query user profile success")
+	s.log.Info().Str("wechat_id", uid).Msg("apiWeChatMyProfile: query user profile success")
 }

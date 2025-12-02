@@ -15,6 +15,7 @@ type DbService interface {
 
 	ListHobbies(ctx context.Context) ([]string, error)
 	GetInviteByCode(ctx context.Context, code string) (*Invite, error)
+	QueryTestInProcess(ctx context.Context, uid, businessType string) (*TestRecord, error)
 	QueryUnfinishedTest(ctx context.Context, publicId string) (*TestRecord, error)
 	NewTestRecord(ctx context.Context, businessType string, inviteCode *string, weChatId *string) (string, error)
 	UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string, status int) (string, error)

@@ -191,13 +191,13 @@ func (s *HttpSrv) handleTestReport(w http.ResponseWriter, r *http.Request) {
 	var resp *ai_api.EngineResult
 	var aiErr error
 	switch strings.ToLower(record.BusinessType) {
-	case TestTypeBasic:
+	case BusinessTypeBasic:
 		resp, aiErr = ai_api.BasicBuildReportParam(ai_api.Mode(record.Mode.String), answersMap)
-	case TestTypePro:
+	case BusinessTypePro:
 		resp, aiErr = ai_api.ProBuildReportParam(ai_api.Mode(record.Mode.String), answersMap)
-	case TestTypeAdv:
+	case BusinessTypeAdv:
 		resp, aiErr = ai_api.ProBuildReportParam(ai_api.Mode(record.Mode.String), answersMap)
-	case TestTypeSchool:
+	case BusinessTypeSchool:
 		resp, aiErr = ai_api.SchoolBuildReportParam(ai_api.Mode(record.Mode.String), answersMap)
 	default:
 		sLog.Warn().Msg("unknown business type when building report param")

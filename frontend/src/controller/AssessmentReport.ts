@@ -689,7 +689,10 @@ export function useReportPage() {
     //     }
     // }
 
+    const inviteModalOpen = ref(false)
+
     return {
+        inviteModalOpen,
         state,
         route,
         overview,

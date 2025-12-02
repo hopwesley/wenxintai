@@ -31,6 +31,17 @@
         @close="showFinishLetter = false"
         @confirm="handleLetterConfirm"
     />
+
+    <InviteCodeModal
+        v-model:open="inviteModalOpen"
+        :product-name="currentPlan?.name || ''"
+        :product-price="currentPlan?.price || 0"
+        :product-desc="currentPlan?.desc || ''"
+        :pay-order="payOrder"
+        :paying="paying"
+        @pay="handleWeChatPay"
+        @success="handleInviteSuccess"
+    />
   </TestLayout>
 </template>
 
@@ -45,6 +56,7 @@ import ReportBasic from '@/views/report_basic.vue'
 import ReportPro from '@/views/report_pro.vue'
 import {TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool} from "@/controller/common";
 import ReportFinishLetter from "@/views/components/ReportFinishLetter.vue";
+import InviteCodeModal from "@/views/components/InviteCodeModal.vue";
 
 const {
   state,
@@ -55,6 +67,7 @@ const {
   handleExportPdf,
   showFinishLetter,
   handleLetterConfirm,
+  inviteModalOpen,
 } = useReportPage()
 
 console.log(route.params.typ);

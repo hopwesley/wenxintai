@@ -89,10 +89,10 @@ const (
 	StageMotivation    = "motivation"
 	StageMotivationDes = "价值观测试"
 
-	TestTypeBasic  = "basic"
-	TestTypePro    = "pro"
-	TestTypeAdv    = "adv"
-	TestTypeSchool = "school"
+	BusinessTypeBasic  = "basic"
+	BusinessTypePro    = "pro"
+	BusinessTypeAdv    = "adv"
+	BusinessTypeSchool = "school"
 )
 
 var testFlowForBasic = []string{StageBasic, StageRiasec, StageAsc, StageReport}
@@ -100,17 +100,26 @@ var testFlowForPro = []string{StageBasic, StageRiasec, StageAsc, StageReport}
 var testFlowForAdv = []string{StageBasic, StageRiasec, StageAsc, StageOcean, StageMotivation, StageReport}
 var testFlowForSchool = []string{StageBasic, StageRiasec, StageAsc, StageOcean, StageMotivation, StageReport}
 
+func isValidBusinessType(businessTyp string) bool {
+	switch businessTyp {
+	case BusinessTypeBasic, BusinessTypePro, BusinessTypeAdv, BusinessTypeSchool:
+		return true
+	default:
+		return false
+	}
+}
+
 func nextRoute(businessTyp, curStage string) (int, string, error) {
 	var flow []string
 
 	switch businessTyp {
-	case TestTypeBasic:
+	case BusinessTypeBasic:
 		flow = testFlowForBasic
-	case TestTypePro:
+	case BusinessTypePro:
 		flow = testFlowForPro
-	case TestTypeAdv:
+	case BusinessTypeAdv:
 		flow = testFlowForAdv
-	case TestTypeSchool:
+	case BusinessTypeSchool:
 		flow = testFlowForSchool
 	default:
 		return -1, "", fmt.Errorf("unknown business type: %s", businessTyp)
@@ -143,13 +152,13 @@ func nextRoute(businessTyp, curStage string) (int, string, error) {
 
 func getTestRoutes(testType string) []string {
 	switch testType {
-	case TestTypeBasic:
+	case BusinessTypeBasic:
 		return testFlowForBasic
-	case TestTypePro:
+	case BusinessTypePro:
 		return testFlowForPro
-	case TestTypeAdv:
+	case BusinessTypeAdv:
 		return testFlowForAdv
-	case TestTypeSchool:
+	case BusinessTypeSchool:
 		return testFlowForSchool
 	default:
 		return nil
@@ -190,36 +199,34 @@ var testFlowDescForSchool = []string{
 
 func getTestRoutesDes(testType string) []string {
 	switch testType {
-	case TestTypeBasic:
+	case BusinessTypeBasic:
 		return testFlowDescForBasic
-	case TestTypePro:
+	case BusinessTypePro:
 		return testFlowDescForPro
-	case TestTypeAdv:
+	case BusinessTypeAdv:
 		return testFlowDescForAdv
-	case TestTypeSchool:
+	case BusinessTypeSchool:
 		return testFlowDescForSchool
 	default:
 		return nil
 	}
 }
 
-func parseStatusToRoute(record *dbSrv.TestRecord, routes []string) string {
-	status := int(record.Status)
+func parseStatusToRoute(status int, routes []string) (string, int) {
 	if status >= len(routes) {
-		return StageReport
+		return StageReport, len(routes) - 1
 	}
 	switch {
-	case record.Status == RecordStatusInit:
-		return StageBasic
-
-	case record.Status >= RecordStatusInTest && record.Status < RecordStatusInReport:
-		return routes[status]
-
+	case status == RecordStatusInit:
+		return StageBasic, RecordStatusInit
+	case status >= RecordStatusInTest && status < RecordStatusInReport:
+		return routes[status], status
 	default:
-		return StageBasic
+		return StageBasic, RecordStatusInit
 	}
 }
 
+// TODO::check this method again
 func (s *HttpSrv) checkTestSequence(ctx context.Context, publicID, testType string) (*dbSrv.TestRecord, error) {
 	record, dbErr := dbSrv.Instance().QueryUnfinishedTest(ctx, publicID)
 	if dbErr != nil {
@@ -235,20 +242,7 @@ func (s *HttpSrv) checkTestSequence(ctx context.Context, publicID, testType stri
 		return nil, fmt.Errorf("no test flow configured for business type %s", record.BusinessType)
 	}
 
-	// 1. 根据当前记录状态解析出“当前阶段”
-	currentStage := parseStatusToRoute(record, flow)
-
-	// 2. 计算当前阶段在流程中的下标
-	currentIdx := -1
-	for i, stage := range flow {
-		if stage == currentStage {
-			currentIdx = i
-			break
-		}
-	}
-	if currentIdx == -1 {
-		return nil, fmt.Errorf("invalid current stage %s for business type %s", currentStage, record.BusinessType)
-	}
+	currentStage, currentIdx := parseStatusToRoute(int(record.Status), flow)
 
 	// 3. 计算请求阶段在流程中的下标
 	reqIdx := -1
@@ -262,7 +256,6 @@ func (s *HttpSrv) checkTestSequence(ctx context.Context, publicID, testType stri
 		return nil, fmt.Errorf("invalid requested stage %s for business type %s", testType, record.BusinessType)
 	}
 
-	// 4. 只允许访问当前阶段及之前的阶段，禁止越级访问未来阶段
 	if reqIdx > currentIdx {
 		return nil, fmt.Errorf(
 			"mismatched route, need stage index <= %d (%s) but got %d (%s)",
@@ -278,16 +271,16 @@ func getTestFlowSteps(businessType string) []TestFlowStep {
 	var titles []string
 
 	switch businessType {
-	case TestTypeBasic:
+	case BusinessTypeBasic:
 		stages = testFlowForBasic
 		titles = testFlowDescForBasic
-	case TestTypePro:
+	case BusinessTypePro:
 		stages = testFlowForPro
 		titles = testFlowDescForPro
-	case TestTypeAdv:
+	case BusinessTypeAdv:
 		stages = testFlowForAdv
 		titles = testFlowDescForAdv
-	case TestTypeSchool:
+	case BusinessTypeSchool:
 		stages = testFlowForSchool
 		titles = testFlowDescForSchool
 	default:
@@ -323,14 +316,14 @@ func getTestFlowSteps(businessType string) []TestFlowStep {
 
 func parseAITestTyp(testTyp, businessTyp string) ai_api.TestTyp {
 	switch businessTyp {
-	case TestTypeBasic:
+	case BusinessTypeBasic:
 		switch testTyp {
 		case StageRiasec:
 			return ai_api.TypRIASEC
 		case StageAsc:
 			return ai_api.TypASC
 		}
-	case TestTypePro:
+	case BusinessTypePro:
 		switch testTyp {
 		case StageRiasec:
 			return ai_api.TypRIASEC
@@ -338,7 +331,7 @@ func parseAITestTyp(testTyp, businessTyp string) ai_api.TestTyp {
 			return ai_api.TypASC
 		}
 
-	case TestTypeAdv:
+	case BusinessTypeAdv:
 		switch testTyp {
 		case StageRiasec:
 			return ai_api.TypRIASEC
@@ -348,7 +341,7 @@ func parseAITestTyp(testTyp, businessTyp string) ai_api.TestTyp {
 			return ai_api.TypASC
 		}
 
-	case TestTypeSchool:
+	case BusinessTypeSchool:
 		switch testTyp {
 		case StageRiasec:
 			return ai_api.TypRIASEC
@@ -358,7 +351,6 @@ func parseAITestTyp(testTyp, businessTyp string) ai_api.TestTyp {
 			return ai_api.TypASC
 		}
 	}
-
 	return ai_api.TypUnknown
 }
 

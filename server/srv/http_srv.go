@@ -24,7 +24,6 @@ import (
 const (
 	apiHealthy                 = "/api/health"
 	apiLoadHobbies             = "/api/hobbies"
-	apiInviteVerify            = "/api/invites/verify"
 	apiTestFlow                = "/api/test_flow"
 	apiTestBasicInfo           = "/api/tests/basic_info"
 	apiSSEQuestionSub          = "/api/sub/question/"
@@ -149,6 +148,7 @@ func (s *HttpSrv) initWeChatPay() error {
 	}
 	s.wxNotifyHandler = h
 
+	s.log.Info().Msg("init WeChat pay success")
 	return nil
 }
 
@@ -160,7 +160,6 @@ func (s *HttpSrv) initRouter() error {
 	})
 
 	mux.HandleFunc(apiLoadHobbies, s.handleHobbies)
-	mux.HandleFunc(apiInviteVerify, s.handleInviteVerify)
 	mux.HandleFunc(apiTestFlow, s.handleTestFlow)
 	mux.HandleFunc(apiTestBasicInfo, s.updateBasicInfo)
 	mux.HandleFunc(apiSSEQuestionSub, s.handleQuestionSSEEvent)

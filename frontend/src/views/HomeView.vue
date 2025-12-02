@@ -626,18 +626,6 @@
       </div>
     </section>
 
-    <InviteCodeModal
-        v-model:open="inviteModalOpen"
-        :product-name="currentPlan?.name || ''"
-        :product-price="currentPlan?.price || 0"
-        :product-desc="currentPlan?.desc || ''"
-        :pay-order="payOrder"
-        :paying="paying"
-        @pay="handleWeChatPay"
-        @success="handleInviteSuccess"
-    />
-
-
     <NewUserInfoDialog v-model:open="newUserDialogOpen"/>
   </div>
 </template>
@@ -649,28 +637,21 @@ import {useHomeView} from '@/controller/HomeView'
 
 import {useAuthStore} from '@/controller/wx_auth'
 import {useRouter} from "vue-router";
-import {TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool} from "@/controller/common";
+import {PlanInfo, PlanKey, TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool} from "@/controller/common";
 import NewUserInfoDialog from "@/views/components/NewUserInfoDialog.vue";
 
 const {
   activePlan,
-  inviteModalOpen,
   activeTab,
   tabDefs,
   openLogin,
   startTest,
   handleTabClick,
-  handleInviteSuccess,
   handleUserClick,
   isUserMenuOpen,
   userMenuWrapperRef,
   handleGoMyTests,
   handleLogout,
-  currentPlan,
-  handleWeChatPay,
-  planMap,
-  payOrder,
-  paying,
 } = useHomeView()
 
 
@@ -706,6 +687,43 @@ const scrollToStartTest = () => {
   if (!el) return
   el.scrollIntoView({behavior: 'smooth', block: 'start'})
 }
+
+const basicPlan: PlanInfo = {
+  key: TestTypeBasic,
+  name: '基础版',
+  price: 29.9,
+  desc: '组合推荐 + 学科优势评估',
+}
+
+const proPlan: PlanInfo = {
+  key: TestTypePro,
+  name: '专业版',
+  price: 49.9,
+  desc: '基础版+更加全面的参数解读',
+  tag: '推荐',
+}
+
+const advPlan: PlanInfo = {
+  key: TestTypeAdv,
+  name: '增强版',
+  price: 79.9,
+  desc: '专业版 +专业选择推荐+职业规划建议',
+}
+
+const schoolPlan: PlanInfo = {
+  key: TestTypeSchool,
+  name: '校本定制版',
+  price: 59.9,
+  desc: '结合校园真是数据，精准报告，多维对比',
+}
+
+const planMap: Record<PlanKey, PlanInfo> = {
+  [TestTypeBasic]: basicPlan,
+  [TestTypePro]: proPlan,
+  [TestTypeAdv]: advPlan,
+  [TestTypeSchool]: schoolPlan,
+}
+
 
 </script>
 

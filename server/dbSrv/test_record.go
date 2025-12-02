@@ -23,6 +23,58 @@ type TestRecord struct {
 	CompletedAt  sql.NullTime
 }
 
+func (pdb *psDatabase) QueryTestInProcess(ctx context.Context, uid, businessType string) (*TestRecord, error) {
+	log := pdb.log.With().Str("wechat_id", uid).Str("", businessType).Logger()
+	log.Debug().Msg("QueryTestInProcess")
+
+	const q = `
+        SELECT 
+            public_id,
+            business_type,
+            invite_code,
+            wechat_openid,
+            grade,
+            mode,
+            hobby,
+            status,
+            created_at,
+            completed_at
+        FROM app.tests_record
+        WHERE wechat_openid = $1
+      		AND business_type = $2
+      		AND completed_at IS NULL
+        ORDER BY created_at DESC
+        LIMIT 1
+    `
+
+	row := pdb.db.QueryRowContext(ctx, q, uid, businessType)
+
+	var rec TestRecord
+	err := row.Scan(
+		&rec.PublicId,
+		&rec.BusinessType,
+		&rec.InviteCode,
+		&rec.WeChatID,
+		&rec.Grade,
+		&rec.Mode,
+		&rec.Hobby,
+		&rec.Status,
+		&rec.CreatedAt,
+		&rec.CompletedAt,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		log.Err(err).Msg("no record")
+		return nil, nil
+	}
+	if err != nil {
+		log.Err(err).Msg("database query error")
+		return nil, err
+	}
+
+	log.Debug().Msg("find record")
+	return &rec, nil
+}
+
 func (pdb *psDatabase) QueryUnfinishedTest(
 	ctx context.Context, publicId string,
 ) (*TestRecord, error) {

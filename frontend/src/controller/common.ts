@@ -56,6 +56,14 @@ export interface UseSSEOptions {
     autoStart?: boolean
 }
 
+export interface PlanInfo {
+    key: PlanKey
+    name: string
+    price: number       // 单位元；如果你用分自己改成 number of cents
+    desc: string
+    tag?: string        // 如果某些卡片有“推荐”“热门”之类的小标签可以放这里
+}
+
 function eventToError(ev: Event, message = '[SSE] connection error'): Error {
     console.log(ev)
     const err = new Error(message)

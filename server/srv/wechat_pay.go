@@ -1,28 +1,23 @@
 package srv
 
 import (
-	"bytes"
 	"context"
-	"crypto"
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha256"
-	"crypto/x509"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
-	"io"
-	rand2 "math/rand"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/hopwesley/wenxintai/server/dbSrv"
+
+	"github.com/wechatpay-apiv3/wechatpay-go/core"
+	"github.com/wechatpay-apiv3/wechatpay-go/services/payments"
+	"github.com/wechatpay-apiv3/wechatpay-go/services/payments/native"
 )
+
+// ========================= 回调入口 =========================
 
 func (s *HttpSrv) apiWeChatPayCallBack(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -33,220 +28,122 @@ func (s *HttpSrv) apiWeChatPayCallBack(w http.ResponseWriter, r *http.Request) {
 		s.forwardCallback(w, r, s.cfg.PaymentForward)
 		return
 	}
-
 	s.processWeChatPayment(w, r)
-}
-
-type wechatPayNotifyBody struct {
-	ID           string `json:"id"`
-	CreateTime   string `json:"create_time"`
-	EventType    string `json:"event_type"`
-	ResourceType string `json:"resource_type"`
-	Summary      string `json:"summary"`
-	Resource     struct {
-		Algorithm      string `json:"algorithm"`
-		Ciphertext     string `json:"ciphertext"`
-		AssociatedData string `json:"associated_data"`
-		Nonce          string `json:"nonce"`
-		OriginalType   string `json:"original_type"`
-	} `json:"resource"`
-}
-
-// 解密后的支付通知里最关键的是 out_trade_no / trade_state / amount
-type wechatPayNotifyResource struct {
-	AppID         string `json:"appid"`
-	MchID         string `json:"mchid"`
-	OutTradeNo    string `json:"out_trade_no"`
-	TransactionID string `json:"transaction_id"`
-	TradeType     string `json:"trade_type"`
-	TradeState    string `json:"trade_state"` // SUCCESS/NOTPAY/CLOSED/REFUND...
-	Payer         struct {
-		OpenID string `json:"openid"`
-	} `json:"payer"`
-	Amount struct {
-		Total      int64 `json:"total"`
-		PayerTotal int64 `json:"payer_total"`
-	} `json:"amount"`
-	SuccessTime string `json:"success_time"`
 }
 
 func (s *HttpSrv) processWeChatPayment(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := s.log.With().Str("handler", "processWeChatPayment").Logger()
 
-	// 1) 读 body
-	bodyBytes, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if s.wxNotifyHandler == nil {
+		log.Error().Msg("wxNotifyHandler not initialized")
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
+
+	var txn payments.Transaction
+	notifyReq, err := s.wxNotifyHandler.ParseNotifyRequest(ctx, r, &txn)
 	if err != nil {
-		log.Error().Err(err).Msg("read notify body failed")
-		http.Error(w, "read body failed", http.StatusBadRequest)
-		return
-	}
-	_ = r.Body.Close()
-
-	// 2) 验签：使用微信平台证书公钥验证 HTTP 头 + body
-	if err := s.verifyWeChatNotifySignature(r.Header, bodyBytes); err != nil {
-		log.Error().Err(err).Msg("verify signature failed")
-		http.Error(w, "signature verification failed", http.StatusBadRequest)
+		log.Error().Err(err).Msg("ParseNotifyRequest failed")
+		http.Error(w, "invalid notify", http.StatusBadRequest)
 		return
 	}
 
-	// 3) 解析外层 JSON
-	var notify wechatPayNotifyBody
-	if err := json.Unmarshal(bodyBytes, &notify); err != nil {
-		log.Error().Err(err).Msg("unmarshal notify body failed")
-		http.Error(w, "bad notify body", http.StatusBadRequest)
-		return
+	outTradeNo := ""
+	if txn.OutTradeNo != nil {
+		outTradeNo = *txn.OutTradeNo
 	}
-
-	if notify.ResourceType != "encrypt-resource" {
-		log.Error().Str("type", notify.ResourceType).Msg("unexpected resource_type")
-		http.Error(w, "bad resource_type", http.StatusBadRequest)
-		return
+	tradeState := ""
+	if txn.TradeState != nil {
+		tradeState = *txn.TradeState
 	}
-
-	// 4) 解密 resource → 得到真正的订单信息
-	resource, err := s.decryptWeChatResource(&notify.Resource)
-	if err != nil {
-		log.Error().Err(err).Msg("decrypt resource failed")
-		http.Error(w, "decrypt failed", http.StatusBadRequest)
-		return
+	transactionID := ""
+	if txn.TransactionId != nil {
+		transactionID = *txn.TransactionId
 	}
 
 	log.Info().
-		Str("out_trade_no", resource.OutTradeNo).
-		Str("trade_state", resource.TradeState).
-		Str("transaction_id", resource.TransactionID).
+		Str("event_type", notifyReq.EventType).
+		Str("summary", notifyReq.Summary).
+		Str("out_trade_no", outTradeNo).
+		Str("trade_state", tradeState).
+		Str("transaction_id", transactionID).
 		Msg("wechat payment notify")
 
-	// 5) 根据 trade_state 更新本地订单
-	switch resource.TradeState {
-	case "SUCCESS":
-		if err := s.updateWeChatOrderStatus(ctx, resource.OutTradeNo, resource.TradeState, resource, bodyBytes); err != nil {
-			log.Error().Err(err).
-				Str("out_trade_no", resource.OutTradeNo).
-				Msg("updateWeChatOrderStatus failed")
-		}
-
-		// TODO：这里可以触发“开通测试权限”的业务逻辑，
-		// 比如在 app.tests_record 里写一条已付款记录，关联 wx_user + plan + session 等
-
-	case "REFUND", "CLOSED", "PAYERROR":
-		if err := s.updateWeChatOrderStatus(ctx, resource.OutTradeNo, resource.TradeState, resource, bodyBytes); err != nil {
-			log.Error().Err(err).
-				Str("out_trade_no", resource.OutTradeNo).
-				Msg("updateWeChatOrderStatus failed")
+	switch tradeState {
+	case "SUCCESS", "REFUND", "CLOSED", "PAYERROR":
+		if err := s.updateWeChatOrderStatusFromTransaction(ctx, &txn); err != nil {
+			log.Error().Err(err).Str("out_trade_no", outTradeNo).Msg("updateWeChatOrderStatus failed")
 		}
 	default:
-		// NOTPAY 等状态，按需处理
+		// NOTPAY 等状态，看你业务要不要处理
 	}
 
-	// 6) 按微信要求返回 JSON：表示已成功接收
-	type resp struct {
-		Code    string `json:"code"`
-		Message string `json:"message"`
-	}
-
-	writeJSON(w, http.StatusOK, &resp{
-		Code:    "SUCCESS",
-		Message: "成功",
+	writeJSON(w, http.StatusOK, map[string]string{
+		"code":    "SUCCESS",
+		"message": "成功",
 	})
 }
-func (s *HttpSrv) verifyWeChatNotifySignature(header http.Header, body []byte) error {
-	timestamp := header.Get("Wechatpay-Timestamp")
-	nonce := header.Get("Wechatpay-Nonce")
-	signature := header.Get("Wechatpay-Signature")
-	serial := header.Get("Wechatpay-Serial")
 
-	if timestamp == "" || nonce == "" || signature == "" || serial == "" {
-		return fmt.Errorf("missing wechatpay headers")
+func (s *HttpSrv) updateWeChatOrderStatusFromTransaction(
+	ctx context.Context,
+	t *payments.Transaction,
+) error {
+	if t == nil || t.OutTradeNo == nil {
+		return fmt.Errorf("transaction or out_trade_no nil")
 	}
 
-	// 1) 构造待验签串
-	message := timestamp + "\n" + nonce + "\n" + string(body) + "\n"
+	orderID := *t.OutTradeNo
 
-	// 2) Base64 decode 签名
-	sigBytes, err := base64.StdEncoding.DecodeString(signature)
-	if err != nil {
-		return fmt.Errorf("decode signature: %w", err)
+	tradeState := ""
+	if t.TradeState != nil {
+		tradeState = *t.TradeState
 	}
 
-	// 3) 找到对应 serial 的平台证书
-	cert := s.payment.PlatformCerts[serial]
-	if cert == nil {
-		return fmt.Errorf("unknown wechat platform cert serial: %s", serial)
+	var transID *string
+	if t.TransactionId != nil && *t.TransactionId != "" {
+		transID = t.TransactionId
 	}
 
-	pubKey, ok := cert.PublicKey.(*rsa.PublicKey)
-	if !ok {
-		return fmt.Errorf("platform cert public key is not rsa")
+	var openID *string
+	if t.Payer != nil && t.Payer.Openid != nil && *t.Payer.Openid != "" {
+		openID = t.Payer.Openid
 	}
 
-	// 4) 用平台证书公钥验签
-	hash := sha256.Sum256([]byte(message))
-	if err := rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hash[:], sigBytes); err != nil {
-		return fmt.Errorf("verify signature failed: %w", err)
+	var paidAt *time.Time
+	if tradeState == "SUCCESS" && t.SuccessTime != nil && *t.SuccessTime != "" {
+		if tt, err := time.Parse(time.RFC3339, *t.SuccessTime); err == nil {
+			paidAt = &tt
+		}
 	}
 
-	return nil
+	rawBody, _ := json.Marshal(t)
+
+	return dbSrv.Instance().UpdateWeChatOrderStatus(
+		ctx,
+		orderID,
+		tradeState,
+		transID,
+		openID,
+		paidAt,
+		rawBody,
+	)
 }
 
-func (s *HttpSrv) decryptWeChatResource(res *struct {
-	Algorithm      string `json:"algorithm"`
-	Ciphertext     string `json:"ciphertext"`
-	AssociatedData string `json:"associated_data"`
-	Nonce          string `json:"nonce"`
-	OriginalType   string `json:"original_type"`
-}) (*wechatPayNotifyResource, error) {
-	if res.Algorithm != "AEAD_AES_256_GCM" {
-		return nil, fmt.Errorf("unexpected algorithm: %s", res.Algorithm)
-	}
-
-	// 1) Base64 解码 ciphertext
-	cipherBytes, err := base64.StdEncoding.DecodeString(res.Ciphertext)
-	if err != nil {
-		return nil, fmt.Errorf("decode ciphertext: %w", err)
-	}
-
-	// 2) 用 APIv3Key 做 AES-GCM 解密
-	// apiV3Key 通常从配置加载：32 字节
-	apiV3Key := []byte(s.cfg.WeChatAPIV3Key)
-	block, err := aes.NewCipher(apiV3Key)
-	if err != nil {
-		return nil, fmt.Errorf("new cipher: %w", err)
-	}
-	aesGcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return nil, fmt.Errorf("new gcm: %w", err)
-	}
-
-	nonceBytes := []byte(res.Nonce)
-	ad := []byte(res.AssociatedData)
-
-	plain, err := aesGcm.Open(nil, nonceBytes, cipherBytes, ad)
-	if err != nil {
-		return nil, fmt.Errorf("aes gcm open: %w", err)
-	}
-
-	var result wechatPayNotifyResource
-	if err := json.Unmarshal(plain, &result); err != nil {
-		return nil, fmt.Errorf("unmarshal resource: %w", err)
-	}
-
-	return &result, nil
-}
+// ========================= 创建 Native 订单 =========================
 
 type WeChatNativeCreateReq struct {
-	BusinessType string `json:"business_type"` // e.g. "riasec_basic"
-	PlanKey      string `json:"plan_key"`      // e.g. "basic", "pro"，前端传的 TestTypeBasic 之类
+	BusinessType string `json:"business_type"`
+	PlanKey      string `json:"plan_key"`
 }
 
 type WeChatNativeCreateRes struct {
 	Ok          bool   `json:"ok"`
-	OrderID     string `json:"order_id"`              // 你自己的订单号（建议用 out_trade_no）
-	CodeURL     string `json:"code_url"`              // 微信返回，用来生成二维码
-	Amount      int64  `json:"amount"`                // 单位：分
-	Description string `json:"description"`           // 商品描述
-	ErrMessage  string `json:"err_message,omitempty"` // 失败时的错误信息
+	OrderID     string `json:"order_id"`
+	CodeURL     string `json:"code_url"`
+	Amount      int64  `json:"amount"`
+	Description string `json:"description"`
+	ErrMessage  string `json:"err_message,omitempty"`
 }
 
 func (s *HttpSrv) apiWeChatCreateNativeOrder(w http.ResponseWriter, r *http.Request) {
@@ -254,13 +151,11 @@ func (s *HttpSrv) apiWeChatCreateNativeOrder(w http.ResponseWriter, r *http.Requ
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
 	ctx := r.Context()
 	log := s.log.With().Str("handler", "apiWeChatCreateNativeOrder").Logger()
 
 	var req WeChatNativeCreateReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Error().Err(err).Msg("decode create native order req failed")
 		writeJSON(w, http.StatusBadRequest, &WeChatNativeCreateRes{
 			Ok:         false,
 			ErrMessage: "invalid request body",
@@ -278,8 +173,7 @@ func (s *HttpSrv) apiWeChatCreateNativeOrder(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// 1) 通过业务类型 + planKey 查价格 & 描述（你自己的配置）
-	amount, description, err := s.lookupWeChatPlan(ctx, req.BusinessType, req.PlanKey)
+	amount, desc, err := s.lookupWeChatPlan(req.BusinessType, req.PlanKey)
 	if err != nil {
 		log.Error().Err(err).
 			Str("business_type", req.BusinessType).
@@ -292,61 +186,70 @@ func (s *HttpSrv) apiWeChatCreateNativeOrder(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// 2) 生成商户订单号（建议全局唯一）
 	outTradeNo := s.generateOutTradeNo()
 
-	// 3) 调微信 v3 Native 下单，拿 code_url
-	codeURL, err := s.wechatCreateNativeOrder(ctx, outTradeNo, amount, description)
+	if s.wxNativeService == nil {
+		log.Error().Msg("wxNativeService not initialized")
+		writeJSON(w, http.StatusInternalServerError, &WeChatNativeCreateRes{
+			Ok:         false,
+			ErrMessage: "pay service not ready",
+		})
+		return
+	}
+
+	resp, _, err := s.wxNativeService.Prepay(ctx, native.PrepayRequest{
+		Appid:       core.String(s.payment.AppID),
+		Mchid:       core.String(s.payment.MchID),
+		Description: core.String(desc),
+		OutTradeNo:  core.String(outTradeNo),
+		NotifyUrl:   core.String(s.payment.NotifyURL),
+		Amount: &native.Amount{
+			Total:    core.Int64(amount),
+			Currency: core.String("CNY"),
+		},
+	})
 	if err != nil {
-		log.Error().Err(err).
-			Str("out_trade_no", outTradeNo).
-			Msg("wechat native create order failed")
+		log.Error().Err(err).Str("out_trade_no", outTradeNo).Msg("wechat native prepay failed")
 		writeJSON(w, http.StatusBadGateway, &WeChatNativeCreateRes{
 			Ok:         false,
 			ErrMessage: "create wechat order failed",
 		})
 		return
 	}
-
-	// 4) 落库：记录订单，初始状态 NOTPAY
-	var wxUnionID string
-	if c, err := r.Cookie("wx_user"); err == nil && c.Value != "" {
-		wxUnionID = c.Value
-	}
-
-	if err := s.saveWeChatOrder(ctx, outTradeNo, req.BusinessType, req.PlanKey, amount, description, wxUnionID); err != nil {
-		log.Error().Err(err).
-			Str("out_trade_no", outTradeNo).
-			Msg("save order failed")
+	if resp.CodeUrl == nil || *resp.CodeUrl == "" {
 		writeJSON(w, http.StatusInternalServerError, &WeChatNativeCreateRes{
 			Ok:         false,
-			ErrMessage: "save order failed",
+			ErrMessage: "empty code_url",
 		})
 		return
 	}
 
-	log.Info().
-		Str("out_trade_no", outTradeNo).
-		Str("business_type", req.BusinessType).
-		Str("plan_key", req.PlanKey).
-		Int64("amount", amount).
-		Msg("wechat native order created")
+	// 落库
+	var wxUnionID string
+	if c, err := r.Cookie("wx_user"); err == nil && c.Value != "" {
+		wxUnionID = c.Value
+	}
+	if err := s.saveWeChatOrder(ctx, outTradeNo, req.BusinessType, req.PlanKey, amount, desc, wxUnionID); err != nil {
+		log.Error().Err(err).Str("out_trade_no", outTradeNo).Msg("save order failed")
+	}
 
 	writeJSON(w, http.StatusOK, &WeChatNativeCreateRes{
 		Ok:          true,
 		OrderID:     outTradeNo,
-		CodeURL:     codeURL,
+		CodeURL:     *resp.CodeUrl,
 		Amount:      amount,
-		Description: description,
+		Description: desc,
 	})
 }
+
+// ========================= 查询订单状态 =========================
 
 type WeChatOrderStatusRes struct {
 	Ok         bool   `json:"ok"`
 	OrderID    string `json:"order_id"`
 	Paid       bool   `json:"paid"`
-	Status     string `json:"status"`                // e.g. "NOTPAY", "SUCCESS", "REFUND" ...
-	ErrMessage string `json:"err_message,omitempty"` // 如果查询失败
+	Status     string `json:"status"`
+	ErrMessage string `json:"err_message,omitempty"`
 }
 
 func (s *HttpSrv) apiWeChatOrderStatus(w http.ResponseWriter, r *http.Request) {
@@ -369,9 +272,7 @@ func (s *HttpSrv) apiWeChatOrderStatus(w http.ResponseWriter, r *http.Request) {
 
 	order, err := s.getWeChatOrder(ctx, orderID)
 	if err != nil {
-		log.Error().Err(err).
-			Str("order_id", orderID).
-			Msg("getWeChatOrder failed")
+		log.Error().Err(err).Str("order_id", orderID).Msg("getWeChatOrder failed")
 		writeJSON(w, http.StatusInternalServerError, &WeChatOrderStatusRes{
 			Ok:         false,
 			OrderID:    orderID,
@@ -388,6 +289,20 @@ func (s *HttpSrv) apiWeChatOrderStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 如果不是终态，可以调用微信侧查询最新状态（可选）
+	if order.TradeState != "SUCCESS" && order.TradeState != "REFUND" && order.TradeState != "CLOSED" {
+		if s.wxNativeService != nil {
+			tx, _, err := s.wxNativeService.QueryOrderByOutTradeNo(ctx, native.QueryOrderByOutTradeNoRequest{
+				OutTradeNo: core.String(orderID),
+				Mchid:      core.String(s.payment.MchID),
+			})
+			if err == nil && tx != nil && tx.TradeState != nil {
+				order.TradeState = *tx.TradeState
+				_ = s.updateWeChatOrderStatusFromTransaction(ctx, (*payments.Transaction)(tx))
+			}
+		}
+	}
+
 	writeJSON(w, http.StatusOK, &WeChatOrderStatusRes{
 		Ok:      true,
 		OrderID: orderID,
@@ -396,9 +311,9 @@ func (s *HttpSrv) apiWeChatOrderStatus(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// 根据业务类型 + planKey 查金额（分）和商品描述
-func (s *HttpSrv) lookupWeChatPlan(ctx context.Context, businessType, planKey string) (amount int64, desc string, err error) {
-	// 最简单：先用硬编码，后面你可以改到 DB/配置文件
+// ========================= 本地配置 / DB =========================
+
+func (s *HttpSrv) lookupWeChatPlan(businessType, planKey string) (int64, string, error) {
 	switch businessType {
 	case "riasec":
 		switch planKey {
@@ -408,12 +323,11 @@ func (s *HttpSrv) lookupWeChatPlan(ctx context.Context, businessType, planKey st
 			return 19900, "智择未来 · 专业版测评", nil
 		}
 	}
-	return 0, "", fmt.Errorf("unknown plan: business_type=%s plan_key=%s", businessType, planKey)
+	return 0, "", fmt.Errorf("unknown plan: %s/%s", businessType, planKey)
 }
 
 func (s *HttpSrv) generateOutTradeNo() string {
-	// 你可以换成更严格的生成方式（数据库自增 ID + 时间戳等）
-	return fmt.Sprintf("WXT%s%06d", time.Now().Format("20060102150405"), rand2.Intn(1000000))
+	return fmt.Sprintf("WXT%s%06d", time.Now().Format("20060102150405"), rand.Intn(1000000))
 }
 
 func (s *HttpSrv) saveWeChatOrder(
@@ -421,7 +335,7 @@ func (s *HttpSrv) saveWeChatOrder(
 	orderID, businessType, planKey string,
 	amount int64,
 	desc string,
-	wxUnionID string, // 从当前登录态里拿 wx_user
+	wxUnionID string,
 ) error {
 	po := &dbSrv.WeChatOrder{
 		OrderID:      orderID,
@@ -430,6 +344,7 @@ func (s *HttpSrv) saveWeChatOrder(
 		AmountTotal:  amount,
 		Currency:     "CNY",
 		Description:  desc,
+		TradeState:   "NOTPAY",
 	}
 	if wxUnionID != "" {
 		po.WeChatUnionID = sql.NullString{String: wxUnionID, Valid: true}
@@ -439,208 +354,4 @@ func (s *HttpSrv) saveWeChatOrder(
 
 func (s *HttpSrv) getWeChatOrder(ctx context.Context, orderID string) (*dbSrv.WeChatOrder, error) {
 	return dbSrv.Instance().FindWeChatOrderByID(ctx, orderID)
-}
-
-func (s *HttpSrv) updateWeChatOrderStatus(
-	ctx context.Context,
-	orderID string,
-	tradeState string,
-	resource *wechatPayNotifyResource,
-	rawBody []byte,
-) error {
-	var transID *string
-	var openID *string
-	var paidAt *time.Time
-
-	if resource != nil {
-		if resource.TransactionID != "" {
-			transID = &resource.TransactionID
-		}
-		if resource.Payer.OpenID != "" {
-			openID = &resource.Payer.OpenID
-		}
-		if resource.TradeState == "SUCCESS" {
-			// success_time 是 ISO8601 字符串，形如 2020-06-08T10:34:56+08:00
-			if resource.SuccessTime != "" {
-				if t, err := time.Parse(time.RFC3339, resource.SuccessTime); err == nil {
-					paidAt = &t
-				}
-			}
-		}
-	}
-
-	return dbSrv.Instance().UpdateWeChatOrderStatus(
-		ctx,
-		orderID,
-		tradeState,
-		transID,
-		openID,
-		paidAt,
-		rawBody, // 把原始回调存一下
-	)
-}
-
-// 解析商户私钥 PEM
-func (s *HttpSrv) wechatMerchantPrivateKey() (*rsa.PrivateKey, error) {
-	pemStr := s.payment.MchPrivateKeyPEM
-	block, _ := pem.Decode([]byte(pemStr))
-	if block == nil {
-		return nil, fmt.Errorf("invalid merchant private key pem")
-	}
-
-	var key any
-	var err error
-
-	if strings.Contains(block.Type, "PRIVATE KEY") {
-		key, err = x509.ParsePKCS8PrivateKey(block.Bytes)
-		if err != nil {
-			// 有些是 pkcs1
-			rsaKey, err2 := x509.ParsePKCS1PrivateKey(block.Bytes)
-			if err2 != nil {
-				return nil, fmt.Errorf("parse private key failed: %w, %v", err, err2)
-			}
-			return rsaKey, nil
-		}
-	} else {
-		return nil, fmt.Errorf("unexpected pem type: %s", block.Type)
-	}
-
-	rsaKey, ok := key.(*rsa.PrivateKey)
-	if !ok {
-		return nil, fmt.Errorf("private key is not rsa")
-	}
-	return rsaKey, nil
-}
-
-// wechatCreateNativeOrder 调用微信 v3 Native 下单，返回 code_url
-func (s *HttpSrv) wechatCreateNativeOrder(
-	ctx context.Context,
-	outTradeNo string,
-	amount int64,
-	description string,
-) (string, error) {
-	wxCfg := s.payment
-
-	// 1) 组装请求体
-	type amountReq struct {
-		Total    int64  `json:"total"`
-		Currency string `json:"currency"`
-	}
-	type nativeReq struct {
-		AppID       string    `json:"appid"`
-		MchID       string    `json:"mchid"`
-		Description string    `json:"description"`
-		OutTradeNo  string    `json:"out_trade_no"`
-		NotifyURL   string    `json:"notify_url"`
-		Amount      amountReq `json:"amount"`
-	}
-
-	reqBody := nativeReq{
-		AppID:       wxCfg.AppID,
-		MchID:       wxCfg.MchID,
-		Description: description,
-		OutTradeNo:  outTradeNo,
-		NotifyURL:   wxCfg.NotifyURL, // eg. https://xxx/api/pay/wechat/callback
-		Amount: amountReq{
-			Total:    amount,
-			Currency: "CNY",
-		},
-	}
-
-	bodyBytes, err := json.Marshal(&reqBody)
-	if err != nil {
-		return "", fmt.Errorf("marshal wechat native req: %w", err)
-	}
-
-	// 2) 生成签名相关参数
-	timestamp := fmt.Sprintf("%d", time.Now().Unix())
-	nonceStr := randomString(16) // 自己实现一个简单随机串
-
-	// v3 签名串 = HTTP方法 + "\n" + URL路径(含query) + "\n" + timestamp + "\n" + nonceStr + "\n" + body + "\n"
-	method := "POST"
-	canonicalURL := "/v3/pay/transactions/native"
-	signMessage := method + "\n" + canonicalURL + "\n" + timestamp + "\n" + nonceStr + "\n" + string(bodyBytes) + "\n"
-
-	privKey, err := s.wechatMerchantPrivateKey()
-	if err != nil {
-		return "", fmt.Errorf("get merchant private key: %w", err)
-	}
-
-	hash := sha256.Sum256([]byte(signMessage))
-	signature, err := rsa.SignPKCS1v15(rand.Reader, privKey, crypto.SHA256, hash[:])
-	if err != nil {
-		return "", fmt.Errorf("sign message: %w", err)
-	}
-
-	sigBase64 := base64.StdEncoding.EncodeToString(signature)
-
-	// 3) 组装 Authorization 头
-	// 参考格式：
-	// Authorization: WECHATPAY2-SHA256-RSA2048 mchid="...",nonce_str="...",signature="...",timestamp="...",serial_no="..."
-	authHeader := fmt.Sprintf(
-		`WECHATPAY2-SHA256-RSA2048 mchid="%s",nonce_str="%s",signature="%s",timestamp="%s",serial_no="%s"`,
-		wxCfg.MchID,
-		nonceStr,
-		sigBase64,
-		timestamp,
-		wxCfg.MchSerial,
-	)
-
-	// 4) 发起 HTTP 请求
-	url := "https://api.mch.weixin.qq.com" + canonicalURL
-	httpReq, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return "", fmt.Errorf("new http request: %w", err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json; charset=utf-8")
-	httpReq.Header.Set("Authorization", authHeader)
-	httpReq.Header.Set("Accept", "application/json")
-
-	resp, err := s.httpClient.Do(httpReq)
-	if err != nil {
-		return "", fmt.Errorf("do http request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	respBytes, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-	if err != nil {
-		return "", fmt.Errorf("read response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return "", fmt.Errorf("wechat native resp status=%d body=%s", resp.StatusCode, string(respBytes))
-	}
-
-	// 5) 解析响应，拿 code_url
-	type nativeResp struct {
-		CodeURL string `json:"code_url"`
-		// 还有别的字段用得上可以一起解析
-	}
-
-	var nr nativeResp
-	if err := json.Unmarshal(respBytes, &nr); err != nil {
-		return "", fmt.Errorf("unmarshal native resp: %w", err)
-	}
-	if nr.CodeURL == "" {
-		return "", fmt.Errorf("empty code_url in native resp")
-	}
-
-	return nr.CodeURL, nil
-}
-
-// 简单随机串
-func randomString(n int) string {
-	const letters = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	b := make([]byte, n)
-	if _, err := rand.Read(b); err != nil {
-		// fallback
-		for i := range b {
-			b[i] = letters[time.Now().UnixNano()%int64(len(letters))]
-		}
-		return string(b)
-	}
-	for i := range b {
-		b[i] = letters[int(b[i])%len(letters)]
-	}
-	return string(b)
 }

@@ -12,6 +12,14 @@ import (
 
 	"github.com/hopwesley/wenxintai/server/comm"
 	"github.com/rs/zerolog"
+
+	"github.com/wechatpay-apiv3/wechatpay-go/core"
+	"github.com/wechatpay-apiv3/wechatpay-go/core/auth/verifiers"
+	"github.com/wechatpay-apiv3/wechatpay-go/core/downloader"
+	"github.com/wechatpay-apiv3/wechatpay-go/core/notify"
+	"github.com/wechatpay-apiv3/wechatpay-go/core/option"
+	"github.com/wechatpay-apiv3/wechatpay-go/services/payments/native"
+	"github.com/wechatpay-apiv3/wechatpay-go/utils"
 )
 
 const (
@@ -46,6 +54,10 @@ type HttpSrv struct {
 	payment    *WeChatPayConfig
 	srv        *http.Server
 	httpClient *http.Client
+
+	wxClient        *core.Client
+	wxNativeService *native.NativeApiService
+	wxNotifyHandler *notify.Handler
 }
 
 func Instance() *HttpSrv {
@@ -66,6 +78,12 @@ func newBusinessService() *HttpSrv {
 func (s *HttpSrv) Init(cfg *Config, payment *WeChatPayConfig) error {
 	s.cfg = cfg
 	s.payment = payment
+
+	if err := s.initWeChatPay(); err != nil {
+		s.log.Err(err).Msg("init wechat pay failed")
+		return err
+	}
+
 	if err := s.initHobbies(); err != nil {
 		s.log.Err(err).Msg("init hobbies failed")
 		return err
@@ -89,6 +107,41 @@ func (s *HttpSrv) Init(cfg *Config, payment *WeChatPayConfig) error {
 	return nil
 }
 
+func (s *HttpSrv) initWeChatPay() error {
+	ctx := context.Background()
+
+	privKey, err := utils.LoadPrivateKey(s.payment.MchPrivateKeyPEM)
+	if err != nil {
+		return err
+	}
+
+	client, err := core.NewClient(ctx,
+		option.WithWechatPayAutoAuthCipher(
+			s.payment.MchID,
+			s.payment.MchSerial,
+			privKey,
+			s.payment.APIV3Key,
+		),
+	)
+	if err != nil {
+		return err
+	}
+	s.wxClient = client
+	s.wxNativeService = &native.NativeApiService{Client: client}
+
+	// 用 downloader 的证书访问器初始化 notify.Handler
+	certVisitor := downloader.MgrInstance().GetCertificateVisitor(s.payment.MchID)
+	handler, err := notify.NewRSANotifyHandler(
+		s.payment.APIV3Key,
+		verifiers.NewSHA256WithRSAVerifier(certVisitor),
+	)
+	if err != nil {
+		return fmt.Errorf("new rsa notify handler failed: %w", err)
+	}
+	s.wxNotifyHandler = handler
+	return nil
+}
+
 func (s *HttpSrv) initRouter() error {
 	mux := http.NewServeMux()
 
@@ -105,14 +158,16 @@ func (s *HttpSrv) initRouter() error {
 	mux.HandleFunc(apiSubmitTest, s.handleTestSubmit)
 	mux.HandleFunc(apiGenerateReport, s.handleTestReport)
 	mux.HandleFunc(apiFinishReport, s.finishReport)
+
 	mux.HandleFunc(apiWeChatSignIn, s.wechatSignStatus)
 	mux.HandleFunc(apiWeChatSignInCallBack, s.wechatSignInCallBack)
 	mux.HandleFunc(apiWeChatLogOut, s.wechatLogout)
 	mux.HandleFunc(apiWeChatUpdateProfile, s.apiWeChatUpdateProfile)
 	mux.HandleFunc(apiWeChatMyProfile, s.apiWeChatMyProfile)
+
 	mux.HandleFunc(apiWeChatPayment, s.apiWeChatPayCallBack)
 	mux.HandleFunc(apiWeChatCreateNativeOrder, s.apiWeChatCreateNativeOrder)
-	mux.HandleFunc(apiWeChatNativeOrderStatus, s.apiWeChatPayCallBack)
+	mux.HandleFunc(apiWeChatNativeOrderStatus, s.apiWeChatOrderStatus)
 
 	//if err := s.registerSpaStatic(mux); err != nil {
 	//	return err

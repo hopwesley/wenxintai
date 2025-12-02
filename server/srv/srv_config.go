@@ -4,7 +4,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"os"
 )
 
 type Config struct {
@@ -21,23 +20,32 @@ type Config struct {
 }
 
 type WeChatPayConfig struct {
-	MchID            string // 商户号
-	AppID            string // 公众号/网站对应的 appid
-	APIV3Key         string // v3 密钥（32 字节）
-	MchSerial        string // 商户证书序列号
-	MchPrivateKeyPEM string // 商户私钥 PEM（pkcs1 或 pkcs8）
-
-	// 平台证书：key 为 serial 号，值为证书对象，用于验签
-	PlatformCerts map[string]*x509.Certificate
-
-	NotifyURL string // 支付结果通知地址：https://你的域名/api/pay/wechat/callback
+	MchID            string `json:"mch_id"`              // 商户号
+	AppID            string `json:"app_id"`              // 公众号/小程序 AppID
+	APIV3Key         string `json:"apiv_3_key"`          // API v3 密钥（32 字节）
+	MchSerial        string `json:"mch_serial"`          // 商户证书序列号
+	MchPrivateKeyPEM string `json:"mch_private_key_pem"` // 商户私钥 PEM（pkcs1/pkcs8 均可）
+	NotifyURL        string `json:"notify_url"`          // 回调地址：https://xxx/api/pay/wechat/callback
 }
 
 func (c *WeChatPayConfig) Validate() error {
-
-	wxPlatformCert, _ := loadWeChatPlatformCert(os.Getenv("WX_PLATFORM_CERT_PEM"))
-	c.PlatformCerts = map[string]*x509.Certificate{
-		"微信平台证书序列号": wxPlatformCert,
+	if c.MchID == "" {
+		return fmt.Errorf("wechat pay: mch_id empty")
+	}
+	if c.AppID == "" {
+		return fmt.Errorf("wechat pay: app_id empty")
+	}
+	if len(c.APIV3Key) != 32 {
+		return fmt.Errorf("wechat pay: apiv_3_key must be 32 bytes")
+	}
+	if c.MchSerial == "" {
+		return fmt.Errorf("wechat pay: mch_serial empty")
+	}
+	if c.MchPrivateKeyPEM == "" {
+		return fmt.Errorf("wechat pay: mch_private_key_pem empty")
+	}
+	if c.NotifyURL == "" {
+		return fmt.Errorf("wechat pay: notify_url empty")
 	}
 	return nil
 }

@@ -3,7 +3,12 @@
     <section class="hero">
       <div class="site-header">
         <div class="header-container">
-          <div class="logo-dot" aria-label="问心台">
+          <div style="display: flex; justify-content: center;">
+            <div class="logo-dot" aria-label="问心台">
+            </div>
+            <h2 style="font-weight: 600;font-size: 20px;color: var(--brand)">智择未来</h2>
+            <p style="font-weight: 400;font-size: 14px;color: var(--text-third)">新高考AI选科智能决策系统</p>
+
           </div>
           <nav class="main-nav-tabs">
             <button

@@ -243,10 +243,13 @@ a {
 
 /* ========== 顶部 Header：左 logo 圆点 + 右 登录 ========== */
 .site-header {
-    background-color: rgba(255, 255, 255, 0.4);
+    background-color: rgba(255, 255, 255, 0.7);
     padding: 12px;
-    position: relative;
-    z-index: 20;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
 }
 
 .header-container {

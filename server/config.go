@@ -18,6 +18,9 @@ type appConfig struct {
 	PaymentCfg *srv.WeChatPayConfig `json:"payment_cfg"`
 	Database   *dbSrv.PSDBConfig    `json:"database"`
 	AIApi      *ai_api.Cfg          `json:"ai_api"`
+
+	MchPrivateKeyFile   string `json:"mch_private_key_file"`
+	WechatPayPubKeyFile string `json:"wechatpay_public_key_file"`
 }
 
 // 根据 env 选择不同的配置文件名：
@@ -62,6 +65,8 @@ func loadAppConfig(env string) (*appConfig, error) {
 		return nil, err
 	}
 
+	configDir := filepath.Dir(path)
+
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -80,7 +85,7 @@ func loadAppConfig(env string) (*appConfig, error) {
 		return nil, err
 	}
 
-	if err := cfg.PaymentCfg.Validate(); err != nil {
+	if err := cfg.PaymentCfg.Validate(configDir, cfg.WechatPayPubKeyFile, cfg.MchPrivateKeyFile); err != nil {
 		return nil, err
 	}
 

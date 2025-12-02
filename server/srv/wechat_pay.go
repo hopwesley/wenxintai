@@ -31,6 +31,13 @@ func (s *HttpSrv) apiWeChatPayCallBack(w http.ResponseWriter, r *http.Request) {
 	s.processWeChatPayment(w, r)
 }
 
+func safeStr(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}
+
 func (s *HttpSrv) processWeChatPayment(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := s.log.With().Str("handler", "processWeChatPayment").Logger()
@@ -41,38 +48,28 @@ func (s *HttpSrv) processWeChatPayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var txn payments.Transaction
-	notifyReq, err := s.wxNotifyHandler.ParseNotifyRequest(ctx, r, &txn)
+	tx := new(payments.Transaction)
+	notifyReq, err := s.wxNotifyHandler.ParseNotifyRequest(ctx, r, tx)
 	if err != nil {
-		log.Error().Err(err).Msg("ParseNotifyRequest failed")
+		log.Error().Err(err).Msg("parse notify failed")
 		http.Error(w, "invalid notify", http.StatusBadRequest)
 		return
 	}
 
-	outTradeNo := ""
-	if txn.OutTradeNo != nil {
-		outTradeNo = *txn.OutTradeNo
-	}
-	tradeState := ""
-	if txn.TradeState != nil {
-		tradeState = *txn.TradeState
-	}
-	transactionID := ""
-	if txn.TransactionId != nil {
-		transactionID = *txn.TransactionId
-	}
+	outTradeNo := safeStr(tx.OutTradeNo)
+	tradeState := safeStr(tx.TradeState)
 
 	log.Info().
 		Str("event_type", notifyReq.EventType).
 		Str("summary", notifyReq.Summary).
 		Str("out_trade_no", outTradeNo).
 		Str("trade_state", tradeState).
-		Str("transaction_id", transactionID).
+		Str("transaction_id", safeStr(tx.TransactionId)).
 		Msg("wechat payment notify")
 
 	switch tradeState {
 	case "SUCCESS", "REFUND", "CLOSED", "PAYERROR":
-		if err := s.updateWeChatOrderStatusFromTransaction(ctx, &txn); err != nil {
+		if err := s.updateWeChatOrderStatusFromTransaction(ctx, tx); err != nil {
 			log.Error().Err(err).Str("out_trade_no", outTradeNo).Msg("updateWeChatOrderStatus failed")
 		}
 	default:

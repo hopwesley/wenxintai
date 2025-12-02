@@ -4,6 +4,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"os"
+	"path/filepath"
 )
 
 type Config struct {
@@ -20,15 +22,43 @@ type Config struct {
 }
 
 type WeChatPayConfig struct {
-	MchID            string `json:"mch_id"`              // 商户号
-	AppID            string `json:"app_id"`              // 公众号/小程序 AppID
-	APIV3Key         string `json:"apiv_3_key"`          // API v3 密钥（32 字节）
-	MchSerial        string `json:"mch_serial"`          // 商户证书序列号
-	MchPrivateKeyPEM string `json:"mch_private_key_pem"` // 商户私钥 PEM（pkcs1/pkcs8 均可）
-	NotifyURL        string `json:"notify_url"`          // 回调地址：https://xxx/api/pay/wechat/callback
+	MchID       string `json:"mch_id"`        // 商户号
+	AppID       string `json:"app_id"`        // 公众号/小程序 AppID
+	APIV3Key    string `json:"apiv_3_key"`    // API v3 密钥（32 字节）
+	MchSerial   string `json:"mch_serial"`    // 商户证书序列号
+	PublicKeyID string `json:"public_key_id"` // 你截图里的 PUB_KEY_ID_...
+	NotifyURL   string `json:"notify_url"`    // 回调地址：https://xxx/api/pay/wechat/callback
+
+	privateKeyPEM string
+	publicKeyPEM  string
 }
 
-func (c *WeChatPayConfig) Validate() error {
+func (c *WeChatPayConfig) Validate(configDir, WechatPayPubKeyFile, MchPrivateKeyFile string) error {
+
+	// --------------------------
+	// 1. 读取商户私钥 PEM（apiclient_key.pem）
+	// --------------------------
+	if MchPrivateKeyFile != "" {
+		fullPath := filepath.Join(configDir, MchPrivateKeyFile)
+		keyBytes, err := os.ReadFile(fullPath)
+		if err != nil {
+			return fmt.Errorf("读取商户私钥文件失败: %s, %w", fullPath, err)
+		}
+		c.privateKeyPEM = string(keyBytes)
+	}
+
+	// --------------------------
+	// 2. 读取微信支付公钥 PEM（wechatpay_public.pem）
+	// --------------------------
+	if WechatPayPubKeyFile != "" {
+		fullPath := filepath.Join(configDir, WechatPayPubKeyFile)
+		pubBytes, err := os.ReadFile(fullPath)
+		if err != nil {
+			return fmt.Errorf("读取微信支付公钥文件失败: %s, %w", fullPath, err)
+		}
+		c.publicKeyPEM = string(pubBytes)
+	}
+
 	if c.MchID == "" {
 		return fmt.Errorf("wechat pay: mch_id empty")
 	}
@@ -41,12 +71,13 @@ func (c *WeChatPayConfig) Validate() error {
 	if c.MchSerial == "" {
 		return fmt.Errorf("wechat pay: mch_serial empty")
 	}
-	if c.MchPrivateKeyPEM == "" {
+	if c.privateKeyPEM == "" {
 		return fmt.Errorf("wechat pay: mch_private_key_pem empty")
 	}
 	if c.NotifyURL == "" {
 		return fmt.Errorf("wechat pay: notify_url empty")
 	}
+
 	return nil
 }
 

@@ -15,7 +15,6 @@ import (
 
 	"github.com/wechatpay-apiv3/wechatpay-go/core"
 	"github.com/wechatpay-apiv3/wechatpay-go/core/auth/verifiers"
-	"github.com/wechatpay-apiv3/wechatpay-go/core/downloader"
 	"github.com/wechatpay-apiv3/wechatpay-go/core/notify"
 	"github.com/wechatpay-apiv3/wechatpay-go/core/option"
 	"github.com/wechatpay-apiv3/wechatpay-go/services/payments/native"
@@ -106,39 +105,50 @@ func (s *HttpSrv) Init(cfg *Config, payment *WeChatPayConfig) error {
 
 	return nil
 }
-
 func (s *HttpSrv) initWeChatPay() error {
 	ctx := context.Background()
 
-	privKey, err := utils.LoadPrivateKey(s.payment.MchPrivateKeyPEM)
+	// 商户私钥（apiclient_key.pem）
+	mchPrivateKey, err := utils.LoadPrivateKey(s.payment.privateKeyPEM)
 	if err != nil {
-		return err
+		return fmt.Errorf("load merchant private key failed: %w", err)
 	}
 
-	client, err := core.NewClient(ctx,
-		option.WithWechatPayAutoAuthCipher(
+	// 微信支付公钥（pub_key.pem）
+	wechatPayPubKey, err := utils.LoadPublicKey(s.payment.publicKeyPEM)
+	if err != nil {
+		return fmt.Errorf("load wechatpay public key failed: %w", err)
+	}
+
+	opts := []core.ClientOption{
+		option.WithWechatPayPublicKeyAuthCipher(
 			s.payment.MchID,
 			s.payment.MchSerial,
-			privKey,
-			s.payment.APIV3Key,
+			mchPrivateKey,
+			s.payment.PublicKeyID,
+			wechatPayPubKey,
 		),
-	)
+	}
+
+	client, err := core.NewClient(ctx, opts...)
 	if err != nil {
-		return err
+		return fmt.Errorf("new wechat pay client failed: %w", err)
 	}
 	s.wxClient = client
 	s.wxNativeService = &native.NativeApiService{Client: client}
 
-	// 用 downloader 的证书访问器初始化 notify.Handler
-	certVisitor := downloader.MgrInstance().GetCertificateVisitor(s.payment.MchID)
-	handler, err := notify.NewRSANotifyHandler(
+	h, err := notify.NewRSANotifyHandler(
 		s.payment.APIV3Key,
-		verifiers.NewSHA256WithRSAVerifier(certVisitor),
+		verifiers.NewSHA256WithRSAPubkeyVerifier(
+			s.payment.PublicKeyID,
+			*wechatPayPubKey,
+		),
 	)
 	if err != nil {
 		return fmt.Errorf("new rsa notify handler failed: %w", err)
 	}
-	s.wxNotifyHandler = handler
+	s.wxNotifyHandler = h
+
 	return nil
 }
 

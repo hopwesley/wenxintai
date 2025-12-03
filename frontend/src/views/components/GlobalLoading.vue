@@ -26,7 +26,7 @@ const {visible, message} = useGlobalLoading()
 .global-loading-overlay {
   position: fixed;
   inset: 0;
-  z-index: 2100;
+  z-index: 2300;
   display: flex;
   align-items: center;
   justify-content: center;

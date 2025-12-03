@@ -215,7 +215,7 @@ func (pdb *psDatabase) FinalizedTest(ctx context.Context, publicID string, busin
 			updated_at   = now()
 		WHERE public_id = $1
 		  AND business_type = $2
-		RETURNING invite_code, wechat_openid
+		RETURNING pay_order_id, wechat_openid
 	`
 
 	const incReportNoSQL = `
@@ -224,14 +224,6 @@ func (pdb *psDatabase) FinalizedTest(ctx context.Context, publicID string, busin
 			report_no  = COALESCE(report_no, 0) + 1,
 			updated_at = now()
 		WHERE uid = $1
-	`
-
-	const markInviteUsedSQL = `
-		UPDATE app.invites
-		SET 
-			status = 2,
-			used_at = now()
-		WHERE code = $1
 	`
 
 	const updateReportSQL = `
@@ -246,7 +238,6 @@ func (pdb *psDatabase) FinalizedTest(ctx context.Context, publicID string, busin
 		var inviteCode sql.NullString
 		var wechatOpenID sql.NullString
 
-		// 1) 更新 tests_record.completed_at 并拿到 invite_code / wechat_openid
 		if err := tx.QueryRowContext(
 			ctx,
 			updateRecordSQL,
@@ -275,20 +266,6 @@ func (pdb *psDatabase) FinalizedTest(ctx context.Context, publicID string, busin
 				log.Warn().
 					Str("wechat_openid", wechatOpenID.String).
 					Msg("FinalizedTest: no user_profile row updated")
-			}
-		} else if inviteCode.Valid && inviteCode.String != "" {
-			// 2') 否则，如果 wechat_openid 为空但 invite_code 有值，则标记邀请码已使用
-			res, err := tx.ExecContext(ctx, markInviteUsedSQL, inviteCode.String)
-			if err != nil {
-				log.Err(err).
-					Str("invite_code", inviteCode.String).
-					Msg("FinalizedTest: update invites failed")
-				return err
-			}
-			if rows, _ := res.RowsAffected(); rows == 0 {
-				log.Warn().
-					Str("invite_code", inviteCode.String).
-					Msg("FinalizedTest: no invites row updated")
 			}
 		}
 

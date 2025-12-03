@@ -12,7 +12,7 @@ import (
 )
 
 type tesReportRequest struct {
-	TestPublicID string `json:"public_id"`
+	PublicID     string `json:"public_id"`
 	BusinessType string `json:"business_type"`
 }
 
@@ -20,7 +20,7 @@ func (req *tesReportRequest) parseObj(r *http.Request) *ApiErr {
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		return ApiInvalidReq("invalid request body", err)
 	}
-	if !IsValidPublicID(req.TestPublicID) {
+	if !IsValidPublicID(req.PublicID) {
 		return ApiInvalidReq("无效的问卷编号", nil)
 	}
 	if len(req.BusinessType) == 0 {
@@ -121,7 +121,7 @@ type CombinedReport struct {
 	*ai_api.EngineResult
 }
 
-func (s *HttpSrv) handleTestReport(w http.ResponseWriter, r *http.Request) {
+func (s *HttpSrv) generateReport(w http.ResponseWriter, r *http.Request) {
 
 	var req tesReportRequest
 	err := req.parseObj(r)
@@ -133,18 +133,24 @@ func (s *HttpSrv) handleTestReport(w http.ResponseWriter, r *http.Request) {
 
 	sLog := s.log.With().
 		Str("business_type", req.BusinessType).
-		Str("public_id", req.TestPublicID).Logger()
+		Str("public_id", req.PublicID).Logger()
 
 	ctx := r.Context()
 
-	record, cErr := s.checkTestSequence(ctx, req.TestPublicID, StageReport)
+	record, cErr := dbSrv.Instance().QueryRecordById(ctx, req.PublicID)
 	if cErr != nil {
-		sLog.Err(cErr).Msg("invalid test sequence request")
-		writeError(w, ApiInvalidTestSequence(cErr))
+		sLog.Err(cErr).Msg("no record found ")
+		writeError(w, ApiInvalidNoTestRecord(cErr))
 		return
 	}
 
-	sessions, dbErr := dbSrv.Instance().FindQASessionsForReport(ctx, req.TestPublicID)
+	if !record.PayOrderId.Valid || !record.PaidTime.Valid {
+		sLog.Error().Msg(" record is not paid")
+		writeError(w, ApiInternalErr("问卷尚未支付，请先支付再生产报告", cErr))
+		return
+	}
+
+	sessions, dbErr := dbSrv.Instance().FindQASessionsForReport(ctx, req.PublicID)
 	if dbErr != nil || len(sessions) == 0 {
 		sLog.Err(dbErr).Msg("FindQASessionsForReport failed")
 		writeError(w, ApiInternalErr("未找到问卷测试的题目与答案", dbErr))
@@ -216,7 +222,7 @@ func (s *HttpSrv) handleTestReport(w http.ResponseWriter, r *http.Request) {
 		aiParamForMode, _ = json.Marshal(resp.Recommend312)
 	}
 
-	dbErr = dbSrv.Instance().SaveTestReportCore(ctx, req.TestPublicID, record.Mode.String, commonScore, aiParamForMode)
+	dbErr = dbSrv.Instance().SaveTestReportCore(ctx, req.PublicID, record.Mode.String, commonScore, aiParamForMode)
 	if dbErr != nil {
 		sLog.Err(dbErr).Msg("failed to save report param")
 		writeError(w, ApiInternalErr("保存 AI 报告需要的参数失败", dbErr))
@@ -224,11 +230,15 @@ func (s *HttpSrv) handleTestReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sLog.Info().Msg("build param of report success")
+	user, pDBErr := dbSrv.Instance().FindUserProfileByUid(ctx, record.WeChatID.String)
+	if pDBErr != nil || user == nil {
+		sLog.Err(pDBErr).Msg("failed to find user profile")
+		writeError(w, ApiInternalErr("查找用户基本信息失败", pDBErr))
+		return
+	}
 
 	combinedResult := &CombinedReport{
-		UserProfile: &dbSrv.UserProfile{
-			Uid: record.InviteCode.String,
-		},
+		UserProfile:  user,
 		Mode:         record.Mode.String,
 		GeneratedAt:  time.Now(),
 		EngineResult: resp,
@@ -251,11 +261,11 @@ func (s *HttpSrv) finishReport(w http.ResponseWriter, r *http.Request) {
 
 	sLog := s.log.With().
 		Str("business_type", req.BusinessType).
-		Str("public_id", req.TestPublicID).Logger()
+		Str("public_id", req.PublicID).Logger()
 
 	ctx := r.Context()
 
-	var dbErr = dbSrv.Instance().FinalizedTest(ctx, req.TestPublicID, req.BusinessType)
+	var dbErr = dbSrv.Instance().FinalizedTest(ctx, req.PublicID, req.BusinessType)
 	if dbErr != nil {
 		sLog.Err(dbErr).Msg("failed to finalized test")
 		writeError(w, ApiInternalErr("保存 AI 报告需要的参数失败", dbErr))

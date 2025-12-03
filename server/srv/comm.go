@@ -209,8 +209,6 @@ func parseStatusToRoute(status int, routes []string) (string, int) {
 	}
 }
 
-// TODO::check this method again
-
 func (s *HttpSrv) checkTestSequence(ctx context.Context, publicID, testType string) (*dbSrv.TestRecord, error) {
 	record, dbErr := dbSrv.Instance().QueryUnfinishedTest(ctx, publicID)
 	if dbErr != nil {

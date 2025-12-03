@@ -1,9 +1,9 @@
-import {apiRequest} from "@/api";
-import {ref} from "vue";
-
-export async function verifyInviteWithMessage(rawCode: string){
-}
-
+// src/controller/useNativePayment.ts
+import {computed, ref} from 'vue'
+import {API_PATHS, apiRequest} from '@/api'
+import {router} from "@/controller/router_index";
+import {useAlert} from "@/controller/useAlert";
+import {useGlobalLoading} from "@/controller/useGlobalLoading";
 
 export interface NativeCreateOrderResponse {
     order_id: string
@@ -12,38 +12,50 @@ export interface NativeCreateOrderResponse {
     description: string
 }
 
-
-// 轮询支付状态的结果结构（根据你后端约定来定）
 export interface QueryOrderStatusResponse {
     paid: boolean
 }
 
-export async function queryOrderStatus(orderId: string): Promise<QueryOrderStatusResponse> {
-    return apiRequest<QueryOrderStatusResponse>(`/api/pay/wechat/order-status?order_id=${encodeURIComponent(orderId)}`)
+interface UseNativePaymentOptions {
+    onSuccess: () => void
+    onClose: () => void
+    publicID: string
 }
 
-
-export function useNativePayment() {
-    const paying = ref(false)              // 点击“微信支付”后，按钮 loading
-    const payOrder = ref<NativeCreateOrderResponse | null>(null)  // 当前订单信息（包括 code_url）
-    const payPollingTimer = ref<number | null>(null)              // 轮询定时器 id
+export function useNativePayment(opts: UseNativePaymentOptions) {
+    const paying = ref(false)
+    const payOrder = ref<NativeCreateOrderResponse | null>(null)
+    const payPollingTimer = ref<number | null>(null)
     const paySucceeded = ref(false)
+    const payLoading = ref(false)
+
+    const code = ref('')
+    const inviteLoading = ref(false)
+    const errorMessage = ref('')
+    const inputRef = ref<HTMLInputElement | null>(null)
+    const trimmedCode = computed(() => code.value.trim())
+    const {showAlert} = useAlert()
+    const {showLoading, hideLoading} = useGlobalLoading()
+
+    async function queryOrderStatus(orderId: string): Promise<QueryOrderStatusResponse> {
+        return apiRequest<QueryOrderStatusResponse>(
+            `/api/pay/wechat/order-status?order_id=${encodeURIComponent(orderId)}`
+        )
+    }
 
     function startPayPolling(orderId: string) {
-        stopPayPolling() // 防止重复
+        stopPayPolling()
 
-        // 每 2 秒查一次支付状态，视情况调节
         payPollingTimer.value = window.setInterval(async () => {
             try {
                 const status = await queryOrderStatus(orderId)
                 if (status.paid) {
                     paySucceeded.value = true
                     stopPayPolling()
-                    // TODO: 在这里触发你原来进入测试的逻辑
+                    opts.onSuccess()
                 }
             } catch (err) {
                 console.error('[Pay] queryOrderStatus error', err)
-                // 轮询失败可以先不打断，下次继续查
             }
         }, 2000)
     }
@@ -55,8 +67,100 @@ export function useNativePayment() {
         }
     }
 
+    function resetAll() {
+        code.value = ''
+        inviteLoading.value = false
+        payLoading.value = false
+        errorMessage.value = ''
+        paying.value = false
+        payOrder.value = null
+        paySucceeded.value = false
+    }
+
+    // 点击微信支付
+    async function handleWeChatPayClick() {
+        if (paying.value) return
+        if (!opts.publicID) {
+            console.warn('No product when trying to pay')
+            return
+        }
+
+        try {
+            paying.value = true
+            const res = await apiRequest<NativeCreateOrderResponse>('/api/pay/wechat/native-create', {
+                method: 'POST',
+                body: {
+                    public_id: opts.publicID
+                },
+            })
+
+            payOrder.value = res
+            startPayPolling(res.order_id)
+        } catch (e) {
+            console.error('[Pay] create native order error', e)
+        } finally {
+            paying.value = false
+        }
+    }
+
+    async function handleInviteConfirm() {
+        if (inviteLoading.value) return
+
+        inviteLoading.value = true
+        errorMessage.value = ''
+        try {
+            const trimmed = code.value.trim()
+            await verifyInviteWithMessage(trimmed)
+            opts.onSuccess()
+        } catch (e) {
+            errorMessage.value = e instanceof Error ? e.message : String(e)
+            inputRef.value?.focus()
+            return
+        } finally {
+            inviteLoading.value = false
+        }
+    }
+
+    async function verifyInviteWithMessage(rawCode: string) {
+        await apiRequest(API_PATHS.INVITE_PAYMENT, {
+            method: 'POST',
+            body: {
+                invite_code: rawCode,
+                public_id: opts.publicID,
+            },
+        })
+    }
+
+
+    function handleCancel() {
+        showAlert('您确定放弃本次测试报告吗？', () => {
+            showLoading('结束报告')
+            router
+                .replace('/')
+                .then(() => {
+                    opts.onClose()
+                })
+                .finally(() => {
+                    hideLoading()
+                })
+        })
+    }
+
     return {
-        payOrder,
+        // 状态
         paying,
+        payOrder,
+        payLoading,
+        code,
+        trimmedCode,
+        inviteLoading,
+        errorMessage,
+        inputRef,
+        // 方法
+        handleWeChatPayClick,
+        handleInviteConfirm,
+        resetAll,
+        stopPayPolling,
+        handleCancel,
     }
 }

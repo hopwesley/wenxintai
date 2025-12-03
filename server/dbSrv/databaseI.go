@@ -18,9 +18,12 @@ type DbService interface {
 	PlanByKey(ctx context.Context, key string) (*TestPlan, error)
 
 	GetInviteByCode(ctx context.Context, code string) (*Invite, error)
+
 	QueryTestInProcess(ctx context.Context, uid, businessType string) (*TestRecord, error)
 	QueryUnfinishedTest(ctx context.Context, publicId string) (*TestRecord, error)
 	NewTestRecord(ctx context.Context, businessType string, weChatId string) (string, error)
+	QueryRecordById(ctx context.Context, publicID string) (*TestRecord, error)
+
 	UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string, status int) (string, error)
 	QueryBasicInfo(ctx context.Context, publicId string) (*ai_api.BasicInfo, error)
 
@@ -50,4 +53,5 @@ type DbService interface {
 		notifyRaw []byte,
 	) error
 	InsertWeChatOrder(ctx context.Context, d *WeChatOrder) error
+	PayByInviteCode(ctx context.Context, publicId string, inviteCode string) error
 }

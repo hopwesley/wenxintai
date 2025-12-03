@@ -43,6 +43,7 @@ const (
 	apiWeChatUpdateProfile  = "/api/user/update_profile"
 	apiWeChatMyProfile      = "/api/auth/profile"
 
+	apiInvitePayment           = "/api/pay/use_invite"
 	apiWeChatPayment           = "/api/pay/"
 	apiWeChatCreateNativeOrder = "/api/pay/wechat/native/create"
 	apiWeChatNativeOrderStatus = "/api/pay/wechat/order-status"
@@ -186,11 +187,13 @@ func (s *HttpSrv) initRouter() error {
 		{apiTestFlow, http.MethodPost, s.handleTestFlow, true},
 		{apiTestBasicInfo, http.MethodPost, s.updateBasicInfo, true},
 
+		{apiInvitePayment, http.MethodPost, s.apiPayByInvite, false},
+
 		{apiSSEQuestionSub, http.MethodGet, s.handleQuestionSSEEvent, true},
 		{apiSubmitTest, http.MethodPost, s.handleTestSubmit, true},
 
 		{apiSSEReportSub, http.MethodGet, s.handleReportSSEEvent, true},
-		{apiGenerateReport, http.MethodPost, s.handleTestReport, true},
+		{apiGenerateReport, http.MethodPost, s.generateReport, true},
 		{apiFinishReport, http.MethodPost, s.finishReport, true},
 
 		{apiWeChatUpdateProfile, http.MethodPost, s.apiWeChatUpdateProfile, true},

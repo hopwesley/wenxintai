@@ -31,11 +31,12 @@ func (s *HttpSrv) handleHobbies(w http.ResponseWriter, _ *http.Request) {
 }
 
 type PlanInfoDTO struct {
-	Key   string  `json:"key"`
-	Name  string  `json:"name"`
-	Price float64 `json:"price"`
-	Desc  string  `json:"desc"`
-	Tag   *string `json:"tag,omitempty"`
+	Key     string  `json:"key"`
+	Name    string  `json:"name"`
+	Price   float64 `json:"price"`
+	Desc    string  `json:"desc"`
+	Tag     *string `json:"tag,omitempty"`
+	HasPaid bool    `json:"has_paid"`
 }
 
 func (s *HttpSrv) handleProducts(w http.ResponseWriter, r *http.Request) {
@@ -83,6 +84,28 @@ func (s *HttpSrv) handleCurrentProduct(w http.ResponseWriter, r *http.Request) {
 		sLog.Err(planErr).Msg("failed find product price info")
 		writeError(w, ApiInternalErr("查询产品价格信息失败", planErr))
 		return
+	}
+
+	record, dbError := dbSrv.Instance().QueryRecordById(ctx, req.PublicId)
+	if dbError != nil {
+		sLog.Err(dbError).Msg("failed find test record")
+		writeError(w, ApiInternalErr("查询问卷状态失败", planErr))
+		return
+	}
+
+	item := PlanInfoDTO{
+		Key:   plan.PlanKey,
+		Name:  plan.Name,
+		Price: plan.Price,
+		Desc:  plan.Description,
+	}
+	if plan.Tag.Valid {
+		tag := plan.Tag.String
+		item.Tag = &tag
+	}
+
+	if record.PayOrderId.Valid && record.PaidTime.Valid {
+		item.HasPaid = true
 	}
 
 	writeJSON(w, http.StatusOK, plan)

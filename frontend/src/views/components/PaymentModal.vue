@@ -82,16 +82,14 @@
 
 
 <script setup lang="ts">
-import {computed, nextTick, ref, watch} from 'vue'
-import {verifyInviteWithMessage} from '@/controller/PaymentModal'
-import {NativeCreateOrderResponse} from "@/controller/PaymentModal";
-import {PlanInfo} from "@/controller/common";
-import {useAlert} from "@/controller/useAlert";
-
+import {computed, nextTick, onUnmounted, watch} from 'vue'
+import {PlanInfo} from '@/controller/common'
+import {useNativePayment} from '@/controller/PaymentModal' // 路径按你项目调整
 
 const props = defineProps<{
   open: boolean
   product: PlanInfo | null
+  publicId: string
 }>()
 
 const emit = defineEmits<{
@@ -99,72 +97,52 @@ const emit = defineEmits<{
   (e: 'success'): void
 }>()
 
-function handleWeChatPayClick() {
-}
 
-// 邀请码相关状态
-const code = ref('')
-const inviteLoading = ref(false)
-const errorMessage = ref('')
-const inputRef = ref<HTMLInputElement | null>(null)
-
-const payOrder = ref<NativeCreateOrderResponse | null>(null)
-const paying = ref(false)
-
-const trimmedCode = computed(() => code.value.trim())
-const payLoading = ref(false)
+const {
+  // 状态
+  paying,
+  payOrder,
+  payLoading,
+  code,
+  trimmedCode,
+  inviteLoading,
+  errorMessage,
+  inputRef,
+  // 方法
+  handleWeChatPayClick,
+  handleInviteConfirm,
+  resetAll,
+  stopPayPolling,
+  handleCancel,
+} = useNativePayment({
+  onSuccess: () => emit('success'),
+  publicID: props.publicId,
+  onClose: () => emit('update:open', false),
+})
 
 const displayPrice = computed(() => {
-  return props.product?.price.toFixed(2)
+  if (!props.product) return ''
+  return props.product.price.toFixed(2)
 })
-const {showAlert} = useAlert()
 
 watch(
     () => props.open,
-    async (isOpen) => {
+    async isOpen => {
       if (isOpen) {
         await nextTick()
-        reset()
+        resetAll()
+        inputRef.value?.focus()
       } else {
-        reset()
+        stopPayPolling()
+        resetAll()
       }
     }
 )
 
-function reset() {
-  code.value = ''
-  inviteLoading.value = false
-  payLoading.value = false
-  errorMessage.value = ''
-}
 
-function handleCancel() {
-  showAlert("您确定放弃本次测试报告吗？",()=>{
-    emit('update:open', false)
-  })
-}
-
-// 提交邀请码
-async function handleInviteConfirm() {
-  if (inviteLoading.value) return
-
-  inviteLoading.value = true
-  errorMessage.value = ''
-  try {
-    inviteLoading.value = false
-    const trimmed = code.value.trim()
-
-    await verifyInviteWithMessage(trimmed)
-    emit('success')
-  } catch (e) {
-    errorMessage.value = JSON.stringify(e)
-    inputRef.value?.focus()
-    return
-  } finally {
-
-  }
-
-}
+onUnmounted(() => {
+  stopPayPolling()
+})
 </script>
 
 <style scoped src="@/styles/payment_code.css"></style>

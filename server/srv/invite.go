@@ -4,126 +4,73 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/hopwesley/wenxintai/server/dbSrv"
 )
 
-type inviteVerifyRequest struct {
-	InviteCode   string `json:"invite_code"`
-	BusinessType string `json:"business_type"`
+type payByInviteReq struct {
+	InviteCode string `json:"invite_code"`
+	PublicID   string `json:"public_id"`
 }
 
-func (req *inviteVerifyRequest) parseObj(r *http.Request) *ApiErr {
-	if r.Method != http.MethodPost {
-		return ApiMethodInvalid
-	}
-
+func (req *payByInviteReq) parseObj(r *http.Request) *ApiErr {
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		return ApiInvalidReq("json 解析参数失败", nil)
 	}
-
 	if strings.TrimSpace(req.InviteCode) == "" {
 		return ApiInvalidReq("无效的邀请码", nil)
 	}
-
-	if strings.TrimSpace(req.BusinessType) == "" {
-		return ApiInvalidReq("无效的业务类型", nil)
+	if !IsValidPublicID(req.PublicID) {
+		return ApiInvalidReq("无效的问卷编号", nil)
 	}
 
 	return nil
 }
 
-//
-//type inviteVerifyResponse struct {
-//	OK       bool   `json:"ok"`
-//	Reason   string `json:"reason"`
-//	PublicId string `json:"public_id,omitempty"`
-//}
-//
-//func (s *HttpSrv) handleInviteVerify(w http.ResponseWriter, r *http.Request) {
-//
-//	var req inviteVerifyRequest
-//	if err := req.parseObj(r); err != nil {
-//		s.log.Err(err).Msg("decode requests error when handleInviteVerify")
-//		writeError(w, err)
-//		return
-//	}
-//
-//	sLog := s.log.With().Str("invite_code", req.InviteCode).Str("business_type", req.BusinessType).Logger()
-//
-//	ctx := r.Context()
-//	inv, err := dbSrv.Instance().GetInviteByCode(ctx, req.InviteCode)
-//	if err != nil {
-//		sLog.Err(err).Msg("get invite error")
-//		writeError(w, ApiInternalErr("查询邀请码数据库失败", err))
-//		return
-//	}
-//
-//	if inv == nil {
-//		resp := inviteVerifyResponse{
-//			OK:     false,
-//			Reason: "无此邀请码",
-//		}
-//		sLog.Info().Msg("invite code not found")
-//		writeJSON(w, http.StatusOK, resp)
-//		return
-//	}
-//
-//	now := time.Now()
-//	if inv.ExpiresAt.Valid && inv.ExpiresAt.Time.Before(now) {
-//		resp := inviteVerifyResponse{
-//			OK:     false,
-//			Reason: "邀请码过期",
-//		}
-//		sLog.Info().Str("expired", inv.ExpiresAt.Time.String()).Msg("invite code expired")
-//		writeJSON(w, http.StatusOK, resp)
-//		return
-//	}
-//
-//	if inv.Status == dbSrv.InviteStatusUsed {
-//		resp := inviteVerifyResponse{
-//			OK:     false,
-//			Reason: "当前邀请码已经被使用",
-//		}
-//		sLog.Info().Int16("status", inv.Status).Msg("invite code invalid")
-//		writeJSON(w, http.StatusOK, resp)
-//		return
-//	}
-//
-//	if inv.PublicID.Valid && inv.Status == dbSrv.InviteStatusInUse {
-//		resp := inviteVerifyResponse{
-//			OK:       true,
-//			Reason:   "问卷已创建",
-//			PublicId: inv.PublicID.String,
-//		}
-//
-//		sLog.Info().Int16("status", inv.Status).Msg("test record found by invite code")
-//		writeJSON(w, http.StatusOK, resp)
-//		return
-//	}
-//
-//	if inv.Status != dbSrv.InviteStatusUnused {
-//		resp := inviteVerifyResponse{
-//			OK:     false,
-//			Reason: "问卷状态异常",
-//		}
-//
-//		sLog.Info().Int16("status", inv.Status).Msg("invite code status error")
-//		writeJSON(w, http.StatusOK, resp)
-//		return
-//	}
-//
-//	publicID, dbErr := dbSrv.Instance().NewTestRecord(ctx, req.BusinessType, &req.InviteCode, nil)
-//	if dbErr != nil {
-//		sLog.Err(dbErr).Msg("failed to create test record")
-//		writeError(w, ApiInternalErr("创建测试问卷失败", err))
-//		return
-//	}
-//
-//	resp := inviteVerifyResponse{
-//		OK:       true,
-//		Reason:   "新建试卷成功",
-//		PublicId: publicID,
-//	}
-//
-//	sLog.Debug().Str("public_id", publicID).Msg("create test record success")
-//	writeJSON(w, http.StatusOK, resp)
-//}
+func (s *HttpSrv) apiPayByInvite(w http.ResponseWriter, r *http.Request) {
+	var req payByInviteReq
+	if err := req.parseObj(r); err != nil {
+		s.log.Err(err).Msg("decode requests error when payByInvite")
+		writeError(w, err)
+		return
+	}
+
+	sLog := s.log.With().Str("invite_code", req.InviteCode).Str("public_id", req.PublicID).Logger()
+
+	ctx := r.Context()
+	inv, err := dbSrv.Instance().GetInviteByCode(ctx, req.InviteCode)
+	if err != nil {
+		sLog.Err(err).Msg("get invite error")
+		writeError(w, ApiInternalErr("查询邀请码数据库失败", err))
+		return
+	}
+
+	if inv == nil {
+		sLog.Info().Msg("invite code not found")
+		writeError(w, ApiInternalErr("无此邀请码", nil))
+		return
+	}
+
+	now := time.Now()
+	if inv.ExpiresAt.Valid && inv.ExpiresAt.Time.Before(now) {
+		sLog.Info().Str("expired", inv.ExpiresAt.Time.String()).Msg("invite code expired")
+		writeError(w, ApiInternalErr("邀请码过期", nil))
+		return
+	}
+
+	if inv.Status != dbSrv.InviteStatusUnused {
+		sLog.Info().Int16("status", inv.Status).Msg("invite code invalid")
+		writeError(w, ApiInternalErr("当前邀请码已经被使用", nil))
+		return
+	}
+
+	if dbErr := dbSrv.Instance().PayByInviteCode(ctx, req.PublicID, req.InviteCode); dbErr != nil {
+		sLog.Err(dbErr).Msg("pay error")
+		writeError(w, ApiInternalErr("更新支付状态失败", nil))
+		return
+	}
+
+	sLog.Info().Msg("create test record success")
+	writeJSON(w, http.StatusOK, CommonRes{Ok: true, Msg: "邀请码支付成功"})
+}

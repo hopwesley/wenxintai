@@ -73,6 +73,7 @@ export const API_PATHS = {
     WECHAT_MY_PROFILE: '/api/auth/profile',
 
     WECHAT_PAYMENT: '/api/pay/',
+    INVITE_PAYMENT: '/api/pay/use_invite',
     WECHAT_CREATE_NATIVE_ORDER: '/api/pay/wechat/native/create',
     WECHAT_NATIVE_ORDER_STATUS: '/api/pay/wechat/order-status',
 } as const

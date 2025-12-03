@@ -626,7 +626,12 @@ export function useReportPage() {
                     business_type: businessType.value
                 },
             })
-            paymentDialogShow.value = true
+            const hasPaid = currentPlan.value.has_paid || false;
+            if (hasPaid) {
+                generateReport().then()
+            } else {
+                paymentDialogShow.value = true
+            }
         } catch (e) {
             showAlert("查询产品价格失败:" + e);
         } finally {
@@ -658,5 +663,7 @@ export function useReportPage() {
         handleLetterConfirm,
         paymentDialogShow,
         currentPlan,
+        publicId,
+        generateReport,
     }
 }

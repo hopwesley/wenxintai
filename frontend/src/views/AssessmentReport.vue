@@ -30,6 +30,8 @@
     <PaymentModal
         v-model:open="paymentDialogShow"
         :product="currentPlan"
+        :publicId="publicId"
+        @success="() => generateReport"
     />
   </TestLayout>
 </template>
@@ -57,9 +59,10 @@ const {
   handleLetterConfirm,
   paymentDialogShow,
   currentPlan,
+  publicId,
+  generateReport,
 } = useReportPage()
 
-console.log(route.params.typ);
 const businessType = computed(() =>
     String(route.params.typ ?? "")
 )

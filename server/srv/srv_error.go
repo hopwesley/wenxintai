@@ -31,9 +31,11 @@ var (
 func ApiInvalidReq(msg string, err error) *ApiErr {
 	return NewApiError(http.StatusBadRequest, ErrorCodeBadRequest, msg, err)
 }
+
 func ApiInternalErr(msg string, err error) *ApiErr {
 	return NewApiError(http.StatusInternalServerError, ErrorCodeInternal, msg, err)
 }
+
 func ApiInvalidTestSequence(err error) *ApiErr {
 	return NewApiError(http.StatusInternalServerError, ErrorCodeInternal, "请按照测试顺序进行测试", err)
 }

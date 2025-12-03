@@ -18,8 +18,7 @@ type Invite struct {
 
 const (
 	InviteStatusUnused int16 = 0
-	InviteStatusInUse  int16 = 1
-	InviteStatusUsed   int16 = 2
+	InviteStatusUsed   int16 = 1
 )
 
 // GetInviteByCode 按 code 查邀请码，不存在时返回 (nil, nil)。
@@ -99,5 +98,79 @@ func (pdb *psDatabase) UpdateInviteStatus(ctx context.Context, code string, newS
 		Str("code", code).
 		Int64("rows", rows).
 		Msg("UpdateInviteStatus: success")
+	return nil
+}
+
+func (pdb *psDatabase) PayByInviteCode(ctx context.Context, publicId string, inviteCode string) error {
+	log := pdb.log.With().
+		Str("public_id", publicId).
+		Str("invite_code", inviteCode).
+		Logger()
+	log.Debug().Msg("PayByInviteCode")
+
+	tx, err := pdb.db.BeginTx(ctx, nil)
+	if err != nil {
+		log.Err(err).Msg("begin tx failed")
+		return err
+	}
+
+	// 1) 更新 tests_record
+	const qUpdateTestRecord = `
+		UPDATE app.tests_record
+		SET 
+		    pay_order_id = $1,
+		    paid_time    = NOW()
+		WHERE public_id = $2
+	`
+	res1, err := tx.ExecContext(ctx, qUpdateTestRecord, inviteCode, publicId)
+	if err != nil {
+		log.Err(err).Msg("update tests_record failed")
+		_ = tx.Rollback()
+		return err
+	}
+	rows1, err := res1.RowsAffected()
+	if err != nil {
+		log.Err(err).Msg("rows affected (tests_record) failed")
+		_ = tx.Rollback()
+		return err
+	}
+	if rows1 == 0 {
+		log.Warn().Msg("no tests_record updated")
+		_ = tx.Rollback()
+		return sql.ErrNoRows
+	}
+
+	// 2) 更新 invites
+	const qUpdateInvite = `
+		UPDATE app.invites
+		SET 
+		    status    = $1,
+		    used_at   = NOW(),
+		    public_id = $2
+		WHERE code = $3
+	`
+	res2, err := tx.ExecContext(ctx, qUpdateInvite, InviteStatusUsed, publicId, inviteCode)
+	if err != nil {
+		log.Err(err).Msg("update invites failed")
+		_ = tx.Rollback()
+		return err
+	}
+	rows2, err := res2.RowsAffected()
+	if err != nil {
+		log.Err(err).Msg("rows affected (invites) failed")
+		_ = tx.Rollback()
+		return err
+	}
+	if rows2 == 0 {
+		log.Warn().Msg("no invites updated")
+		_ = tx.Rollback()
+		return sql.ErrNoRows
+	}
+
+	if err = tx.Commit(); err != nil {
+		log.Err(err).Msg("commit tx failed")
+		return err
+	}
+
 	return nil
 }

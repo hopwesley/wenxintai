@@ -12,7 +12,7 @@ import (
 type TestRecord struct {
 	PublicId     string
 	BusinessType string
-	InviteCode   sql.NullString
+	PayOrderId   sql.NullString
 	WeChatID     sql.NullString
 	Grade        sql.NullString
 	Mode         sql.NullString
@@ -20,6 +20,7 @@ type TestRecord struct {
 	Status       int16
 	CreatedAt    time.Time
 	CompletedAt  sql.NullTime
+	PaidTime     sql.NullTime
 }
 
 func (pdb *psDatabase) QueryTestInProcess(ctx context.Context, uid, businessType string) (*TestRecord, error) {
@@ -30,18 +31,17 @@ func (pdb *psDatabase) QueryTestInProcess(ctx context.Context, uid, businessType
         SELECT 
             public_id,
             business_type,
-            invite_code,
+            pay_order_id,
             wechat_openid,
             grade,
             mode,
             hobby,
             status,
             created_at,
-            completed_at
         FROM app.tests_record
         WHERE wechat_openid = $1
       		AND business_type = $2
-      		AND completed_at IS NULL
+      		AND paid_time IS NULL
         ORDER BY created_at DESC
         LIMIT 1
     `
@@ -52,14 +52,13 @@ func (pdb *psDatabase) QueryTestInProcess(ctx context.Context, uid, businessType
 	err := row.Scan(
 		&rec.PublicId,
 		&rec.BusinessType,
-		&rec.InviteCode,
+		&rec.PayOrderId,
 		&rec.WeChatID,
 		&rec.Grade,
 		&rec.Mode,
 		&rec.Hobby,
 		&rec.Status,
 		&rec.CreatedAt,
-		&rec.CompletedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		log.Err(err).Msg("no record")
@@ -84,17 +83,16 @@ func (pdb *psDatabase) QueryUnfinishedTest(
         SELECT 
             public_id,
             business_type,
-            invite_code,
+            pay_order_id,
             wechat_openid,
             grade,
             mode,
             hobby,
             status,
-            created_at,
-            completed_at
+            created_at
         FROM app.tests_record
         WHERE public_id = $1
-          AND completed_at IS NULL
+          AND paid_time IS NULL
         ORDER BY created_at DESC
         LIMIT 1
     `
@@ -105,14 +103,13 @@ func (pdb *psDatabase) QueryUnfinishedTest(
 	err := row.Scan(
 		&rec.PublicId,
 		&rec.BusinessType,
-		&rec.InviteCode,
+		&rec.PayOrderId,
 		&rec.WeChatID,
 		&rec.Grade,
 		&rec.Mode,
 		&rec.Hobby,
 		&rec.Status,
 		&rec.CreatedAt,
-		&rec.CompletedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		log.Err(err).Msg("no record")
@@ -249,4 +246,54 @@ func (pdb *psDatabase) QueryBasicInfo(ctx context.Context, publicId string) (*ai
 		Msg("QueryBasicInfo: done")
 
 	return info, nil
+}
+
+func (pdb *psDatabase) QueryRecordById(ctx context.Context, publicID string) (*TestRecord, error) {
+	log := pdb.log.With().
+		Str("public_id", publicID).
+		Logger()
+	log.Debug().Msg("QueryRecordById")
+
+	const q = `
+		SELECT 
+			public_id,
+			business_type,
+			pay_order_id,
+			wechat_openid,
+			grade,
+			mode,
+			hobby,
+			status,
+			created_at,
+			completed_at,
+			paid_time
+		FROM app.tests_record
+		WHERE public_id = $1
+		ORDER BY paid_time DESC
+		LIMIT 1
+	`
+
+	row := pdb.db.QueryRowContext(ctx, q, publicID)
+
+	var rec TestRecord
+	err := row.Scan(
+		&rec.PublicId,
+		&rec.BusinessType,
+		&rec.PayOrderId,
+		&rec.WeChatID,
+		&rec.Grade,
+		&rec.Mode,
+		&rec.Hobby,
+		&rec.Status,
+		&rec.CreatedAt,
+		&rec.CompletedAt,
+		&rec.PaidTime,
+	)
+	if err != nil {
+		// 包括 sql.ErrNoRows 在内，都直接返回给上层
+		log.Err(err).Msg("QueryRecordById failed")
+		return nil, err
+	}
+
+	return &rec, nil
 }

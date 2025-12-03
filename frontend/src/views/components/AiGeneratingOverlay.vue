@@ -10,10 +10,10 @@
 
         <div class="overlay__title-row">
           <div class="overlay__title">{{ title }}</div>
-          <div v-if="meta" class="overlay__meta">
-            <span v-if="meta.mode">模式：{{ meta.mode }}</span>
-            <span v-if="meta.grade">年级：{{ meta.grade }}</span>
-            <span v-if="meta.stage">阶段：{{ meta.stage }}</span>
+          <div v-if="headerInfo" class="overlay__meta">
+            <span v-if="headerInfo.mode">模式：{{ headerInfo.mode }}</span>
+            <span v-if="headerInfo.grade">年级：{{ headerInfo.grade }}</span>
+            <span v-if="stage">年级：{{ stage }}</span>
           </div>
         </div>
 
@@ -53,16 +53,26 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import {TestRecordDTO, useTestSession} from "@/controller/testSession";
+
+const {state} = useTestSession()
+const record = computed<TestRecordDTO | undefined>(() => state.record)
+
+const headerInfo = computed(() => ({
+  publicId: record.value?.public_id ?? '',
+  businessType: record.value?.business_type ?? '',
+  grade: record.value?.grade ?? '',
+  mode: record.value?.mode ?? '',
+  hobby: record.value?.hobby ?? '',
+  inviteCode: record.value?.invite_code ?? '',
+}))
+
 
 const props = defineProps<{
   title: string
   subtitle?: string
   logLines?: string[]
-  meta?: {
-    mode?: string
-    grade?: string
-    stage?: string
-  }
+  stage?:string
 }>()
 
 const hasLogs = computed(() => !!props.logLines && props.logLines.length > 0)

@@ -276,15 +276,6 @@ export function useReportPage() {
         account: '',
     })
 
-    const headerInfo = computed(() => ({
-        publicId: record.value?.public_id ?? '',
-        businessType: record.value?.business_type ?? '',
-        grade: record.value?.grade ?? '',
-        mode: record.value?.mode ?? '',
-        hobby: record.value?.hobby ?? '',
-        inviteCode: record.value?.invite_code ?? '',
-    }))
-
     // 当前报告模式：3+3 / 3+1+2
     const isMode33 = computed(() => overview.mode === Mode33)
     const isMode312 = computed(() => overview.mode === Mode312)
@@ -435,9 +426,7 @@ export function useReportPage() {
 
     computed(() => {
         if (!isMode33.value) return ''
-
         const section = aiReportData.value?.mode_section as any
-        // 后面我们会把 ModeSection 换成 union 类型，这里先用 any 顶一下
         return section?.mode33_overview_text ?? ''
     });
     // 3+3：科目数组 -> “化学 + 生物 + 地理”

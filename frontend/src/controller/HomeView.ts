@@ -1,14 +1,15 @@
 import {API_PATHS, apiRequest} from "@/api";
-import {onBeforeUnmount, onMounted, ref, watch} from 'vue'
+import {onBeforeUnmount, onMounted, reactive, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {TestRecordDTO, useTestSession} from '@/controller/testSession'
 import {useAlert} from '@/controller/useAlert'
 import {useAuthStore} from '@/controller/wx_auth'
 import {
+    PlanInfo,
     PlanKey,
     pushStageRoute,
     StageBasic,
-    type TestFlowStep,
+    type TestFlowStep, TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool,
 } from "@/controller/common";
 import {useGlobalLoading} from "@/controller/useGlobalLoading";
 
@@ -54,6 +55,7 @@ export function useHomeView() {
         authStore.fetchSignInStatus().then().catch(err => {
             console.error('[HomeView] fetchSignInStatus failed', err)
         })
+        loadProducts().then()
     })
 
     function handleFlowError(msg: string) {
@@ -159,6 +161,60 @@ export function useHomeView() {
         document.removeEventListener('click', handleGlobalClick)
     })
 
+    const basicPlan: PlanInfo = {
+        key: TestTypeBasic,
+        name: '基础版',
+        price: 29.9,
+        desc: '组合推荐 + 学科优势评估',
+    }
+
+    const proPlan: PlanInfo = {
+        key: TestTypePro,
+        name: '专业版',
+        price: 49.9,
+        desc: '基础版+更加全面的参数解读',
+        tag: '推荐',
+    }
+
+    const advPlan: PlanInfo = {
+        key: TestTypeAdv,
+        name: '增强版',
+        price: 79.9,
+        desc: '专业版 +专业选择推荐+职业规划建议',
+    }
+
+    const schoolPlan: PlanInfo = {
+        key: TestTypeSchool,
+        name: '校本定制版',
+        price: 59.9,
+        desc: '结合校园真是数据，精准报告，多维对比',
+    }
+
+    const planMap = reactive<Record<PlanKey, PlanInfo>>({
+        [TestTypeBasic]: basicPlan,
+        [TestTypePro]: proPlan,
+        [TestTypeAdv]: advPlan,
+        [TestTypeSchool]: schoolPlan,
+    })
+
+    async function loadProducts() {
+        try {
+            const res = await apiRequest<PlanInfo[]>(API_PATHS.LOAD_PRODUCTS, {
+                method: 'GET',
+            })
+
+            if (!Array.isArray(res) || res.length === 0) {
+                return
+            }
+
+            for (const p of res) {
+                planMap[p.key] = p
+            }
+
+        } catch (err) {
+            console.error('loadProducts failed, fallback to local planMap:', err)
+        }
+    }
 
     return {
         // 状态
@@ -175,5 +231,6 @@ export function useHomeView() {
         userMenuWrapperRef,
         handleGoMyTests,
         handleLogout,
+        planMap,
     }
 }

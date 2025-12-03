@@ -1,6 +1,6 @@
 import {ref, nextTick, computed, watch} from 'vue'
 import {defineStore} from 'pinia'
-import {apiRequest} from '@/api'
+import {API_PATHS, apiRequest} from '@/api'
 
 export type WxLoginStatus = 'idle' | 'pending' | 'success' | 'error' | 'expired'
 const NEW_USER_HINT_KEY_PREFIX = 'wenxintai:newUserInfoDismissed:'
@@ -203,7 +203,7 @@ export const useAuthStore = defineStore('auth', () => {
      */
     async function fetchSignInStatus() {
         try {
-            const res = await apiRequest<WxLoginStatusResponse>('/api/auth/wx/status', {
+            const res = await apiRequest<WxLoginStatusResponse>(API_PATHS.WECHAT_SIGN_IN, {
                 method: 'GET',
             })
 

@@ -89,7 +89,6 @@ import { VerifyInviteResponse, verifyInviteWithMessage } from '@/controller/Invi
 import { useTestSession } from '@/controller/testSession'
 import {NativeCreateOrderResponse} from "@/controller/WeChatNativePay";
 
-const { setInviteCode } = useTestSession()
 
 const props = defineProps<{
   open: boolean

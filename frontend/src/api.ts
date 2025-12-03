@@ -1,7 +1,7 @@
 interface RequestOptions {
-  method?: string
-  body?: unknown
-  headers?: Record<string, string>
+    method?: string
+    body?: unknown
+    headers?: Record<string, string>
 }
 
 type ApiError = Error & { code?: string; body?: any }
@@ -9,13 +9,13 @@ type ApiError = Error & { code?: string; body?: any }
 export async function apiRequest<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
     const init: RequestInit = {
         method: options.method ?? 'GET',
-        headers: { ...options.headers },
+        headers: {...options.headers},
         credentials: 'include',
     }
 
     if (options.body !== undefined) {
         init.body = JSON.stringify(options.body)
-        init.headers = { 'Content-Type': 'application/json', ...init.headers }
+        init.headers = {'Content-Type': 'application/json', ...init.headers}
     }
 
     const resp = await fetch(path, init)
@@ -53,6 +53,7 @@ export async function apiRequest<T = any>(path: string, options: RequestOptions 
 export const API_PATHS = {
     HEALTH: '/api/health',
     LOAD_HOBBIES: '/api/hobbies',
+    LOAD_PRODUCTS: '/api/products',
 
     TEST_FLOW: '/api/test_flow',
 

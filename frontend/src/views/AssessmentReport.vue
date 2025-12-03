@@ -20,11 +20,7 @@
         title="AI 正在为你生成专属报告…"
         subtitle="正在分析你的测试各项参数，为您全面展示智能分析结果"
         :log-lines="truncatedLatestMessage"
-        :meta="{
-    mode: overview.mode || '',
-    grade: state.grade || '',
-    stage: '选科报告'
-  }"
+        stage="AI报告"
     />
     <ReportFinishLetter
         :visible="showFinishLetter"
@@ -42,10 +38,12 @@
         @pay="handleWeChatPay"
         @success="handleInviteSuccess"
     />
+
   </TestLayout>
 </template>
 
 <script setup lang="ts">
+
 import StepIndicator from '@/views/components/StepIndicator.vue'
 import TestLayout from '@/views/components/TestLayout.vue'
 import AiGeneratingOverlay from '@/views/components/AiGeneratingOverlay.vue'

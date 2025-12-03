@@ -22,8 +22,9 @@ import (
 )
 
 const (
-	apiHealthy     = "/api/health"
-	apiLoadHobbies = "/api/hobbies"
+	apiHealthy      = "/api/health"
+	apiLoadHobbies  = "/api/hobbies"
+	apiLoadProducts = "/api/products"
 
 	apiTestFlow = "/api/test_flow"
 
@@ -173,6 +174,7 @@ func (s *HttpSrv) initRouter() error {
 
 	routes := []route{
 		{apiLoadHobbies, http.MethodGet, s.handleHobbies, false},
+		{apiLoadProducts, http.MethodGet, s.handleProducts, false},
 		{apiWeChatSignIn, http.MethodGet, s.wechatSignStatus, false},
 		{apiWeChatSignInCallBack, http.MethodGet, s.wechatSignInCallBack, false},
 		{apiWeChatPayment, http.MethodPost, s.apiWeChatPayCallBack, false},
@@ -180,11 +182,14 @@ func (s *HttpSrv) initRouter() error {
 
 		{apiTestFlow, http.MethodPost, s.handleTestFlow, true},
 		{apiTestBasicInfo, http.MethodPost, s.updateBasicInfo, true},
+
 		{apiSSEQuestionSub, http.MethodGet, s.handleQuestionSSEEvent, true},
-		{apiSSEReportSub, http.MethodGet, s.handleReportSSEEvent, true},
 		{apiSubmitTest, http.MethodPost, s.handleTestSubmit, true},
+
+		{apiSSEReportSub, http.MethodGet, s.handleReportSSEEvent, true},
 		{apiGenerateReport, http.MethodPost, s.handleTestReport, true},
 		{apiFinishReport, http.MethodPost, s.finishReport, true},
+
 		{apiWeChatUpdateProfile, http.MethodPost, s.apiWeChatUpdateProfile, true},
 		{apiWeChatMyProfile, http.MethodGet, s.apiWeChatMyProfile, true},
 		{apiWeChatCreateNativeOrder, http.MethodPost, s.apiWeChatCreateNativeOrder, true},

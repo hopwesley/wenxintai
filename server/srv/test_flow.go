@@ -3,6 +3,7 @@ package srv
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/hopwesley/wenxintai/server/dbSrv"
 )
@@ -29,12 +30,43 @@ type TestFlowStep struct {
 	Title string `json:"title"` // 展示给用户的标题，例如 "基础信息" / "兴趣测试"
 }
 
+type TestRecordDTO struct {
+	PublicId     string     `json:"public_id"`
+	BusinessType string     `json:"business_type"`
+	InviteCode   string     `json:"invite_code,omitempty"`
+	WeChatID     string     `json:"wechat_id,omitempty"`
+	Grade        string     `json:"grade,omitempty"`
+	Mode         string     `json:"mode,omitempty"`
+	Hobby        string     `json:"hobby,omitempty"`
+	Status       int16      `json:"status"`
+	CreatedAt    time.Time  `json:"created_at"`
+	CompletedAt  *time.Time `json:"completed_at,omitempty"`
+}
+
 type testFlowResponse struct {
-	TestPublicID string         `json:"public_id"`
-	BusinessType string         `json:"business_type"`
+	Record       TestRecordDTO  `json:"record"`
 	Steps        []TestFlowStep `json:"steps"`         // 全部阶段（key + title）
 	CurrentStage string         `json:"current_stage"` // 当前阶段的 stage key，比如 "riasec"
 	CurrentIndex int            `json:"current_index"` // 当前阶段在 Steps 里的下标（0-based）
+}
+
+func toRecordDTO(rec dbSrv.TestRecord) TestRecordDTO {
+	var completed *time.Time
+	if rec.CompletedAt.Valid {
+		completed = &rec.CompletedAt.Time
+	}
+	return TestRecordDTO{
+		PublicId:     rec.PublicId,
+		BusinessType: rec.BusinessType,
+		InviteCode:   nullToString(rec.InviteCode),
+		WeChatID:     nullToString(rec.WeChatID),
+		Grade:        nullToString(rec.Grade),
+		Mode:         nullToString(rec.Mode),
+		Hobby:        nullToString(rec.Hobby),
+		Status:       rec.Status,
+		CreatedAt:    rec.CreatedAt,
+		CompletedAt:  completed,
+	}
 }
 
 func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
@@ -70,24 +102,24 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 
 	var currentStage = StageBasic
 	var currentIndex = 0
-	var publicID = ""
+	var dto TestRecordDTO
 	if record == nil {
-		pid, dbErr := dbSrv.Instance().NewTestRecord(ctx, req.BusinessType, nil, &uid)
+		pid, dbErr := dbSrv.Instance().NewTestRecord(ctx, req.BusinessType, uid)
 		if dbErr != nil {
 			sLog.Err(dbErr).Msg("failed create test record")
 			writeError(w, ApiInternalErr("没有问卷相关数据库记录", nil))
 			return
 		}
-		publicID = pid
+		dto.PublicId = pid
+		dto.BusinessType = req.BusinessType
 		currentStage, currentIndex = StageBasic, RecordStatusInit
 	} else {
-		publicID = record.PublicId
 		currentStage, currentIndex = parseStatusToRoute(int(record.Status), stageFlow)
+		dto = toRecordDTO(*record)
 	}
 
 	resp := testFlowResponse{
-		TestPublicID: publicID,
-		BusinessType: req.BusinessType,
+		Record:       dto,
 		Steps:        steps,
 		CurrentStage: currentStage,
 		CurrentIndex: currentIndex,

@@ -17,7 +17,7 @@ type DbService interface {
 	GetInviteByCode(ctx context.Context, code string) (*Invite, error)
 	QueryTestInProcess(ctx context.Context, uid, businessType string) (*TestRecord, error)
 	QueryUnfinishedTest(ctx context.Context, publicId string) (*TestRecord, error)
-	NewTestRecord(ctx context.Context, businessType string, inviteCode *string, weChatId *string) (string, error)
+	NewTestRecord(ctx context.Context, businessType string, weChatId string) (string, error)
 	UpdateBasicInfo(ctx context.Context, publicId string, grade string, mode string, hobby string, status int) (string, error)
 	QueryBasicInfo(ctx context.Context, publicId string) (*ai_api.BasicInfo, error)
 	FindQASession(ctx context.Context, testType, publicId string) (*QASession, error)

@@ -1,10 +1,18 @@
 import {ref, computed, onMounted, reactive} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useGlobalLoading} from '@/controller/useGlobalLoading'
-import {useTestSession} from '@/controller/testSession'
+import {useTestSession, type TestRecordDTO} from '@/controller/testSession'
 import {apiRequest} from "@/api";
 import {useAlert} from "@/controller/useAlert";
-import {Mode312, Mode33, ModeOption, subjectLabelMap, useSseLogs, useSubscriptBySSE} from "@/controller/common";
+import {
+    Mode312,
+    Mode33,
+    ModeOption,
+    subjectLabelMap,
+    TestTypeBasic,
+    useSseLogs,
+    useSubscriptBySSE
+} from "@/controller/common";
 
 export interface ComboMetric {
     label: string
@@ -249,6 +257,7 @@ export function useReportPage() {
     const {state, resetSession} = useTestSession()
     const {showAlert} = useAlert()
     const router = useRouter()
+    const aiLoading = ref(false)
 
     const rawReportData = ref<ReportRawData | null>(null)
     const subjectRadar = computed<ReportRadarBlock | null>(() => {
@@ -266,9 +275,23 @@ export function useReportPage() {
         schoolName: '',
         account: '',
     })
+
+    const headerInfo = computed(() => ({
+        publicId: record.value?.public_id ?? '',
+        businessType: record.value?.business_type ?? '',
+        grade: record.value?.grade ?? '',
+        mode: record.value?.mode ?? '',
+        hobby: record.value?.hobby ?? '',
+        inviteCode: record.value?.invite_code ?? '',
+    }))
+
     // 当前报告模式：3+3 / 3+1+2
     const isMode33 = computed(() => overview.mode === Mode33)
     const isMode312 = computed(() => overview.mode === Mode312)
+
+    const record = computed<TestRecordDTO | undefined>(() => state.record)
+    const businessType = computed(() => record.value?.business_type ?? TestTypeBasic)
+    const  publicId= record.value?.public_id ?? ''
 
 // === 新增：3+1+2 概览 + 图表数据 ===
     const mode312OverviewStrips = computed<Mode312OverviewStrips | null>(() => {
@@ -417,14 +440,6 @@ export function useReportPage() {
         // 后面我们会把 ModeSection 换成 union 类型，这里先用 any 顶一下
         return section?.mode33_overview_text ?? ''
     });
-
-    const businessType = computed(() => {
-        return String(route.params.typ ?? state.businessType ?? '')
-    })
-    // 之后接入后端 / SSE 时再开启，这里先保持为 false
-    const aiLoading = ref(false)
-
-
     // 3+3：科目数组 -> “化学 + 生物 + 地理”
     function formatComboName33(subjects: string[]): string {
         return subjects.map(s => subjectLabelMap[s] ?? s).join(' + ')
@@ -556,7 +571,7 @@ export function useReportPage() {
         }
     }
 
-    const sseCtrl = useSubscriptBySSE(`/api/sub/report/${state.recordPublicID!}`, {
+    const sseCtrl = useSubscriptBySSE(`/api/sub/report/${publicId!}`, {
         autoStart: false,
         onOpen: () => {
             aiLoading.value = true
@@ -573,14 +588,13 @@ export function useReportPage() {
     onMounted(async () => {
         showLoading("正在准备智能分析参数", 20_000)
         try {
-            const public_id = state.recordPublicID
-            if (!public_id) {
+            if (!publicId) {
                 showAlert('未找到试卷编号', () => {
-                    router.replace('/').then()
+                    router.replace('/home').then()
                 })
                 return
             }
-            const resp = await getAiReportParam(public_id, businessType.value)
+            const resp = await getAiReportParam(publicId, businessType.value)
             rawReportData.value = resp;
             console.log("------>>>resp data:", rawReportData)
             applyReportOverview(resp);
@@ -601,11 +615,10 @@ export function useReportPage() {
     const showFinishLetter = ref(false)
     const handleLetterConfirm = async () => {
         try {
-            const public_id = state.recordPublicID
             await apiRequest<ReportRawData>('/api/finish_report', {
                 method: 'POST',
                 body: {
-                    public_id: public_id,
+                    public_id: publicId,
                     business_type: businessType.value,
                 },
             });

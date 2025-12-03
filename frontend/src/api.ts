@@ -60,10 +60,6 @@ export async function login(payload: LoginPayload) {
   return apiRequest('/api/login', { method: 'POST', body: payload })
 }
 
-export async function getHobbies(): Promise<string[]> {
-  const data = await apiRequest<{ hobbies: string[] }>('/api/hobbies')
-  return data?.hobbies ?? []
-}
 
 export interface ReportRequest {
   session_id?: string

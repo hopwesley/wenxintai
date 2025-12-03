@@ -1,6 +1,6 @@
 import {computed, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
-import {useTestSession} from '@/controller/testSession'
+import {useTestSession, type TestRecordDTO} from '@/controller/testSession'
 import {
     AnswerValue,
     CommonResponse,
@@ -9,7 +9,7 @@ import {
     StageOcean,
     StageRiasec,
     useSubscriptBySSE,
-    pushStageRoute, useSseLogs,
+    pushStageRoute, useSseLogs, TestTypeBasic,
 } from "@/controller/common";
 
 import {useAlert} from "@/controller/useAlert";
@@ -63,7 +63,7 @@ export function useQuestionsStagePage() {
 
     const route = useRoute()
     const router = useRouter()
-    const {state, getPublicID, setNextRouteItem, saveStageAnswers, loadStageAnswers} = useTestSession()
+    const {state, setNextRouteItem, saveStageAnswers, loadStageAnswers} = useTestSession()
     const {showAlert} = useAlert()
     const aiLoading = ref(true)
     const {showLoading, hideLoading} = useGlobalLoading()
@@ -88,13 +88,11 @@ export function useQuestionsStagePage() {
     )
     const isFirstPage = computed(() => currentPage.value <= 1)
     const isLastPage = computed(() => currentPage.value >= totalPages.value)
-
-    const public_id: string | undefined = getPublicID()
+    const record = computed<TestRecordDTO | undefined>(() => state.record)
+    const public_id = record.value?.public_id ?? ''
     const routes = state.testRoutes ?? []
-    const businessType = computed(() =>
-        String(route.params.businessType ?? state.businessType ?? '')
-    )
 
+    const businessType = computed(() => record.value?.business_type ?? TestTypeBasic)
     const testStage = computed(() =>
         String(route.params.testStage ?? '')
     )
@@ -128,12 +126,12 @@ export function useQuestionsStagePage() {
             answers: answers.value,
             hasQuestions: questions.value.length > 0,
         }),
-        ({ key, answers, hasQuestions }) => {
+        ({key, answers, hasQuestions}) => {
             if (!key || !hasQuestions) return
             // 注意：这里不会缓存题目，只把答案 map 写到 store.stageAnswers[key]
             saveStageAnswers(key, answers)
         },
-        { deep: true }
+        {deep: true}
     )
 
 
@@ -173,7 +171,6 @@ export function useQuestionsStagePage() {
     }
 
 
-
     function resetStageState() {
         currentPage.value = 1
         questions.value = []
@@ -186,6 +183,7 @@ export function useQuestionsStagePage() {
     interface ServerAnswerItem {
         id: number
         value: AnswerValue
+
         // 其余字段（dimension / subject 等）不影响前端恢复选项
         [key: string]: any
     }
@@ -224,7 +222,7 @@ export function useQuestionsStagePage() {
 
         } catch (e) {
             console.error('[QuestionsStagePage] 解析题目失败:', e)
-            showAlert('获取测试题目失败，请稍后再试'+e)
+            showAlert('获取测试题目失败，请稍后再试' + e)
         } finally {
             hideAIProcess()
         }
@@ -250,10 +248,7 @@ export function useQuestionsStagePage() {
                 if (!item) continue
                 const id = item.id
                 const value = item.value
-                if (typeof id === 'number' && typeof value === 'number') {
-                    // 这里强转为 AnswerValue，前提是后端保证 1~5
-                    map[id] = value as AnswerValue
-                }
+                map[id] = value as AnswerValue
             }
 
             if (Object.keys(map).length > 0) {
@@ -269,7 +264,7 @@ export function useQuestionsStagePage() {
 
         // 3) 有最终确定的答案，就写回本地 state + 缓存
         if (finalAnswers) {
-            answers.value = { ...finalAnswers }
+            answers.value = {...finalAnswers}
 
             if (key) {
                 saveStageAnswers(key, finalAnswers)
@@ -285,7 +280,7 @@ export function useQuestionsStagePage() {
         if (key) {
             const cached = loadStageAnswers(key)
             if (cached) {
-                answers.value = { ...cached }
+                answers.value = {...cached}
             }
         }
 
@@ -338,7 +333,7 @@ export function useQuestionsStagePage() {
             throw new Error(resp.msg || '提交失败，请稍后重试')
         }
 
-        if(!resp.next_route){
+        if (!resp.next_route) {
             throw new Error(resp.msg || '未找到下一步处理逻辑')
         }
 
@@ -359,15 +354,14 @@ export function useQuestionsStagePage() {
             return
         }
 
-        const currentBusinessType = state.businessType || businessType.value
-        if (!currentBusinessType) {
+        if (!businessType) {
             showAlert('测试流程异常，未找到测评类型，请返回首页重新开始', () => {
                 router.replace('/').then()
             })
             return
         }
 
-        pushStageRoute(router, currentBusinessType, next_route)
+        pushStageRoute(router, businessType.value, next_route)
     }
 
     function handlePrev() {

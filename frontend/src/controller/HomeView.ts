@@ -1,7 +1,7 @@
 import {apiRequest} from "@/api";
 import {onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
-import {useTestSession} from '@/controller/testSession'
+import {TestRecordDTO, useTestSession} from '@/controller/testSession'
 import {useAlert} from '@/controller/useAlert'
 import {useAuthStore} from '@/controller/wx_auth'
 import {
@@ -13,8 +13,7 @@ import {
 import {useGlobalLoading} from "@/controller/useGlobalLoading";
 
 export interface FetchTestFlowResponse {
-    public_id: string
-    business_type: PlanKey
+    record: TestRecordDTO
     steps: TestFlowStep[]
     current_stage: string
     current_index: number
@@ -32,7 +31,7 @@ export function useHomeView() {
     const {showAlert} = useAlert()
     const router = useRouter()
     const route = useRoute()
-    const {setTestFlow, setNextRouteItem, resetSession} = useTestSession()
+    const {setTestFlow, setNextRouteItem, resetSession, setRecord} = useTestSession()
     const authStore = useAuthStore()
     const {showLoading, hideLoading} = useGlobalLoading()
     const isUserMenuOpen = ref(false)
@@ -88,10 +87,11 @@ export function useHomeView() {
             const currentStage = resp.current_stage || StageBasic
             const currentIndex = resp.current_index
 
+            setRecord(resp.record)
+
             setTestFlow(steps)
             setNextRouteItem(currentStage, currentIndex)
             await pushStageRoute(router, typ, currentStage)
-
         } catch (e) {
             showAlert("创建问卷测试失败:" + e)
         } finally {

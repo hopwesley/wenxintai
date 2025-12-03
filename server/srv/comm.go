@@ -3,6 +3,7 @@ package srv
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -434,4 +435,11 @@ func (s *HttpSrv) forwardCallback(w http.ResponseWriter, r *http.Request, target
 		log.Error().Err(err).Msg("write response to client failed")
 		return
 	}
+}
+
+func nullToString(ns sql.NullString) string {
+	if ns.Valid {
+		return ns.String
+	}
+	return ""
 }

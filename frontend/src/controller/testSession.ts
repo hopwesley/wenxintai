@@ -1,58 +1,58 @@
 import { reactive, watch } from 'vue'
 import {
     AnswerValue,
-    ModeOption, PlanKey,
-    type TestFlowStep,
+    ModeOption,
+    PlanKey,
+    TestFlowStep,
 } from '@/controller/common'
 
 const STORAGE_KEY = 'wenxintai:test-session'
 
+/** 后端返回的完整 TestRecordDTO */
+export interface TestRecordDTO {
+    public_id: string
+    business_type: PlanKey
+    invite_code?: string
+    wechat_id?: string
+    grade?: string
+    mode: ModeOption|''
+    hobby?: string
+    status: number
+    created_at: string
+    completed_at?: string | null
+}
+
+/** Session 结构 */
 export interface TestSession {
-    recordPublicID?: string
-    businessType?: PlanKey
+    record?: TestRecordDTO                              // ★ 用 record 取代所有散落字段
+
     testFlowSteps?: TestFlowStep[]
     testRoutes?: string[]
     nextRouteItem: Record<string, number>
+
     stageAnswers: Record<string, Record<number, AnswerValue>>
-
-    mode?: ModeOption
-    hobby?: string
-    grade?: string
-
-    inviteCode?: string
-    wechatOpenId?: string
 
     currentStep?: number
 }
 
-// 默认值：这里可以按需要补一些默认 businessType 等
+/** 默认值 */
 const defaultSession: TestSession = {
-    recordPublicID: undefined,
-    businessType: undefined,
+    record: undefined,
     testFlowSteps: undefined,
     testRoutes: undefined,
     nextRouteItem: {},
     stageAnswers: {},
-    mode: undefined,
-    hobby: undefined,
-    grade: undefined,
-    inviteCode: undefined,
-    wechatOpenId: undefined,
     currentStep: undefined,
 }
 
-/**
- * 从 localStorage 读取 TestSession
- */
+/** 从 localStorage 读取 */
 function loadFromStorage(): TestSession {
     if (typeof window === 'undefined') {
         return { ...defaultSession }
     }
 
     const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) {
-        return { ...defaultSession }
-    }
+    if (!raw) return { ...defaultSession }
 
     try {
         const parsed = JSON.parse(raw) as Partial<TestSession>
@@ -60,124 +60,91 @@ function loadFromStorage(): TestSession {
             ...defaultSession,
             ...parsed,
         }
-    } catch (error) {
-        console.warn('[testSession] Failed to parse localStorage', error)
+    } catch (e) {
+        console.warn('[testSession] Failed to parse storage', e)
         return { ...defaultSession }
     }
 }
 
-/**
- * 持久化到 localStorage
- */
+/** 保存到 localStorage */
 function persist(session: TestSession) {
     if (typeof window === 'undefined') return
     try {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
-    } catch (error) {
-        console.warn('[testSession] Failed to save localStorage', error)
+    } catch (e) {
+        console.warn('[testSession] Failed to save storage', e)
     }
 }
 
-/**
- * 清空会话（例如测试完成 / 主动退出时可以调用）
- */
+/** 清空 localStorage */
 function clearStorage() {
     if (typeof window === 'undefined') return
     try {
         window.localStorage.removeItem(STORAGE_KEY)
-    } catch (error) {
-        console.warn('[testSession] Failed to clear localStorage', error)
+    } catch (e) {
+        console.warn('[testSession] Failed to clear storage', e)
     }
 }
 
-// 全局唯一的 reactive state
+/** 全局唯一 reactive state */
 const state = reactive<TestSession>(loadFromStorage())
 
-// 任何字段变化时自动写回 localStorage
+/** 任意字段变化 → 自动写回 storage */
 watch(
     () => ({ ...state }),
-    (value) => {
-        persist(value as TestSession)
-    },
+    val => persist(val as TestSession),
     { deep: true }
 )
 
+/** 对外 API */
 export function useTestSession() {
-    function setTestConfig(payload: { grade: string; mode: ModeOption; hobby?: string }) {
-        state.grade = payload.grade
-        state.mode = payload.mode
-        state.hobby = payload.hobby
+
+    /** ★ 设置 record（来自 /api/test_flow 的 resp.record） */
+    function setRecord(rec: TestRecordDTO) {
+        if (!rec) return
+        state.record = { ...rec }
     }
 
-    function setInviteCode(code: string | null | undefined) {
-        const normalized = typeof code === 'string' ? code.trim() : ''
-        state.inviteCode = normalized || undefined
-    }
-
-    function setBusinessType(typ: PlanKey) {
-        if (!typ) return
-        state.businessType = typ
-    }
-
+    /** 流程步骤 */
     function setTestFlow(steps: TestFlowStep[]) {
-        const safeSteps = steps ?? []
-        state.testFlowSteps = safeSteps
-        state.testRoutes = safeSteps.map(step => step.title)
+        const safe = steps ?? []
+        state.testFlowSteps = safe
+        state.testRoutes = safe.map(s => s.title)
 
         if (!state.nextRouteItem) {
             state.nextRouteItem = {}
         }
     }
-    function setNextRouteItem(route:string, rid:number){
+
+    /** 设置下一跳路由索引 */
+    function setNextRouteItem(route: string, idx: number) {
         if (!route) return
-
-        if (!state.nextRouteItem) {
-            state.nextRouteItem = {}
-        }
-        state.nextRouteItem[route] =  rid
+        if (!state.nextRouteItem) state.nextRouteItem = {}
+        state.nextRouteItem[route] = idx
     }
 
-    function setPublicID(pid: string) {
-        state.recordPublicID = pid
+    /** 保存某阶段答案 */
+    function saveStageAnswers(stage: string, answers: Record<number, AnswerValue>) {
+        if (!stage) return
+        if (!state.stageAnswers) state.stageAnswers = {}
+        state.stageAnswers[stage] = { ...answers }
     }
 
-    function getPublicID() {
-        return state.recordPublicID
+    /** 读取某阶段答案 */
+    function loadStageAnswers(stage: string) {
+        return state.stageAnswers?.[stage]
     }
 
-    // 保存某一阶段的答案
-    function saveStageAnswers(stageKey: string, answers: Record<number, AnswerValue>) {
-        if (!stageKey) return
-        if (!state.stageAnswers) {
-            state.stageAnswers = {}
-        }
-        state.stageAnswers[stageKey] = { ...answers }
-    }
-
-    // 读取某一阶段的答案
-    function loadStageAnswers(stageKey: string): Record<number, AnswerValue> | undefined {
-        if (!stageKey || !state.stageAnswers) return undefined
-        return state.stageAnswers[stageKey]
-    }
-
+    /** 重置整个 session */
     function resetSession() {
-        state.recordPublicID = undefined
-        state.businessType = undefined
-        state.testRoutes = undefined
-        state.nextRouteItem = {}
-        state.stageAnswers = {}
         Object.assign(state, { ...defaultSession })
         clearStorage()
     }
 
     return {
         state,
-        setTestConfig,
-        setInviteCode,
-        setBusinessType,
+        setRecord,
         setTestFlow,
-        setPublicID,
-        getPublicID,
         setNextRouteItem,
         saveStageAnswers,
         loadStageAnswers,

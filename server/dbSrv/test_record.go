@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/hopwesley/wenxintai/server/ai_api"
@@ -131,123 +130,20 @@ func (pdb *psDatabase) QueryUnfinishedTest(
 func (pdb *psDatabase) NewTestRecord(
 	ctx context.Context,
 	businessTyp string,
-	inviteCode *string,
-	weChatId *string,
-) (string, error) {
-	pdb.log.Debug().
-		Str("business_type", businessTyp).
-		Msg("NewTestRecord")
-
-	if inviteCode == nil && weChatId == nil {
-		return "", errors.New("either inviteCode or weChatId must be non-nil")
-	}
-
-	// 通过邀请码创建：需要顺便绑定 invites.public_id
-	if inviteCode != nil {
-		return pdb.newTestRecordWithInvite(ctx, businessTyp, *inviteCode)
-	}
-
-	// 通过 wechat_openid 创建：只写 tests_record
-	return pdb.newTestRecordWithWeChat(ctx, businessTyp, *weChatId)
-}
-
-func (pdb *psDatabase) newTestRecordWithInvite(
-	ctx context.Context,
-	businessTyp string,
-	inviteCode string,
-) (string, error) {
-	pdb.log.Debug().
-		Str("business_type", businessTyp).
-		Str("invite_code", inviteCode).
-		Msg("newTestRecordWithInvite")
-
-	const insertSQL = `
-		INSERT INTO app.tests_record (business_type, wechat_openid, invite_code)
-		VALUES ($1, $2, $3)
-		RETURNING public_id
-	`
-
-	const updateInviteSQL = `
-		UPDATE app.invites
-		SET public_id = $2,
-		status    = $3,
-    		used_at   = now()
-		WHERE code = $1
-	`
-
-	var publicID string
-
-	err := pdb.WithTx(ctx, func(tx *sql.Tx) error {
-		// 1) 插入 tests_record
-		if err := tx.QueryRowContext(
-			ctx,
-			insertSQL,
-			businessTyp,
-			nil,        // wechat_openid 为空
-			inviteCode, // invite_code
-		).Scan(&publicID); err != nil {
-			pdb.log.Err(err).
-				Str("business_type", businessTyp).
-				Str("invite_code", inviteCode).
-				Msg("newTestRecordWithInvite: insert tests_record failed")
-			return err
-		}
-
-		// 2) 更新 invites.public_id
-		res, err := tx.ExecContext(ctx, updateInviteSQL, inviteCode, publicID, InviteStatusInUse)
-		if err != nil {
-			pdb.log.Err(err).
-				Str("invite_code", inviteCode).
-				Str("public_id", publicID).
-				Msg("newTestRecordWithInvite: update invites failed")
-			return err
-		}
-
-		affected, err := res.RowsAffected()
-		if err != nil {
-			pdb.log.Err(err).
-				Str("invite_code", inviteCode).
-				Msg("newTestRecordWithInvite: RowsAffected error")
-			return err
-		}
-
-		if affected == 0 {
-			err := fmt.Errorf("invite code not found: %s", inviteCode)
-			pdb.log.Err(err).
-				Str("invite_code", inviteCode).
-				Msg("newTestRecordWithInvite: no invites row updated")
-			return err
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return "", err
-	}
-
-	pdb.log.Debug().
-		Str("business_type", businessTyp).
-		Str("invite_code", inviteCode).
-		Str("public_id", publicID).
-		Msg("newTestRecordWithInvite created")
-
-	return publicID, nil
-}
-
-func (pdb *psDatabase) newTestRecordWithWeChat(
-	ctx context.Context,
-	businessTyp string,
 	weChatId string,
 ) (string, error) {
-	pdb.log.Debug().
-		Str("business_type", businessTyp).
-		Str("wechat_openid", weChatId).
-		Msg("newTestRecordWithWeChat")
+	if len(weChatId) == 0 || len(businessTyp) == 0 {
+		return "", errors.New("either businessType or weChatId must be non-nil")
+	}
+
+	sLog := pdb.log.With().Str("business_type", businessTyp).
+		Str("wechat_openid", weChatId).Logger()
+
+	sLog.Debug().Msg("NewTestRecord")
 
 	const insertSQL = `
-		INSERT INTO app.tests_record (business_type, wechat_openid, invite_code)
-		VALUES ($1, $2, $3)
+		INSERT INTO app.tests_record (business_type, wechat_openid)
+		VALUES ($1, $2)
 		RETURNING public_id
 	`
 
@@ -258,13 +154,9 @@ func (pdb *psDatabase) newTestRecordWithWeChat(
 			ctx,
 			insertSQL,
 			businessTyp,
-			weChatId, // wechat_openid
-			nil,      // invite_code 为空
+			weChatId,
 		).Scan(&publicID); err != nil {
-			pdb.log.Err(err).
-				Str("business_type", businessTyp).
-				Str("wechat_openid", weChatId).
-				Msg("newTestRecordWithWeChat: insert tests_record failed")
+			sLog.Err(err).Msg("newTestRecordWithWeChat: insert tests_record failed")
 			return err
 		}
 		return nil
@@ -274,12 +166,7 @@ func (pdb *psDatabase) newTestRecordWithWeChat(
 		return "", err
 	}
 
-	pdb.log.Debug().
-		Str("business_type", businessTyp).
-		Str("wechat_openid", weChatId).
-		Str("public_id", publicID).
-		Msg("newTestRecordWithWeChat created")
-
+	sLog.Debug().Str("public_id", publicID).Msg("newTestRecordWithWeChat created")
 	return publicID, nil
 }
 

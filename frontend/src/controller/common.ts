@@ -180,7 +180,7 @@ export function useSubscriptBySSE(
 
 export function pushStageRoute(
     router: Router,
-    businessType: string,
+    businessType: PlanKey,
     stage: string,
 ) {
     if (!businessType || !stage) return
@@ -272,3 +272,39 @@ export function useSseLogs(
     }
 }
 
+// src/constants/hobbies.ts
+
+// 默认兴趣列表（与后端 defaultHobbies 保持一致）
+export const DEFAULT_HOBBIES: string[] = [
+    // 体育类
+    '篮球',
+    '足球',
+    '羽毛球',
+    '跑步',
+    '游泳',
+    '乒乓球',
+    '健身',
+
+    // 艺术类
+    '音乐',
+    '绘画',
+    '舞蹈',
+    '摄影',
+    '书法',
+    '写作',
+
+    // 科技类
+    '编程',
+    '机器人',
+    '科学实验',
+    '电子制作',
+    '下棋',
+
+    // 生活方式类
+    '旅行',
+    '美食',
+    '志愿活动',
+    '阅读',
+    '看电影',
+    '园艺',
+]

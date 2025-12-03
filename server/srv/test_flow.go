@@ -80,12 +80,7 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 	sLog := s.log.With().Str("business_type", req.BusinessType).Logger()
 	sLog.Info().Msg("start test flow")
 
-	uid, cookieErr := s.currentUserFromCookie(r)
-	if cookieErr != nil || len(uid) == 0 {
-		sLog.Err(cookieErr).Msgf("fail to get user from cookie")
-		writeError(w, ApiInternalErr("请先登录微信", cookieErr))
-		return
-	}
+	uid := userIDFromContext(ctx)
 
 	record, dbErr := dbSrv.Instance().QueryTestInProcess(ctx, uid, req.BusinessType)
 	if dbErr != nil {

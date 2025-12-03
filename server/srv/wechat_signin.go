@@ -200,6 +200,7 @@ func (s *HttpSrv) wechatSignStatus(w http.ResponseWriter, r *http.Request) {
 		AppID:       s.cfg.WeChatAppID,
 		RedirectURI: redirectUrl,
 	}
+
 	if len(uid) == 0 {
 		writeJSON(w, http.StatusOK, resp)
 		return
@@ -310,12 +311,7 @@ func (s *HttpSrv) apiWeChatUpdateProfile(w http.ResponseWriter, r *http.Request)
 
 	ctx := r.Context()
 
-	uid, err := s.currentUserFromCookie(r)
-	if err != nil {
-		s.log.Err(err).Msg("apiWeChatUpdateProfile: no uid in cookie or no such user")
-		writeError(w, ApiInvalidReq("请先登录", err))
-		return
-	}
+	uid := userIDFromContext(ctx)
 
 	var extraData UsrProfileExtra
 	if err := extraData.parseObj(r); err != nil {
@@ -324,7 +320,7 @@ func (s *HttpSrv) apiWeChatUpdateProfile(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err = dbSrv.Instance().UpdateUserProfileExtra(ctx, uid, extraData.ParentPhone, extraData.StudyId,
+	var err = dbSrv.Instance().UpdateUserProfileExtra(ctx, uid, extraData.ParentPhone, extraData.StudyId,
 		extraData.SchoolName, extraData.Province, extraData.City)
 	if err != nil {
 		s.log.Err(err).Msg("apiWeChatUpdateProfile: update user profile failed")
@@ -344,12 +340,7 @@ type TestResponse struct {
 func (s *HttpSrv) apiWeChatMyProfile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	uid, err := s.currentUserFromCookie(r)
-	if err != nil {
-		s.log.Err(err).Msg("apiWeChatMyProfile: no uid in cookie or no such user")
-		writeError(w, ApiInvalidReq("请先登录", err))
-		return
-	}
+	uid := userIDFromContext(ctx)
 
 	tests, dbErr := dbSrv.Instance().QueryTestInfos(ctx, uid)
 	if dbErr != nil {

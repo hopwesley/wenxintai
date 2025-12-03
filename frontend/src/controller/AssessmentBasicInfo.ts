@@ -1,7 +1,7 @@
 import {computed, onMounted, reactive, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {TestRecordDTO, useTestSession} from '@/controller/testSession'
-import {apiRequest} from '@/api'
+import {API_PATHS, apiRequest} from '@/api'
 import {useAlert} from '@/controller/useAlert'
 import {
     ModeOption,
@@ -75,7 +75,7 @@ export function useStartTestConfig() {
         errorMessage.value = ''
         showLoading("正式开始测试")
         try {
-            const res = await apiRequest<CommonResponse>('/api/tests/basic_info', {
+            const res = await apiRequest<CommonResponse>(API_PATHS.TEST_BASIC_INFO, {
                 method: 'POST',
                 body: {
                     public_id: record.value.public_id,

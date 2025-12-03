@@ -1,4 +1,4 @@
-import {apiRequest} from "@/api";
+import {API_PATHS, apiRequest} from "@/api";
 import {onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {TestRecordDTO, useTestSession} from '@/controller/testSession'
@@ -74,7 +74,7 @@ export function useHomeView() {
         showLoading("进入测试环节")
 
         try {
-            const resp = await apiRequest<FetchTestFlowResponse>('/api/test_flow', {
+            const resp = await apiRequest<FetchTestFlowResponse>(API_PATHS.TEST_FLOW, {
                 method: 'POST',
                 body: {business_type: typ},
             });

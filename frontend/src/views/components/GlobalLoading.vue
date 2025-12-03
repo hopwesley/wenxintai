@@ -67,16 +67,6 @@ const {visible, message} = useGlobalLoading()
   text-align: center;
 }
 
-/* 渐隐动效 */
-.global-loading-fade-enter-active,
-.global-loading-fade-leave-active {
-  transition: opacity 0.18s ease-out;
-}
-
-.global-loading-fade-enter-from,
-.global-loading-fade-leave-to {
-  opacity: 0;
-}
 
 @keyframes global-loading-spin {
   to {

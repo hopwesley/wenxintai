@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/hopwesley/wenxintai/server/dbSrv"
-
 	"github.com/wechatpay-apiv3/wechatpay-go/core"
 	"github.com/wechatpay-apiv3/wechatpay-go/services/payments"
 	"github.com/wechatpay-apiv3/wechatpay-go/services/payments/native"
@@ -128,70 +127,73 @@ func (s *HttpSrv) updateWeChatOrderStatusFromTransaction(
 
 type WeChatNativeCreateReq struct {
 	BusinessType string `json:"business_type"`
-	PlanKey      string `json:"plan_key"`
+	PublicId     string `json:"public_id"`
+}
+
+func (req *WeChatNativeCreateReq) parseObj(r *http.Request) *ApiErr {
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return ApiInvalidReq("invalid request body", err)
+	}
+
+	if !isValidBusinessType(req.BusinessType) {
+		return ApiInvalidReq("无效的测试类型", nil)
+	}
+	if !IsValidPublicID(req.PublicId) {
+		return ApiInvalidReq("无效的问卷编号", nil)
+	}
+	return nil
 }
 
 type WeChatNativeCreateRes struct {
-	Ok          bool   `json:"ok"`
-	OrderID     string `json:"order_id"`
-	CodeURL     string `json:"code_url"`
-	Amount      int64  `json:"amount"`
-	Description string `json:"description"`
-	ErrMessage  string `json:"err_message,omitempty"`
+	Ok          bool    `json:"ok"`
+	OrderID     string  `json:"order_id"`
+	CodeURL     string  `json:"code_url"`
+	Amount      float64 `json:"amount"`
+	Description string  `json:"description"`
+	ErrMessage  string  `json:"err_message,omitempty"`
 }
 
 func (s *HttpSrv) apiWeChatCreateNativeOrder(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
-	log := s.log.With().Str("handler", "apiWeChatCreateNativeOrder").Logger()
 
 	var req WeChatNativeCreateReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, &WeChatNativeCreateRes{
-			Ok:         false,
-			ErrMessage: "invalid request body",
-		})
+
+	if err := req.parseObj(r); err != nil {
+		s.log.Err(err).Msgf("[order creation]invalid request")
+		writeError(w, err)
 		return
 	}
 
-	req.BusinessType = strings.TrimSpace(req.BusinessType)
-	req.PlanKey = strings.TrimSpace(req.PlanKey)
-	if req.BusinessType == "" || req.PlanKey == "" {
-		writeJSON(w, http.StatusBadRequest, &WeChatNativeCreateRes{
-			Ok:         false,
-			ErrMessage: "missing business_type or plan_key",
-		})
+	sLog := s.log.With().Str("public_id", req.PublicId).Str("business_type", req.BusinessType).Logger()
+
+	record, dbErr := dbSrv.Instance().QueryUnfinishedTest(ctx, req.PublicId)
+	if dbErr != nil || record == nil {
+		sLog.Err(dbErr).Msg("failed find test record")
+		writeError(w, ApiInvalidNoTestRecord(dbErr))
 		return
 	}
 
-	amount, desc, err := s.lookupWeChatPlan(req.BusinessType, req.PlanKey)
-	if err != nil {
-		log.Error().Err(err).
-			Str("business_type", req.BusinessType).
-			Str("plan_key", req.PlanKey).
-			Msg("lookup plan failed")
-		writeJSON(w, http.StatusBadRequest, &WeChatNativeCreateRes{
-			Ok:         false,
-			ErrMessage: "unknown plan",
-		})
+	plan, planErr := dbSrv.Instance().PlanByKey(ctx, record.BusinessType)
+	if planErr != nil {
+		sLog.Err(planErr).Msg("failed find product price info")
+		writeError(w, ApiInternalErr("查询产品价格信息失败", planErr))
 		return
 	}
 
 	outTradeNo := s.generateOutTradeNo()
 
 	if s.wxNativeService == nil {
-		log.Error().Msg("wxNativeService not initialized")
-		writeJSON(w, http.StatusInternalServerError, &WeChatNativeCreateRes{
-			Ok:         false,
-			ErrMessage: "pay service not ready",
-		})
+		sLog.Error().Msg("wxNativeService not initialized")
+		writeError(w, ApiInternalErr("支付系统初始化异常", nil))
 		return
 	}
 
-	resp, _, err := s.wxNativeService.Prepay(ctx, native.PrepayRequest{
+	amount := int64(plan.Price * 100)
+	resp, _, payErr := s.wxNativeService.Prepay(ctx, native.PrepayRequest{
 		Appid:       core.String(s.payment.AppID),
 		Mchid:       core.String(s.payment.MchID),
-		Description: core.String(desc),
+		Description: core.String(plan.Description),
 		OutTradeNo:  core.String(outTradeNo),
 		NotifyUrl:   core.String(s.payment.NotifyURL),
 		Amount: &native.Amount{
@@ -199,37 +201,34 @@ func (s *HttpSrv) apiWeChatCreateNativeOrder(w http.ResponseWriter, r *http.Requ
 			Currency: core.String("CNY"),
 		},
 	})
-	if err != nil {
-		log.Error().Err(err).Str("out_trade_no", outTradeNo).Msg("wechat native prepay failed")
-		writeJSON(w, http.StatusBadGateway, &WeChatNativeCreateRes{
-			Ok:         false,
-			ErrMessage: "create wechat order failed",
-		})
+
+	if payErr != nil {
+		sLog.Err(payErr).Str("out_trade_no", outTradeNo).Msg("wechat native prepay failed")
+		writeError(w, ApiInternalErr("创建支付订单失败", payErr))
 		return
 	}
+
 	if resp.CodeUrl == nil || *resp.CodeUrl == "" {
-		writeJSON(w, http.StatusInternalServerError, &WeChatNativeCreateRes{
-			Ok:         false,
-			ErrMessage: "empty code_url",
-		})
+		sLog.Error().Str("out_trade_no", outTradeNo).Msg("wechat native prepay failed")
+		writeError(w, ApiInternalErr("生成支付二维码失败", nil))
 		return
 	}
 
 	// 落库
-	var wxUnionID string
-	if c, err := r.Cookie("wx_user"); err == nil && c.Value != "" {
-		wxUnionID = c.Value
-	}
-	if err := s.saveWeChatOrder(ctx, outTradeNo, req.BusinessType, req.PlanKey, amount, desc, wxUnionID); err != nil {
-		log.Error().Err(err).Str("out_trade_no", outTradeNo).Msg("save order failed")
+	var wxUnionID = userIDFromContext(ctx)
+
+	if err := s.saveWeChatOrder(ctx, outTradeNo, req.BusinessType, record.BusinessType, amount, plan.Description, wxUnionID); err != nil {
+		sLog.Err(err).Str("out_trade_no", outTradeNo).Msg("save order failed")
+		writeError(w, ApiInternalErr("保存原始订单失败", nil))
+		return
 	}
 
 	writeJSON(w, http.StatusOK, &WeChatNativeCreateRes{
 		Ok:          true,
 		OrderID:     outTradeNo,
 		CodeURL:     *resp.CodeUrl,
-		Amount:      amount,
-		Description: desc,
+		Amount:      plan.Price,
+		Description: plan.Description,
 	})
 }
 
@@ -295,21 +294,6 @@ func (s *HttpSrv) apiWeChatOrderStatus(w http.ResponseWriter, r *http.Request) {
 		Paid:    order.TradeState == "SUCCESS",
 		Status:  order.TradeState,
 	})
-}
-
-// ========================= 本地配置 / DB =========================
-
-func (s *HttpSrv) lookupWeChatPlan(businessType, planKey string) (int64, string, error) {
-	switch businessType {
-	case "riasec":
-		switch planKey {
-		case "basic":
-			return 9900, "智择未来 · 基础版测评", nil
-		case "pro":
-			return 19900, "智择未来 · 专业版测评", nil
-		}
-	}
-	return 0, "", fmt.Errorf("unknown plan: %s/%s", businessType, planKey)
 }
 
 func (s *HttpSrv) generateOutTradeNo() string {

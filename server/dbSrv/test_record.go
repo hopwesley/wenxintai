@@ -94,7 +94,7 @@ func (pdb *psDatabase) QueryUnfinishedTest(
             completed_at
         FROM app.tests_record
         WHERE public_id = $1
-      		AND completed_at IS NULL
+          AND completed_at IS NULL
         ORDER BY created_at DESC
         LIMIT 1
     `

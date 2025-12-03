@@ -1,6 +1,6 @@
 <template>
   <teleport to="body">
-    <div v-if="open" class="invite-mask" @click.self="handleCancel">
+    <div v-if="open" class="invite-mask">
       <div class="invite-dialog" role="dialog" aria-modal="true">
         <button class="close-btn" type="button" @click="handleCancel" aria-label="close">
           ×
@@ -9,15 +9,13 @@
         <!-- 顶部：产品信息 -->
         <div class="plan-section">
           <h3 class="title">确认测试方案</h3>
-          <p class="plan-name">{{ productName }}</p>
+          <p class="plan-name">{{ product?.name }}</p>
           <p class="plan-price">￥{{ displayPrice }}</p>
-          <p v-if="productDesc" class="plan-desc">
-            {{ productDesc }}
+          <p v-if="product?.desc" class="plan-desc">
+            {{ product?.desc }}
           </p>
         </div>
 
-        <!-- 微信支付主操作 -->
-        <!-- 微信支付主操作 / 二维码区域 -->
         <div class="pay-section">
           <!-- 还没创建订单时，显示按钮 -->
           <button
@@ -84,45 +82,42 @@
 
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
-import { VerifyInviteResponse, verifyInviteWithMessage } from '@/controller/InviteCode'
-import { useTestSession } from '@/controller/testSession'
-import {NativeCreateOrderResponse} from "@/controller/WeChatNativePay";
+import {computed, nextTick, ref, watch} from 'vue'
+import {verifyInviteWithMessage} from '@/controller/PaymentModal'
+import {NativeCreateOrderResponse} from "@/controller/PaymentModal";
+import {PlanInfo} from "@/controller/common";
+import {useAlert} from "@/controller/useAlert";
 
 
 const props = defineProps<{
   open: boolean
-  productName: string
-  productPrice: number // 假设单位“元”，如果是分，这里注意换算
-  productDesc?: string
-
-  payOrder?: NativeCreateOrderResponse | null
-  paying?: boolean
+  product: PlanInfo | null
 }>()
 
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
-  (e: 'success', payload: VerifyInviteResponse): void
-  (e: 'pay'): void
+  (e: 'success'): void
 }>()
 
 function handleWeChatPayClick() {
-  emit('pay')
 }
+
 // 邀请码相关状态
 const code = ref('')
 const inviteLoading = ref(false)
 const errorMessage = ref('')
 const inputRef = ref<HTMLInputElement | null>(null)
-const trimmedCode = computed(() => code.value.trim())
 
-// 支付按钮的 loading 状态
+const payOrder = ref<NativeCreateOrderResponse | null>(null)
+const paying = ref(false)
+
+const trimmedCode = computed(() => code.value.trim())
 const payLoading = ref(false)
 
 const displayPrice = computed(() => {
-  // 如果 productPrice 是“元”，可以直接展示；如果你用“分”，这里改成 (productPrice / 100).toFixed(2)
-  return props.productPrice.toFixed(2)
+  return props.product?.price.toFixed(2)
 })
+const {showAlert} = useAlert()
 
 watch(
     () => props.open,
@@ -130,7 +125,6 @@ watch(
       if (isOpen) {
         await nextTick()
         reset()
-        // 默认焦点先不给邀请码，主路径是支付
       } else {
         reset()
       }
@@ -145,7 +139,9 @@ function reset() {
 }
 
 function handleCancel() {
-  emit('update:open', false)
+  showAlert("您确定放弃本次测试报告吗？",()=>{
+    emit('update:open', false)
+  })
 }
 
 // 提交邀请码
@@ -154,28 +150,21 @@ async function handleInviteConfirm() {
 
   inviteLoading.value = true
   errorMessage.value = ''
+  try {
+    inviteLoading.value = false
+    const trimmed = code.value.trim()
 
-  const { ok, errorMessage: msg, response } = await verifyInviteWithMessage(code.value)
-
-  inviteLoading.value = false
-
-  if (!ok) {
-    if (msg) {
-      errorMessage.value = msg
-    }
-    // 自动聚焦输入框方便重试
+    await verifyInviteWithMessage(trimmed)
+    emit('success')
+  } catch (e) {
+    errorMessage.value = JSON.stringify(e)
     inputRef.value?.focus()
     return
+  } finally {
+
   }
 
-  const trimmed = code.value.trim()
-  setInviteCode(trimmed)
-  emit('update:open', false)
-
-  if (response) {
-    emit('success', response)
-  }
 }
 </script>
 
-<style scoped src="@/styles/invite_code.css"></style>
+<style scoped src="@/styles/payment_code.css"></style>

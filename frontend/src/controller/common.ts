@@ -1,5 +1,6 @@
-import {onMounted, onBeforeUnmount, getCurrentInstance, computed, ref} from 'vue'
+import {onMounted, onBeforeUnmount, getCurrentInstance, computed, ref, reactive} from 'vue'
 import type {Router} from 'vue-router'
+import {API_PATHS, apiRequest} from "@/api";
 
 export const TestTypeBasic = "basic"
 export const TestTypePro = "pro"
@@ -272,9 +273,6 @@ export function useSseLogs(
     }
 }
 
-// src/constants/hobbies.ts
-
-// 默认兴趣列表（与后端 defaultHobbies 保持一致）
 export const DEFAULT_HOBBIES: string[] = [
     // 体育类
     '篮球',
@@ -308,3 +306,58 @@ export const DEFAULT_HOBBIES: string[] = [
     '看电影',
     '园艺',
 ]
+
+export const basicPlan: PlanInfo = {
+    key: TestTypeBasic,
+    name: '基础版',
+    price: 29.9,
+    desc: '组合推荐 + 学科优势评估',
+}
+
+const proPlan: PlanInfo = {
+    key: TestTypePro,
+    name: '专业版',
+    price: 49.9,
+    desc: '基础版+更加全面的参数解读',
+    tag: '推荐',
+}
+
+const advPlan: PlanInfo = {
+    key: TestTypeAdv,
+    name: '增强版',
+    price: 79.9,
+    desc: '专业版 +专业选择推荐+职业规划建议',
+}
+
+const schoolPlan: PlanInfo = {
+    key: TestTypeSchool,
+    name: '校本定制版',
+    price: 59.9,
+    desc: '结合校园真是数据，精准报告，多维对比',
+}
+
+export const currentProductsMap = reactive<Record<PlanKey, PlanInfo>>({
+    [TestTypeBasic]: basicPlan,
+    [TestTypePro]: proPlan,
+    [TestTypeAdv]: advPlan,
+    [TestTypeSchool]: schoolPlan,
+})
+
+export async function loadProducts() {
+    try {
+        const res = await apiRequest<PlanInfo[]>(API_PATHS.LOAD_PRODUCTS, {
+            method: 'GET',
+        })
+
+        if (!Array.isArray(res) || res.length === 0) {
+            return
+        }
+
+        for (const p of res) {
+            currentProductsMap[p.key] = p
+        }
+
+    } catch (err) {
+        console.error('loadProducts failed, fallback to local planMap:', err)
+    }
+}

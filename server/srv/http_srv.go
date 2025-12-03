@@ -22,9 +22,10 @@ import (
 )
 
 const (
-	apiHealthy      = "/api/health"
-	apiLoadHobbies  = "/api/hobbies"
-	apiLoadProducts = "/api/products"
+	apiHealthy        = "/api/health"
+	apiLoadHobbies    = "/api/hobbies"
+	apiLoadProducts   = "/api/products"
+	apiLoadCurProduct = "/api/current_product"
 
 	apiTestFlow = "/api/test_flow"
 
@@ -175,6 +176,8 @@ func (s *HttpSrv) initRouter() error {
 	routes := []route{
 		{apiLoadHobbies, http.MethodGet, s.handleHobbies, false},
 		{apiLoadProducts, http.MethodGet, s.handleProducts, false},
+		{apiLoadCurProduct, http.MethodPost, s.handleCurrentProduct, false},
+
 		{apiWeChatSignIn, http.MethodGet, s.wechatSignStatus, false},
 		{apiWeChatSignInCallBack, http.MethodGet, s.wechatSignInCallBack, false},
 		{apiWeChatPayment, http.MethodPost, s.apiWeChatPayCallBack, false},

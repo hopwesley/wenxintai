@@ -38,20 +38,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ReportRadarBlock } from '@/controller/AssessmentReport'
+import {subjectLabelMap} from "@/controller/common";
 
 const props = defineProps<{
   radar: ReportRadarBlock | null
 }>()
-
-// 学科编码 -> 中文标签
-const subjectLabelMap: Record<string, string> = {
-  PHY: '物理',
-  CHE: '化学',
-  BIO: '生物',
-  GEO: '地理',
-  HIS: '历史',
-  POL: '政治',
-}
 
 // 打印用：把雷达里的数组拆成表格行
 const rows = computed(() => {
@@ -79,9 +70,6 @@ const option = computed(() => {
     animation: false,
     animationDuration: 0,
     animationDurationUpdate: 0,
-    // 备用色盘（可以不写，只用下面的显式颜色）
-    // color: ['#1d9bf0', '#a855f7'],
-
     tooltip: {
       trigger: 'item',
     },
@@ -91,15 +79,14 @@ const option = computed(() => {
       left: 'center',
     },
     radar: {
-      // 每个维度
       indicator: r.subjects.map((sub: string) => ({
         name: subjectLabelMap[sub] ?? sub,
         max: 100,
         min: 0,
       })),
       splitNumber: 4,
-      radius: '70%',            // 放大雷达主体
-      center: ['50%', '55%'],   // 稍微往下挪，给 legend 腾空间
+      radius: '70%',
+      center: ['50%', '55%'],
       axisName: {
         fontSize: 11,
       },
@@ -137,18 +124,6 @@ const option = computed(() => {
             itemStyle: {
               color: '#a855f7',
             },
-            // 如果你希望图上也常显数值，可以打开这段 label
-            // label: {
-            //   show: true,
-            //   formatter: (params: any) => {
-            //     const { value, dataIndex } = params
-            //     if (!Array.isArray(value)) return ''
-            //     const v = value[dataIndex]
-            //     if (v == null || Number.isNaN(v)) return ''
-            //     return `${v.toFixed(0)}`
-            //   },
-            //   fontSize: 10,
-            // },
           },
         ],
       },

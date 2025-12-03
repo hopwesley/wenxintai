@@ -15,6 +15,7 @@ type DbService interface {
 
 	ListHobbies(ctx context.Context) ([]string, error)
 	ListTestPlans(ctx context.Context) ([]TestPlan, error)
+	PlanByKey(ctx context.Context, key string) (*TestPlan, error)
 
 	GetInviteByCode(ctx context.Context, code string) (*Invite, error)
 	QueryTestInProcess(ctx context.Context, uid, businessType string) (*TestRecord, error)

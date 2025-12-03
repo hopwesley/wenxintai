@@ -85,7 +85,7 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 	record, dbErr := dbSrv.Instance().QueryTestInProcess(ctx, uid, req.BusinessType)
 	if dbErr != nil {
 		sLog.Err(dbErr).Msg("failed find test record")
-		writeError(w, ApiInternalErr("查询文件数据库操作失败", dbErr))
+		writeError(w, ApiInvalidNoTestRecord(dbErr))
 		return
 	}
 

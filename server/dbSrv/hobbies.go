@@ -3,14 +3,16 @@ package dbSrv
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
 )
 
 type TestPlan struct {
-	PlanKey     string         // plan_key
-	Name        string         // name
-	Price       float64        // price (NUMERIC -> float64)
-	Description string         // description
-	Tag         sql.NullString // tag，可能为 NULL
+	PlanKey     string         `json:"key"`           // plan_key
+	Name        string         `json:"name"`          // name
+	Price       float64        `json:"price"`         // price (NUMERIC -> float64)
+	Description string         `json:"desc"`          // description
+	Tag         sql.NullString `json:"tag,omitempty"` // tag，可能为 NULL
 }
 
 func (pdb *psDatabase) ListHobbies(ctx context.Context) ([]string, error) {
@@ -78,4 +80,35 @@ func (pdb *psDatabase) ListTestPlans(ctx context.Context) ([]TestPlan, error) {
 	}
 
 	return out, nil
+}
+
+func (pdb *psDatabase) PlanByKey(ctx context.Context, key string) (*TestPlan, error) {
+	const q = `
+        SELECT 
+            plan_key,
+            name,
+            price,
+            description,
+            tag
+        FROM app.test_plans
+        WHERE plan_key = $1
+    `
+
+	var p TestPlan
+
+	row := pdb.db.QueryRowContext(ctx, q, key)
+	if err := row.Scan(
+		&p.PlanKey,
+		&p.Name,
+		&p.Price,
+		&p.Description,
+		&p.Tag,
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("plan %s not found", key)
+		}
+		return nil, err
+	}
+
+	return &p, nil
 }

@@ -65,3 +65,25 @@ func (s *HttpSrv) handleProducts(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, out)
 }
+
+func (s *HttpSrv) handleCurrentProduct(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var req WeChatNativeCreateReq
+
+	if err := req.parseObj(r); err != nil {
+		s.log.Err(err).Msgf("[handleCurrentProduct] invalid request")
+		writeError(w, err)
+		return
+	}
+	sLog := s.log.With().Str("public_id", req.PublicId).Str("business_type", req.BusinessType).Logger()
+
+	plan, planErr := dbSrv.Instance().PlanByKey(ctx, req.BusinessType)
+	if planErr != nil {
+		sLog.Err(planErr).Msg("failed find product price info")
+		writeError(w, ApiInternalErr("查询产品价格信息失败", planErr))
+		return
+	}
+
+	writeJSON(w, http.StatusOK, plan)
+}

@@ -36,45 +36,45 @@
                 class="home-user-wrapper"
                 ref="userMenuWrapperRef"
             >
-            <!-- 已登录：用 signInStatus 里的头像 & 昵称 -->
-            <button
-                type="button"
-                class="home-user"
-                @click="handleUserClick"
-            >
-              <img
-                  v-if="signInStatus.avatar_url"
-                  :src="signInStatus.avatar_url"
-                  alt="微信头像"
-                  class="home-user__avatar"
-              />
-              <span
-                  v-if="signInStatus.nick_name"
-                  class="home-user__name"
+              <!-- 已登录：用 signInStatus 里的头像 & 昵称 -->
+              <button
+                  type="button"
+                  class="home-user"
+                  @click="handleUserClick"
               >
+                <img
+                    v-if="signInStatus.avatar_url"
+                    :src="signInStatus.avatar_url"
+                    alt="微信头像"
+                    class="home-user__avatar"
+                />
+                <span
+                    v-if="signInStatus.nick_name"
+                    class="home-user__name"
+                >
                 {{ signInStatus.nick_name }}
               </span>
-            </button>
-            <!-- 下拉菜单 -->
-            <div
-                v-if="isUserMenuOpen"
-                class="home-user-menu"
-            >
-              <button
-                  type="button"
-                  class="home-user-menu__item"
-                  @click="handleGoMyTests"
-              >
-                我的测试
               </button>
-              <button
-                  type="button"
-                  class="home-user-menu__item home-user-menu__item--danger"
-                  @click="handleLogout"
+              <!-- 下拉菜单 -->
+              <div
+                  v-if="isUserMenuOpen"
+                  class="home-user-menu"
               >
-                退出登录
-              </button>
-            </div>
+                <button
+                    type="button"
+                    class="home-user-menu__item"
+                    @click="handleGoMyTests"
+                >
+                  我的测试
+                </button>
+                <button
+                    type="button"
+                    class="home-user-menu__item home-user-menu__item--danger"
+                    @click="handleLogout"
+                >
+                  退出登录
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -87,23 +87,19 @@
             <br>
             通过精准能力画像与价值观探索，帮助孩子发现“天赋赛道”
           </p>
-          <!--      <div class="hero-cta">
-            <RouterLink to="/login" class="btn btn-primary">立即开始</RouterLink>
-          </div> -->
         </div>
       </div>
     </section>
-
     <section class="plans container" id="section-start-test">
       <div
           class="plan-card plan-a"
           :class="{ 'is-active': activePlan === TestTypeBasic }"
           @click="activePlan = TestTypeBasic"
       >
-        <div class="planA-head"> {{ planMap[TestTypeBasic].name }}</div>
+        <div class="planA-head"> {{ currentProductsMap[TestTypeBasic].name }}</div>
         <div class="plan-card-content">
           <div class="plan-head">
-            <div class="price"><span class="currency">¥</span>{{ planMap[TestTypeBasic].price }}</div>
+            <div class="price"><span class="currency">¥</span>{{ currentProductsMap[TestTypeBasic].price }}</div>
           </div>
           <ul class="plan-features">
             <li class="plan-lists">
@@ -182,10 +178,10 @@
           @click="activePlan = TestTypePro"
           aria-disabled="true"
       >
-        <div class="planA-head">{{ planMap[TestTypePro].name }}</div>
+        <div class="planA-head">{{ currentProductsMap[TestTypePro].name }}</div>
         <div class="plan-card-content">
           <div class="plan-head">
-            <div class="price"><span class="currency">¥</span>{{ planMap[TestTypePro].price }}</div>
+            <div class="price"><span class="currency">¥</span>{{ currentProductsMap[TestTypePro].price }}</div>
           </div>
           <ul class="plan-features">
             <li class="plan-lists">
@@ -222,7 +218,7 @@
             </li>
             <li class="plan-lists">
               <div class="list-icon">
-                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" >
+                <svg width="10px" height="10px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
                   <title>形状结合</title>
                   <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.300000012">
                     <g id="banner01备份" transform="translate(-324, -742)" fill="#5A60EA">
@@ -263,10 +259,11 @@
           @click="activePlan = TestTypeAdv"
           aria-disabled="true"
       >
-        <div class="planA-head">{{ planMap[TestTypeAdv].name }}</div>
+        <div class="planA-head">{{ currentProductsMap[TestTypeAdv].name }}</div>
         <div class="plan-card-content">
           <div class="plan-head">
-            <div class="price price-gray"><span class="currency">¥</span>{{ planMap[TestTypeAdv].price }}</div>
+            <div class="price price-gray"><span class="currency">¥</span>{{ currentProductsMap[TestTypeAdv].price }}
+            </div>
           </div>
           <ul class="plan-features">
             <li class="plan-lists">
@@ -344,10 +341,11 @@
           @click="activePlan = TestTypeSchool"
           aria-disabled="true"
       >
-        <div class="planA-head">{{ planMap[TestTypeSchool].name }}</div>
+        <div class="planA-head">{{ currentProductsMap[TestTypeSchool].name }}</div>
         <div class="plan-card-content">
           <div class="plan-head">
-            <div class="price price-gray"><span class="currency">¥</span>{{ planMap[TestTypeSchool].price }}</div>
+            <div class="price price-gray"><span class="currency">¥</span>{{ currentProductsMap[TestTypeSchool].price }}
+            </div>
           </div>
           <ul class="plan-features">
             <li class="plan-lists">
@@ -618,26 +616,23 @@
         </div>
       </div>
     </section>
-
     <section id="icp-area">
       <div
           style="margin: 0 auto;color: #b0b1b3; text-align: center;padding: 16px;border-top: 1px solid #ECECEE; font-size: 14px">
         域世安（北京）科技有限公司 | 京ICP备2025150532号-1
       </div>
     </section>
-
     <NewUserInfoDialog v-model:open="newUserDialogOpen"/>
   </div>
 </template>
 
 <script setup lang="ts">
 import {computed, ref, watch} from 'vue'
-import InviteCodeModal from '@/views/components/InviteCodeModal.vue'
 import {useHomeView} from '@/controller/HomeView'
 
 import {useAuthStore} from '@/controller/wx_auth'
 import {useRouter} from "vue-router";
-import {PlanInfo, PlanKey, TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool} from "@/controller/common";
+import {TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool, currentProductsMap} from "@/controller/common";
 import NewUserInfoDialog from "@/views/components/NewUserInfoDialog.vue";
 
 const {
@@ -652,9 +647,7 @@ const {
   userMenuWrapperRef,
   handleGoMyTests,
   handleLogout,
-  planMap,
 } = useHomeView()
-
 
 const authStore = useAuthStore()
 const router = useRouter()

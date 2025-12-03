@@ -2,17 +2,18 @@ import {ref, computed, onMounted, reactive} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useGlobalLoading} from '@/controller/useGlobalLoading'
 import {useTestSession, type TestRecordDTO} from '@/controller/testSession'
-import {apiRequest} from "@/api";
+import {API_PATHS, apiRequest} from "@/api";
 import {useAlert} from "@/controller/useAlert";
 import {
     Mode312,
     Mode33,
-    ModeOption,
+    ModeOption, PlanInfo,
     subjectLabelMap,
     TestTypeBasic,
     useSseLogs,
     useSubscriptBySSE
 } from "@/controller/common";
+import {NativeCreateOrderResponse} from "@/controller/PaymentModal";
 
 export interface ComboMetric {
     label: string
@@ -29,8 +30,6 @@ export interface ReportCombo {
     recommendExplain: string
 }
 
-// ===== 报告接口类型 =====
-// 单科 common_score.common.subjects 里的条目
 export interface ReportSubjectScore {
     subject: string
     interest_z: number
@@ -41,7 +40,6 @@ export interface ReportSubjectScore {
     fit_score?: number
 }
 
-// common_score.common
 export interface ReportCommonBlock {
     global_cosine: number
     quality_score: number
@@ -50,20 +48,17 @@ export interface ReportCommonBlock {
     subjects: ReportSubjectScore[]
 }
 
-// common_score.radar
 export interface ReportRadarBlock {
     subjects: string[]
     interest_pct: number[]
     ability_pct: number[]
 }
 
-// common_score 整体
 export interface ReportCommonScore {
     common: ReportCommonBlock
     radar: ReportRadarBlock
 }
 
-// recommend_312[*].combos 里的条目
 export interface Report312Combo {
     aux1: string
     aux2: string
@@ -78,7 +73,6 @@ export interface Report312Combo {
     combo_score?: number
 }
 
-// recommend_312 里每个 anchor_* 块
 export interface Report312Anchor {
     subject: string
     fit: number
@@ -92,10 +86,8 @@ export interface Report312Anchor {
     s_final_score?: number
 }
 
-// recommend_312 顶层：key 例如 "anchor_phy" / "anchor_his"…
 export type ReportRecommend312 = Record<string, Report312Anchor>
 
-// 3+3 推荐组合的原始数值
 export interface Recommend33Combo {
     subjects: string[]          // ["CHE","BIO","GEO"]
     avg_fit: number             // 平均匹配度
@@ -111,20 +103,17 @@ export interface ReportRecommend33 {
     top_combinations: Recommend33Combo[]
 }
 
-// 通用：一个组合 + 若干数值（这里我们约定长度为 1 或 2）
 export interface ComboChartMetric {
     key: string        // 内部字段名，例如 'score' / 's_final' / 'coverage' / 'mix_penalty'
     label: string      // 展示用名称，例如 '综合得分' / '专业覆盖率'
     value: number
 }
 
-// 通用：图表用的“组合 + 指标”
 export interface ComboChartItem {
     comboKey: string        // 组合编码，例如 "PHY_CHE_BIO"
     metrics: ComboChartMetric[]   // 长度 1 = 单指标；长度 2 = 双指标
 }
 
-// 整体响应
 export interface ReportRawData {
     uid: string
     mode: ModeOption
@@ -133,16 +122,6 @@ export interface ReportRawData {
     common_score: ReportCommonScore
     recommend_33: ReportRecommend33 | null
     recommend_312: ReportRecommend312 | null
-}
-
-function getAiReportParam(publicID: string, businessTyp: string) {
-    return apiRequest<ReportRawData>('/api/generate_report', {
-        method: 'POST',
-        body: {
-            public_id: publicID,
-            business_type: businessTyp
-        },
-    })
 }
 
 export interface ReportOverviewInfo {
@@ -162,34 +141,18 @@ export interface Mode33ViewModel {
     topCombos: ReportCombo[]
 }
 
-// ==== 报告概览卡片（顶部那张）用到的字段 ====
 
-// 简单日期格式化：2025-11-22
-function formatDate(dateStr?: string | null): string {
-    if (!dateStr) return ''
-    const d = new Date(dateStr)
-    if (Number.isNaN(d.getTime())) return ''
-    const y = d.getFullYear()
-    const m = `${d.getMonth() + 1}`.padStart(2, '0')
-    const day = `${d.getDate()}`.padStart(2, '0')
-    return `${y}-${m}-${day}`
-}
-
-
-// 一条组合详情
 export interface ComboDetail {
     combo_name: string
     combo_description: string
     combo_advice: string
 }
 
-// 某一个“模式小节”（例如 mode312_PHY、mode312_HIS）
 export interface ModeSectionItem {
     overview_text: string
     combo_details: ComboDetail[]
 }
 
-// 整个 mode_section：key 是 "mode312_PHY" / "mode312_HIS" 之类
 export interface Mode312Section {
     [modeKey: string]: ModeSectionItem
 }
@@ -204,16 +167,13 @@ export interface Mode33Section {
     mode33_combo_details: Record<string, Mode33ComboExplain>
 }
 
-// 最终：AIReportPayload 里的 mode_section 允许两种形状
 export type ModeSection = Mode312Section | Mode33Section
 
-// common_section
 export interface CommonSection {
     report_validity_text: string
     subjects_summary_text: string
 }
 
-// final_report 部分
 export interface FinalAIReport {
     mode: ModeOption
     report_validity: string
@@ -225,7 +185,6 @@ export interface FinalAIReport {
     strategic_conclusion: string
 }
 
-// 整个 AI 报告 payload
 export interface AIReportPayload {
     common_section: CommonSection
     mode_section: ModeSection
@@ -252,20 +211,19 @@ export interface Mode312OverviewStrips {
 export const aiReportData = ref<AIReportPayload | null>(null)
 
 export function useReportPage() {
+
     const {showLoading, hideLoading} = useGlobalLoading()
     const route = useRoute()
     const {state, resetSession} = useTestSession()
     const {showAlert} = useAlert()
     const router = useRouter()
     const aiLoading = ref(false)
-
     const rawReportData = ref<ReportRawData | null>(null)
     const subjectRadar = computed<ReportRadarBlock | null>(() => {
         const r = rawReportData.value?.common_score?.radar
         if (!r || !r.subjects || !r.subjects.length) return null
         return r
     })
-
     const overview = reactive<ReportOverviewInfo>({
         mode: Mode33,
         studentLocation: '',
@@ -275,16 +233,12 @@ export function useReportPage() {
         schoolName: '',
         account: '',
     })
-
-    // 当前报告模式：3+3 / 3+1+2
     const isMode33 = computed(() => overview.mode === Mode33)
     const isMode312 = computed(() => overview.mode === Mode312)
-
     const record = computed<TestRecordDTO | undefined>(() => state.record)
     const businessType = computed(() => record.value?.business_type ?? TestTypeBasic)
-    const  publicId= record.value?.public_id ?? ''
-
-// === 新增：3+1+2 概览 + 图表数据 ===
+    const publicId = record.value?.public_id ?? ''
+    const {truncatedLatestMessage, handleSseMsg} = useSseLogs(8, 20)
     const mode312OverviewStrips = computed<Mode312OverviewStrips | null>(() => {
         const raw = rawReportData.value
         const ai = aiReportData.value
@@ -423,31 +377,6 @@ export function useReportPage() {
             hisS1: hisAnchor?.s1 ?? 0,
         }
     })
-
-    computed(() => {
-        if (!isMode33.value) return ''
-        const section = aiReportData.value?.mode_section as any
-        return section?.mode33_overview_text ?? ''
-    });
-    // 3+3：科目数组 -> “化学 + 生物 + 地理”
-    function formatComboName33(subjects: string[]): string {
-        return subjects.map(s => subjectLabelMap[s] ?? s).join(' + ')
-    }
-
-// 3+3：第几个组合 -> 档位文案
-    function rankLabelFor33(index: number): string {
-        const preset = ['第一档', '第二档', '第三档']
-        return preset[index] ?? `第${index + 1}档`
-    }
-
-// 3+3：第几个组合 -> 颜色主题
-    function themeFor33(index: number): string {
-        if (index === 0) return 'primary' // 首选：主紫色
-        if (index === 1) return 'blue'    // 备选一：蓝色
-        return 'yellow'                   // 其他：黄色
-    }
-
-    // 3+3 模式统一视图：overview 文本 + 三个组合的原始 score
     const mode33View = computed<Mode33ViewModel | null>(() => {
         const raw = rawReportData.value
         const ai = aiReportData.value
@@ -519,88 +448,11 @@ export function useReportPage() {
             topCombos,
         }
     })
-
-
-    function applyReportOverview(data: ReportRawData) {
-        overview.mode = data.mode
-        overview.account = data.uid || ''
-
-        overview.generateDate = formatDate(data.generate_at)
-        overview.expireDate = formatDate(data.expired_at)
-
-        overview.studentLocation = ''
-        overview.studentNo = ''
-        overview.schoolName = ''
-    }
-
-    function handleSseError(err: Error) {
-        console.log('------>>> sse channel error:', err)
-        showAlert('获取测试报告失败，请稍后再试:' + err)
-        aiLoading.value = false
-    }
-
-    const {
-        truncatedLatestMessage,
-        handleSseMsg,
-    } = useSseLogs(8, 20)
-
-    function handleSseDone(raw: string) {
-        try {
-            let parsed = JSON.parse(raw)
-            if (typeof parsed === "string") {
-                parsed = JSON.parse(parsed) as AIReportPayload
-            }
-            console.log('------>>> parsed object:', parsed)
-            aiReportData.value = parsed
-
-        } catch (e) {
-            showAlert('解析报告数据失败，请稍后再试' + e)
-        } finally {
-            aiLoading.value = false;
-        }
-    }
-
-    const sseCtrl = useSubscriptBySSE(`/api/sub/report/${publicId!}`, {
-        autoStart: false,
-        onOpen: () => {
-            aiLoading.value = true
-        },
-        onError: handleSseError,
-        onMsg: handleSseMsg,
-        onClose: () => {
-            aiLoading.value = false
-        },
-        onDone: handleSseDone,
-    })
-
-
-    onMounted(async () => {
-        showLoading("正在准备智能分析参数", 20_000)
-        try {
-            if (!publicId) {
-                showAlert('未找到试卷编号', () => {
-                    router.replace('/home').then()
-                })
-                return
-            }
-            const resp = await getAiReportParam(publicId, businessType.value)
-            rawReportData.value = resp;
-            console.log("------>>>resp data:", rawReportData)
-            applyReportOverview(resp);
-            sseCtrl.start()
-        } catch (e) {
-            showAlert("生成 AI 参数失败:" + e);
-        } finally {
-            hideLoading();
-        }
-    })
-
     const finalReport = computed<FinalAIReport | null>(() => {
         const ai = aiReportData.value
         if (!ai || !ai.final_report) return null
         return ai.final_report
     })
-
     const showFinishLetter = ref(false)
     const handleLetterConfirm = async () => {
         try {
@@ -620,8 +472,6 @@ export function useReportPage() {
         showFinishLetter.value = false
         router.replace('/').then()
     }
-
-
     const handleExportPdf = () => {
         const oldTitle = document.title
 
@@ -639,62 +489,157 @@ export function useReportPage() {
             document.title = oldTitle
         }, 1000)
     }
-
     const reportPageRoot = ref<HTMLElement | null>(null)
+    const paymentDialogShow = ref(false)
+    const currentPlan = ref<PlanInfo | null>(null)
 
-    // const handleExportPdf = async () => {
-    //     const el = reportPageRoot.value
-    //     if (!el) return
-    //     el.classList.add('report-page--pdf')
-    //     await nextTick()
-    //     await new Promise(r => setTimeout(r, 300))
-    //
-    //
-    //     const opt = {
-    //         margin: [5, 5, 5, 5],
-    //         filename: `选科报告-${overview.account || overview.generateDate || 'report'}.pdf`,
-    //         image: { type: 'jpeg', quality: 0.98 },
-    //         html2canvas: {
-    //             scale: 3,
-    //             useCORS: true,
-    //             windowWidth: el.scrollWidth,
-    //             windowHeight: el.scrollHeight,
-    //             letterRendering: true,
-    //         },
-    //         jsPDF: {
-    //             unit: 'mm',
-    //             format: 'a4',
-    //             orientation: 'portrait',
-    //         },
-    //         pagebreak: {
-    //             mode: ['css', 'legacy'],
-    //             avoid: [
-    //                 '.report-card',
-    //                 '.basic-analysis-layout__chart',
-    //                 '.recommend-analysis__chart',
-    //                 '.report-section--recommend-analysis',
-    //                 '.report-section--mode312-analysis',
-    //                 '.report-section--summary',
-    //             ],
-    //         },
-    //     }
-    //
-    //     showLoading("正在导出报表.....")
-    //     try {
-    //         await (html2pdf() as any)
-    //             .set(opt)
-    //             .from(el as HTMLElement)
-    //             .save()
-    //     } finally {
-    //         el.classList.remove('report-page--pdf')
-    //         hideLoading()
-    //     }
-    // }
+    computed(() => {
+        if (!isMode33.value) return ''
+        const section = aiReportData.value?.mode_section as any
+        return section?.mode33_overview_text ?? ''
+    });
 
-    const inviteModalOpen = ref(false)
+    function formatComboName33(subjects: string[]): string {
+        return subjects.map(s => subjectLabelMap[s] ?? s).join(' + ')
+    }
+
+    function rankLabelFor33(index: number): string {
+        const preset = ['第一档', '第二档', '第三档']
+        return preset[index] ?? `第${index + 1}档`
+    }
+
+    function themeFor33(index: number): string {
+        if (index === 0) return 'primary' // 首选：主紫色
+        if (index === 1) return 'blue'    // 备选一：蓝色
+        return 'yellow'                   // 其他：黄色
+    }
+
+    function applyReportOverview(data: ReportRawData) {
+        overview.mode = data.mode
+        overview.account = data.uid || ''
+
+        overview.generateDate = formatDate(data.generate_at)
+        overview.expireDate = formatDate(data.expired_at)
+
+        overview.studentLocation = ''
+        overview.studentNo = ''
+        overview.schoolName = ''
+    }
+
+    function handleSseError(err: Error) {
+        console.log('------>>> sse channel error:', err)
+        showAlert('获取测试报告失败，请稍后再试:' + err)
+        aiLoading.value = false
+    }
+
+    function handleSseDone(raw: string) {
+        try {
+            let parsed = JSON.parse(raw)
+            if (typeof parsed === "string") {
+                parsed = JSON.parse(parsed) as AIReportPayload
+            }
+            console.log('------>>> parsed object:', parsed)
+            aiReportData.value = parsed
+
+        } catch (e) {
+            showAlert('解析报告数据失败，请稍后再试' + e)
+        } finally {
+            aiLoading.value = false;
+        }
+    }
+
+    const sseCtrl = useSubscriptBySSE(`${API_PATHS.SSE_REPORT_SUB}${publicId!}`, {
+        autoStart: false,
+        onOpen: () => {
+            aiLoading.value = true
+        },
+        onError: handleSseError,
+        onMsg: handleSseMsg,
+        onClose: () => {
+            aiLoading.value = false
+        },
+        onDone: handleSseDone,
+    })
+
+    function formatDate(dateStr?: string | null): string {
+        if (!dateStr) return ''
+        const d = new Date(dateStr)
+        if (Number.isNaN(d.getTime())) return ''
+        const y = d.getFullYear()
+        const m = `${d.getMonth() + 1}`.padStart(2, '0')
+        const day = `${d.getDate()}`.padStart(2, '0')
+        return `${y}-${m}-${day}`
+    }
+
+    async function generateReport() {
+        showLoading("正在准备智能分析参数", 20_000)
+        try {
+            if (!publicId) {
+                showAlert('未找到试卷编号', () => {
+                    router.replace('/home').then()
+                })
+                return
+            }
+            const resp = await apiRequest<ReportRawData>(API_PATHS.GENERATE_REPORT, {
+                method: 'POST',
+                body: {
+                    public_id: publicId,
+                    business_type: businessType.value
+                },
+            })
+            rawReportData.value = resp;
+            console.log("------>>>resp data:", rawReportData)
+            applyReportOverview(resp);
+            sseCtrl.start()
+        } catch (e) {
+            showAlert("生成 AI 参数失败:" + e);
+        } finally {
+            hideLoading();
+        }
+    }
+
+    async function generatePaymentOrder() {
+        showLoading("创建订单")
+        try {
+            const resp = await apiRequest<NativeCreateOrderResponse>(API_PATHS.WECHAT_CREATE_NATIVE_ORDER, {
+                method: 'POST',
+                body: {
+                    public_id: publicId,
+                    business_type: businessType.value
+                },
+            })
+        } catch (e) {
+            showAlert("生成报告支付二维码失败:" + e);
+        } finally {
+            hideLoading()
+        }
+    }
+
+    async function queryCurPlan() {
+        showLoading("加载支付信息")
+        try {
+            const resp = await apiRequest<PlanInfo>(API_PATHS.LOAD_CUR_PRODUCT, {
+                method: 'POST',
+                body: {
+                    public_id: publicId,
+                    business_type: businessType.value
+                },
+            })
+
+            currentPlan.value = resp
+            paymentDialogShow.value = true
+        } catch (e) {
+            showAlert("查询产品价格失败:" + e);
+        } finally {
+            hideLoading()
+        }
+    }
+
+    onMounted(async () => {
+        await queryCurPlan()
+    })
 
     return {
-        inviteModalOpen,
         state,
         route,
         overview,
@@ -712,5 +657,7 @@ export function useReportPage() {
         handleExportPdf,
         showFinishLetter,
         handleLetterConfirm,
+        paymentDialogShow,
+        currentPlan,
     }
 }

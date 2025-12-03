@@ -46,7 +46,7 @@ const { visible, title, message, handleConfirm, closeAlert } = useAlert()
 .alert-overlay {
   position: fixed;
   inset: 0;
-  z-index: 2000;
+  z-index: 2200;
   display: flex;
   align-items: center;
   justify-content: center;

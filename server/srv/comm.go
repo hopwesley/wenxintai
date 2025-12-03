@@ -195,21 +195,6 @@ var testFlowDescForSchool = []string{
 	StageReportDes,
 }
 
-func getTestRoutesDes(testType string) []string {
-	switch testType {
-	case BusinessTypeBasic:
-		return testFlowDescForBasic
-	case BusinessTypePro:
-		return testFlowDescForPro
-	case BusinessTypeAdv:
-		return testFlowDescForAdv
-	case BusinessTypeSchool:
-		return testFlowDescForSchool
-	default:
-		return nil
-	}
-}
-
 func parseStatusToRoute(status int, routes []string) (string, int) {
 	if status >= len(routes) {
 		return StageReport, len(routes) - 1
@@ -225,6 +210,7 @@ func parseStatusToRoute(status int, routes []string) (string, int) {
 }
 
 // TODO::check this method again
+
 func (s *HttpSrv) checkTestSequence(ctx context.Context, publicID, testType string) (*dbSrv.TestRecord, error) {
 	record, dbErr := dbSrv.Instance().QueryUnfinishedTest(ctx, publicID)
 	if dbErr != nil {
@@ -439,4 +425,25 @@ func nullToString(ns sql.NullString) string {
 		return ns.String
 	}
 	return ""
+}
+
+type ctxKey string
+
+const ctxKeyUserID ctxKey = "context_wx_user_id"
+
+// 一个小工具函数，方便 handler 里直接用
+func userIDFromContext(ctx context.Context) string {
+	v := ctx.Value(ctxKeyUserID)
+	if v == nil {
+		return ""
+	}
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return ""
+}
+
+// 或者再包一层，从 *http.Request 里取，handler 用起来更顺手
+func userIDFromRequest(r *http.Request) string {
+	return userIDFromContext(r.Context())
 }

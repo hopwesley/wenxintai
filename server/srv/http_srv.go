@@ -52,34 +52,10 @@ var (
 )
 
 type route struct {
-	pattern string
-	method  string
-	handler http.HandlerFunc
-}
-
-var routes = []route{
-	{apiLoadHobbies, http.MethodGet, _srvInst.handleHobbies},
-
-	{apiTestFlow, http.MethodPost, _srvInst.handleTestFlow},
-
-	{apiTestBasicInfo, http.MethodPost, _srvInst.updateBasicInfo},
-
-	{apiSSEQuestionSub, http.MethodGet, _srvInst.handleQuestionSSEEvent},
-	{apiSSEReportSub, http.MethodGet, _srvInst.handleReportSSEEvent},
-
-	{apiSubmitTest, http.MethodPost, _srvInst.handleTestSubmit},
-	{apiGenerateReport, http.MethodPost, _srvInst.handleTestReport},
-	{apiFinishReport, http.MethodPost, _srvInst.finishReport},
-
-	{apiWeChatSignIn, http.MethodGet, _srvInst.wechatSignStatus},
-	{apiWeChatSignInCallBack, http.MethodGet, _srvInst.wechatSignInCallBack},
-	{apiWeChatLogOut, http.MethodPost, _srvInst.wechatLogout},
-	{apiWeChatUpdateProfile, http.MethodPost, _srvInst.apiWeChatUpdateProfile},
-	{apiWeChatMyProfile, http.MethodGet, _srvInst.apiWeChatMyProfile},
-
-	{apiWeChatPayment, http.MethodPost, _srvInst.apiWeChatPayCallBack},
-	{apiWeChatCreateNativeOrder, http.MethodPost, _srvInst.apiWeChatCreateNativeOrder},
-	{apiWeChatNativeOrderStatus, http.MethodGet, _srvInst.apiWeChatOrderStatus},
+	pattern      string
+	method       string
+	handler      http.HandlerFunc
+	requireLogin bool
 }
 
 type HttpSrv struct {
@@ -195,15 +171,30 @@ func (s *HttpSrv) initRouter() error {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
 
+	routes := []route{
+		{apiLoadHobbies, http.MethodGet, s.handleHobbies, false},
+		{apiWeChatSignIn, http.MethodGet, s.wechatSignStatus, false},
+		{apiWeChatSignInCallBack, http.MethodGet, s.wechatSignInCallBack, false},
+		{apiWeChatPayment, http.MethodPost, s.apiWeChatPayCallBack, false},
+		{apiWeChatLogOut, http.MethodPost, s.wechatLogout, false},
+
+		{apiTestFlow, http.MethodPost, s.handleTestFlow, true},
+		{apiTestBasicInfo, http.MethodPost, s.updateBasicInfo, true},
+		{apiSSEQuestionSub, http.MethodGet, s.handleQuestionSSEEvent, true},
+		{apiSSEReportSub, http.MethodGet, s.handleReportSSEEvent, true},
+		{apiSubmitTest, http.MethodPost, s.handleTestSubmit, true},
+		{apiGenerateReport, http.MethodPost, s.handleTestReport, true},
+		{apiFinishReport, http.MethodPost, s.finishReport, true},
+		{apiWeChatUpdateProfile, http.MethodPost, s.apiWeChatUpdateProfile, true},
+		{apiWeChatMyProfile, http.MethodGet, s.apiWeChatMyProfile, true},
+		{apiWeChatCreateNativeOrder, http.MethodPost, s.apiWeChatCreateNativeOrder, true},
+		{apiWeChatNativeOrderStatus, http.MethodGet, s.apiWeChatOrderStatus, true},
+	}
+
 	for _, rt := range routes {
 		r := rt
 		mux.HandleFunc(r.pattern, func(w http.ResponseWriter, req *http.Request) {
-			if req.Method != r.method {
-				w.Header().Set("Allow", r.method)
-				http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-				return
-			}
-			r.handler(w, req)
+			s.wrapApi(r, w, req)
 		})
 	}
 
@@ -221,6 +212,31 @@ func (s *HttpSrv) initRouter() error {
 
 	s.srv = srv
 	return nil
+}
+
+func (s *HttpSrv) wrapApi(r route, w http.ResponseWriter, req *http.Request) {
+	if req.Method != r.method {
+		w.Header().Set("Allow", r.method)
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+
+	if r.requireLogin {
+		uid, err := s.currentUserFromCookie(req)
+		if err != nil {
+			s.log.Err(err).Msg("parse wx_user cookie failed")
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+		if uid == "" {
+			http.Error(w, "unauthorized: please login first", http.StatusUnauthorized)
+			return
+		}
+
+		req = req.WithContext(context.WithValue(req.Context(), ctxKeyUserID, uid))
+	}
+
+	r.handler(w, req)
 }
 
 func (s *HttpSrv) loggingMiddleware(next http.Handler) http.Handler {

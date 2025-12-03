@@ -50,23 +50,27 @@ export async function apiRequest<T = any>(path: string, options: RequestOptions 
     throw err
 }
 
-export interface LoginPayload {
-  wechat_id: string
-  nickname: string
-  avatar_url: string
-}
+export const API_PATHS = {
+    HEALTH: '/api/health',
+    LOAD_HOBBIES: '/api/hobbies',
 
-export async function login(payload: LoginPayload) {
-  return apiRequest('/api/login', { method: 'POST', body: payload })
-}
+    TEST_FLOW: '/api/test_flow',
 
+    TEST_BASIC_INFO: '/api/tests/basic_info',
 
-export interface ReportRequest {
-  session_id?: string
-  mode: string
-  api_key?: string
-}
+    SSE_QUESTION_SUB: '/api/sub/question/',
+    SSE_REPORT_SUB: '/api/sub/report/',
+    SUBMIT_TEST: '/api/test_submit',
+    GENERATE_REPORT: '/api/generate_report',
+    FINISH_REPORT: '/api/finish_report',
 
-export async function getReport(payload: ReportRequest) {
-  return apiRequest('/api/report', { method: 'POST', body: payload })
-}
+    WECHAT_SIGN_IN: '/api/auth/wx/status',
+    WECHAT_SIGN_IN_CALLBACK: '/api/wechat_signin',
+    WECHAT_LOGOUT: '/api/auth/logout',
+    WECHAT_UPDATE_PROFILE: '/api/user/update_profile',
+    WECHAT_MY_PROFILE: '/api/auth/profile',
+
+    WECHAT_PAYMENT: '/api/pay/',
+    WECHAT_CREATE_NATIVE_ORDER: '/api/pay/wechat/native/create',
+    WECHAT_NATIVE_ORDER_STATUS: '/api/pay/wechat/order-status',
+} as const

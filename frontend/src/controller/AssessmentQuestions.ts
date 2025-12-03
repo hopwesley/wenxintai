@@ -14,7 +14,7 @@ import {
 
 import {useAlert} from "@/controller/useAlert";
 import {useGlobalLoading} from "@/controller/useGlobalLoading";
-import {apiRequest} from "@/api";
+import {API_PATHS, apiRequest} from "@/api";
 
 export interface Question {
     id: number
@@ -170,7 +170,6 @@ export function useQuestionsStagePage() {
         hideAIProcess()
     }
 
-
     function resetStageState() {
         currentPage.value = 1
         questions.value = []
@@ -291,7 +290,8 @@ export function useQuestionsStagePage() {
             business_type: bizType,
             test_type: stage,
         })
-        const url = `/api/sub/question/${public_id}?${params.toString()}`
+
+        const url = `${API_PATHS.SSE_QUESTION_SUB}${public_id}?${params.toString()}`
 
         const sseCtrl = useSubscriptBySSE(url, {
             autoStart: false,
@@ -312,7 +312,7 @@ export function useQuestionsStagePage() {
             test_type: testStage.value,
             answers: buildAnswersPayloadForCurrentStage(),
         }
-        const resp = await apiRequest<CommonResponse>('/api/test_submit', {method: 'POST', body: payload})
+        const resp = await apiRequest<CommonResponse>(API_PATHS.SUBMIT_TEST, {method: 'POST', body: payload})
 
         if (!resp.ok) {
             throw new Error(resp.msg || '提交失败，请稍后重试')

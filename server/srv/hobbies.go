@@ -24,7 +24,7 @@ func (s *HttpSrv) initHobbies() error {
 	return err
 }
 
-func (s *HttpSrv) handleHobbies(w http.ResponseWriter, r *http.Request) {
+func (s *HttpSrv) handleHobbies(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"hobbies": s.cfg.studentHobbies,
 	})

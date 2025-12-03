@@ -25,10 +25,6 @@ func (s *HttpSrv) initHobbies() error {
 }
 
 func (s *HttpSrv) handleHobbies(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		writeError(w, ApiMethodInvalid)
-		return
-	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"hobbies": s.cfg.studentHobbies,
 	})

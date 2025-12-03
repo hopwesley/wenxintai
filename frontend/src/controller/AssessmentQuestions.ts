@@ -183,8 +183,6 @@ export function useQuestionsStagePage() {
     interface ServerAnswerItem {
         id: number
         value: AnswerValue
-
-        // 其余字段（dimension / subject 等）不影响前端恢复选项
         [key: string]: any
     }
 
@@ -228,14 +226,6 @@ export function useQuestionsStagePage() {
         }
     }
 
-    /**
-     * 统一处理“本阶段应该展示哪些答案”
-     *
-     * 优先级：
-     * 1. 如果 rawAnswers（来自 SSE）是数组：认为是服务器从数据库加载出来的标准答案 → 以它为准
-     * 2. 否则，如果本地有缓存（stageAnswers[stageKey]），用本地缓存
-     * 3. 如果都没有，就保持当前 answers 不变（通常是空）
-     */
     function applyAnswersForCurrentStage(rawAnswers?: ServerAnswerItem[] | null) {
         const key = stageKey.value
         let finalAnswers: Record<number, AnswerValue> | undefined
@@ -272,7 +262,6 @@ export function useQuestionsStagePage() {
         }
     }
 
-
     function initStageForCurrentRoute() {
         resetStageState()
 
@@ -289,15 +278,11 @@ export function useQuestionsStagePage() {
 
         console.log('[QuestionsStagePage] init stage:', stage, 'aiLoading=', aiLoading.value, 'key=', key)
 
-        // 先尝试恢复本阶段的本地答案（题目仍然交给 SSE 来加载）
-
-
-        // 2. 没有缓存 -> 走原有 AI 拉题逻辑
         showAIProcess()
 
         if (!public_id || !routes.length || !validateTestStage(stage)) {
             showAlert('测试流程异常，请返回首页重新开始', () => {
-                router.replace('/').then()
+                router.replace('/home').then()
             })
             return
         }

@@ -13,9 +13,6 @@ type testFlowRequest struct {
 }
 
 func (req *testFlowRequest) parseObj(r *http.Request) *ApiErr {
-	if r.Method != http.MethodPost {
-		return ApiMethodInvalid
-	}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		return ApiInvalidReq("invalid request body", err)
 	}

@@ -1,8 +1,6 @@
 package srv
 
 import (
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -134,12 +132,4 @@ var defaultHobbies = []string{
 	"阅读",
 	"看电影",
 	"园艺",
-}
-
-func loadWeChatPlatformCert(pemStr string) (*x509.Certificate, error) {
-	block, _ := pem.Decode([]byte(pemStr))
-	if block == nil {
-		return nil, fmt.Errorf("invalid platform cert pem")
-	}
-	return x509.ParseCertificate(block.Bytes)
 }

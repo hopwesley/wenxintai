@@ -22,20 +22,25 @@ import (
 )
 
 const (
-	apiHealthy                 = "/api/health"
-	apiLoadHobbies             = "/api/hobbies"
-	apiTestFlow                = "/api/test_flow"
-	apiTestBasicInfo           = "/api/tests/basic_info"
-	apiSSEQuestionSub          = "/api/sub/question/"
-	apiSSEReportSub            = "/api/sub/report/"
-	apiSubmitTest              = "/api/test_submit"
-	apiGenerateReport          = "/api/generate_report"
-	apiFinishReport            = "/api/finish_report"
-	apiWeChatSignIn            = "/api/auth/wx/status"
-	apiWeChatSignInCallBack    = "/api/wechat_signin"
-	apiWeChatLogOut            = "/api/auth/logout"
-	apiWeChatUpdateProfile     = "/api/user/update_profile"
-	apiWeChatMyProfile         = "/api/auth/profile"
+	apiHealthy     = "/api/health"
+	apiLoadHobbies = "/api/hobbies"
+
+	apiTestFlow = "/api/test_flow"
+
+	apiTestBasicInfo = "/api/tests/basic_info"
+
+	apiSSEQuestionSub = "/api/sub/question/"
+	apiSSEReportSub   = "/api/sub/report/"
+	apiSubmitTest     = "/api/test_submit"
+	apiGenerateReport = "/api/generate_report"
+	apiFinishReport   = "/api/finish_report"
+
+	apiWeChatSignIn         = "/api/auth/wx/status"
+	apiWeChatSignInCallBack = "/api/wechat_signin"
+	apiWeChatLogOut         = "/api/auth/logout"
+	apiWeChatUpdateProfile  = "/api/user/update_profile"
+	apiWeChatMyProfile      = "/api/auth/profile"
+
 	apiWeChatPayment           = "/api/pay/"
 	apiWeChatCreateNativeOrder = "/api/pay/wechat/native/create"
 	apiWeChatNativeOrderStatus = "/api/pay/wechat/order-status"
@@ -45,6 +50,37 @@ var (
 	_srvOnce          = sync.Once{}
 	_srvInst *HttpSrv = nil
 )
+
+type route struct {
+	pattern string
+	method  string
+	handler http.HandlerFunc
+}
+
+var routes = []route{
+	{apiLoadHobbies, http.MethodGet, _srvInst.handleHobbies},
+
+	{apiTestFlow, http.MethodPost, _srvInst.handleTestFlow},
+
+	{apiTestBasicInfo, http.MethodPost, _srvInst.updateBasicInfo},
+
+	{apiSSEQuestionSub, http.MethodGet, _srvInst.handleQuestionSSEEvent},
+	{apiSSEReportSub, http.MethodGet, _srvInst.handleReportSSEEvent},
+
+	{apiSubmitTest, http.MethodPost, _srvInst.handleTestSubmit},
+	{apiGenerateReport, http.MethodPost, _srvInst.handleTestReport},
+	{apiFinishReport, http.MethodPost, _srvInst.finishReport},
+
+	{apiWeChatSignIn, http.MethodGet, _srvInst.wechatSignStatus},
+	{apiWeChatSignInCallBack, http.MethodGet, _srvInst.wechatSignInCallBack},
+	{apiWeChatLogOut, http.MethodPost, _srvInst.wechatLogout},
+	{apiWeChatUpdateProfile, http.MethodPost, _srvInst.apiWeChatUpdateProfile},
+	{apiWeChatMyProfile, http.MethodGet, _srvInst.apiWeChatMyProfile},
+
+	{apiWeChatPayment, http.MethodPost, _srvInst.apiWeChatPayCallBack},
+	{apiWeChatCreateNativeOrder, http.MethodPost, _srvInst.apiWeChatCreateNativeOrder},
+	{apiWeChatNativeOrderStatus, http.MethodGet, _srvInst.apiWeChatOrderStatus},
+}
 
 type HttpSrv struct {
 	log        zerolog.Logger
@@ -159,24 +195,17 @@ func (s *HttpSrv) initRouter() error {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
 
-	mux.HandleFunc(apiLoadHobbies, s.handleHobbies)
-	mux.HandleFunc(apiTestFlow, s.handleTestFlow)
-	mux.HandleFunc(apiTestBasicInfo, s.updateBasicInfo)
-	mux.HandleFunc(apiSSEQuestionSub, s.handleQuestionSSEEvent)
-	mux.HandleFunc(apiSSEReportSub, s.handleReportSSEEvent)
-	mux.HandleFunc(apiSubmitTest, s.handleTestSubmit)
-	mux.HandleFunc(apiGenerateReport, s.handleTestReport)
-	mux.HandleFunc(apiFinishReport, s.finishReport)
-
-	mux.HandleFunc(apiWeChatSignIn, s.wechatSignStatus)
-	mux.HandleFunc(apiWeChatSignInCallBack, s.wechatSignInCallBack)
-	mux.HandleFunc(apiWeChatLogOut, s.wechatLogout)
-	mux.HandleFunc(apiWeChatUpdateProfile, s.apiWeChatUpdateProfile)
-	mux.HandleFunc(apiWeChatMyProfile, s.apiWeChatMyProfile)
-
-	mux.HandleFunc(apiWeChatPayment, s.apiWeChatPayCallBack)
-	mux.HandleFunc(apiWeChatCreateNativeOrder, s.apiWeChatCreateNativeOrder)
-	mux.HandleFunc(apiWeChatNativeOrderStatus, s.apiWeChatOrderStatus)
+	for _, rt := range routes {
+		r := rt
+		mux.HandleFunc(r.pattern, func(w http.ResponseWriter, req *http.Request) {
+			if req.Method != r.method {
+				w.Header().Set("Allow", r.method)
+				http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+				return
+			}
+			r.handler(w, req)
+		})
+	}
 
 	//if err := s.registerSpaStatic(mux); err != nil {
 	//	return err

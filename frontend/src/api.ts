@@ -35,8 +35,8 @@ export async function apiRequest<T = any>(path: string, options: RequestOptions 
         body = null
     }
 
-    const code = (body?.code && String(body.code)) || ''
-    const message = (body?.message && String(body.message)) || '请求失败，请稍后重试'
+    const code = (body?.code && String(body?.code)) || ''
+    const message = (body?.message && String(body?.message)) || '请求失败，请稍后重试'
 
     // 只对外暴露 code + message（UI 显示 message，必要时可读 err.code）
     const err = new Error(message) as ApiError

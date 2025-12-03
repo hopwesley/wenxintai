@@ -20,10 +20,7 @@ import (
 // ========================= 回调入口 =========================
 
 func (s *HttpSrv) apiWeChatPayCallBack(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+
 	if len(s.cfg.PaymentForward) > 0 {
 		s.forwardCallback(w, r, s.cfg.PaymentForward)
 		return
@@ -144,10 +141,7 @@ type WeChatNativeCreateRes struct {
 }
 
 func (s *HttpSrv) apiWeChatCreateNativeOrder(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+
 	ctx := r.Context()
 	log := s.log.With().Str("handler", "apiWeChatCreateNativeOrder").Logger()
 
@@ -250,11 +244,6 @@ type WeChatOrderStatusRes struct {
 }
 
 func (s *HttpSrv) apiWeChatOrderStatus(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	ctx := r.Context()
 	log := s.log.With().Str("handler", "apiWeChatOrderStatus").Logger()
 

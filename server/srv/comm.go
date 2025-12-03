@@ -33,9 +33,6 @@ type BasicInfoReq ai_api.BasicInfo
 
 func (bi *BasicInfoReq) parseObj(r *http.Request) *ApiErr {
 
-	if r.Method != http.MethodPost {
-		return ApiMethodInvalid
-	}
 	if err := json.NewDecoder(r.Body).Decode(bi); err != nil {
 		return ApiInvalidReq("无效的请求体", err)
 	}

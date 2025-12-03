@@ -108,14 +108,4 @@ const { visible, title, message, handleConfirm, closeAlert } = useAlert()
   min-width: 88px;
 }
 
-/* 过渡动画 */
-.alert-fade-enter-active,
-.alert-fade-leave-active {
-  transition: opacity 0.18s ease-out;
-}
-
-.alert-fade-enter-from,
-.alert-fade-leave-to {
-  opacity: 0;
-}
 </style>

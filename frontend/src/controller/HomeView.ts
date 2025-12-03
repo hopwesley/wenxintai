@@ -1,5 +1,5 @@
 import {API_PATHS, apiRequest} from "@/api";
-import {onBeforeUnmount, onMounted, reactive, ref, watch} from 'vue'
+import {onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {TestRecordDTO, useTestSession} from '@/controller/testSession'
 import {useAlert} from '@/controller/useAlert'

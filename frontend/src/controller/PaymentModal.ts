@@ -1,5 +1,4 @@
 import {apiRequest} from "@/api";
-import {useTestSession} from "@/controller/testSession";
 import {ref} from "vue";
 
 export async function verifyInviteWithMessage(rawCode: string){

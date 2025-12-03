@@ -1,13 +1,14 @@
-import {ref, computed, onMounted, reactive} from 'vue'
+import {computed, onMounted, reactive, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useGlobalLoading} from '@/controller/useGlobalLoading'
-import {useTestSession, type TestRecordDTO} from '@/controller/testSession'
+import {type TestRecordDTO, useTestSession} from '@/controller/testSession'
 import {API_PATHS, apiRequest} from "@/api";
 import {useAlert} from "@/controller/useAlert";
 import {
     Mode312,
     Mode33,
-    ModeOption, PlanInfo,
+    ModeOption,
+    PlanInfo,
     subjectLabelMap,
     TestTypeBasic,
     useSseLogs,
@@ -618,15 +619,13 @@ export function useReportPage() {
     async function queryCurPlan() {
         showLoading("加载支付信息")
         try {
-            const resp = await apiRequest<PlanInfo>(API_PATHS.LOAD_CUR_PRODUCT, {
+            currentPlan.value = await apiRequest<PlanInfo>(API_PATHS.LOAD_CUR_PRODUCT, {
                 method: 'POST',
                 body: {
                     public_id: publicId,
                     business_type: businessType.value
                 },
             })
-
-            currentPlan.value = resp
             paymentDialogShow.value = true
         } catch (e) {
             showAlert("查询产品价格失败:" + e);

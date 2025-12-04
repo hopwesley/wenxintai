@@ -13,7 +13,7 @@
           <div v-if="headerInfo" class="overlay__meta">
             <span v-if="headerInfo.mode">模式：{{ headerInfo.mode }}</span>
             <span v-if="headerInfo.grade">年级：{{ headerInfo.grade }}</span>
-            <span v-if="stage">年级：{{ stage }}</span>
+            <span v-if="stage">阶段：{{ stage }}</span>
           </div>
         </div>
 

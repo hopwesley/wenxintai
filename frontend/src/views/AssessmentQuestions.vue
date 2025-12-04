@@ -106,7 +106,6 @@ import AiGeneratingOverlay from "@/views/components/AiGeneratingOverlay.vue";
 
 const {
   route,
-  state,
   aiLoading,
   totalPages,
   totalCount,

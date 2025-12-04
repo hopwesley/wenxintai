@@ -11,12 +11,12 @@ type MetricDef struct {
 var metricRegistry = map[string]MetricDef{
 	"subjects.fit": {
 		RawMin:         -0.6,
-		RawMax:         0.8, // 你的数据实际分布上限大概在 0.8 左右
+		RawMax:         0.8,
 		HigherIsBetter: true,
 	},
 	"combo33.score": {
 		RawMin:         -0.1,
-		RawMax:         0.65, // 历史 99% 分位值，可后续调参
+		RawMax:         0.7,
 		HigherIsBetter: true,
 	},
 	"combo312.score": {

@@ -1,4 +1,4 @@
-import {computed, onMounted, reactive, ref} from 'vue'
+import {computed, onMounted, onUnmounted, reactive, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useGlobalLoading} from '@/controller/useGlobalLoading'
 import {type TestRecordDTO, useTestSession} from '@/controller/testSession'
@@ -14,7 +14,6 @@ import {
     useSseLogs,
     useSubscriptBySSE
 } from "@/controller/common";
-import {NativeCreateOrderResponse} from "@/controller/PaymentModal";
 
 export interface ComboMetric {
     label: string
@@ -117,12 +116,21 @@ export interface ComboChartItem {
 
 export interface ReportRawData {
     uid: string
+    nick_name?: string
+    avatar_url?: string
+    study_id?: string
+    school_name?: string
+    province?: string
+    city?: string
+
     mode: ModeOption
-    generate_at: string
+    generated_at: string
     expired_at: string
+
     common_score: ReportCommonScore
     recommend_33: ReportRecommend33 | null
     recommend_312: ReportRecommend312 | null
+    ai_content: string | null
 }
 
 export interface ReportOverviewInfo {
@@ -141,7 +149,6 @@ export interface Mode33ViewModel {
     rarityRiskPairs: ComboChartItem[]
     topCombos: ReportCombo[]
 }
-
 
 export interface ComboDetail {
     combo_name: string
@@ -238,7 +245,7 @@ export function useReportPage() {
     const isMode312 = computed(() => overview.mode === Mode312)
     const record = computed<TestRecordDTO | undefined>(() => state.record)
     const businessType = computed(() => record.value?.business_type ?? TestTypeBasic)
-    const publicId = record.value?.public_id ?? ''
+    const publicId = computed(() => record.value?.public_id ?? '')
     const {truncatedLatestMessage, handleSseMsg} = useSseLogs(8, 20)
     const mode312OverviewStrips = computed<Mode312OverviewStrips | null>(() => {
         const raw = rawReportData.value
@@ -457,10 +464,10 @@ export function useReportPage() {
     const showFinishLetter = ref(false)
     const handleLetterConfirm = async () => {
         try {
-            await apiRequest<ReportRawData>('/api/finish_report', {
+            await apiRequest<ReportRawData>(API_PATHS.FINISH_REPORT, {
                 method: 'POST',
                 body: {
-                    public_id: publicId,
+                    public_id: publicId.value,
                     business_type: businessType.value,
                 },
             });
@@ -517,14 +524,14 @@ export function useReportPage() {
 
     function applyReportOverview(data: ReportRawData) {
         overview.mode = data.mode
-        overview.account = data.uid || ''
+        overview.account = data.nick_name || data.uid || ''
 
-        overview.generateDate = formatDate(data.generate_at)
+        overview.generateDate = formatDate(data.generated_at)
         overview.expireDate = formatDate(data.expired_at)
 
-        overview.studentLocation = ''
-        overview.studentNo = ''
-        overview.schoolName = ''
+        overview.studentLocation = (data.province || "") + "省" + (data.province || "") + "市"
+        overview.studentNo = data.study_id || ''
+        overview.schoolName = data.school_name || ''
     }
 
     function handleSseError(err: Error) {
@@ -535,10 +542,7 @@ export function useReportPage() {
 
     function handleSseDone(raw: string) {
         try {
-            let parsed = JSON.parse(raw)
-            if (typeof parsed === "string") {
-                parsed = JSON.parse(parsed) as AIReportPayload
-            }
+            let parsed = JSON.parse(raw) as AIReportPayload
             console.log('------>>> parsed object:', parsed)
             aiReportData.value = parsed
 
@@ -549,7 +553,7 @@ export function useReportPage() {
         }
     }
 
-    const sseCtrl = useSubscriptBySSE(`${API_PATHS.SSE_REPORT_SUB}${publicId!}`, {
+    const sseCtrl = useSubscriptBySSE(`${API_PATHS.SSE_REPORT_SUB}${publicId.value}`, {
         autoStart: false,
         onOpen: () => {
             aiLoading.value = true
@@ -573,9 +577,10 @@ export function useReportPage() {
     }
 
     async function generateReport() {
+        paymentDialogShow.value = false
         showLoading("正在准备智能分析参数", 20_000)
         try {
-            if (!publicId) {
+            if (!publicId.value) {
                 showAlert('未找到试卷编号', () => {
                     router.replace('/home').then()
                 })
@@ -584,35 +589,26 @@ export function useReportPage() {
             const resp = await apiRequest<ReportRawData>(API_PATHS.GENERATE_REPORT, {
                 method: 'POST',
                 body: {
-                    public_id: publicId,
+                    public_id: publicId.value,
                     business_type: businessType.value
                 },
             })
             rawReportData.value = resp;
             console.log("------>>>resp data:", rawReportData)
             applyReportOverview(resp);
-            sseCtrl.start()
+            if (!resp.ai_content) {
+                sseCtrl.start()
+            } else {
+                let aiContent = JSON.parse(resp.ai_content) as AIReportPayload;
+                if (typeof aiContent === "string") {
+                    aiContent = JSON.parse(aiContent) as AIReportPayload;
+                }
+                aiReportData.value = aiContent
+            }
         } catch (e) {
             showAlert("生成 AI 参数失败:" + e);
         } finally {
             hideLoading();
-        }
-    }
-
-    async function generatePaymentOrder() {
-        showLoading("创建订单")
-        try {
-            const resp = await apiRequest<NativeCreateOrderResponse>(API_PATHS.WECHAT_CREATE_NATIVE_ORDER, {
-                method: 'POST',
-                body: {
-                    public_id: publicId,
-                    business_type: businessType.value
-                },
-            })
-        } catch (e) {
-            showAlert("生成报告支付二维码失败:" + e);
-        } finally {
-            hideLoading()
         }
     }
 
@@ -622,7 +618,7 @@ export function useReportPage() {
             currentPlan.value = await apiRequest<PlanInfo>(API_PATHS.LOAD_CUR_PRODUCT, {
                 method: 'POST',
                 body: {
-                    public_id: publicId,
+                    public_id: publicId.value,
                 },
             })
             const hasPaid = currentPlan.value.has_paid || false;
@@ -637,6 +633,10 @@ export function useReportPage() {
             hideLoading()
         }
     }
+
+    onUnmounted(() => {
+        sseCtrl.stop()
+    })
 
     onMounted(async () => {
         await queryCurPlan()
@@ -664,5 +664,6 @@ export function useReportPage() {
         currentPlan,
         publicId,
         generateReport,
+        queryCurPlan,
     }
 }

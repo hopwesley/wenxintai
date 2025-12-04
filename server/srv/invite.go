@@ -37,7 +37,7 @@ func (s *HttpSrv) apiPayByInvite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sLog := s.log.With().Str("invite_code", req.InviteCode).Str("public_id", req.PublicID).Logger()
-
+	sLog.Info().Msg("start to pay by invite code")
 	ctx := r.Context()
 	inv, err := dbSrv.Instance().GetInviteByCode(ctx, req.InviteCode)
 	if err != nil {
@@ -71,6 +71,6 @@ func (s *HttpSrv) apiPayByInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sLog.Info().Msg("create test record success")
+	sLog.Info().Msg("pay test record success")
 	writeJSON(w, http.StatusOK, CommonRes{Ok: true, Msg: "邀请码支付成功"})
 }

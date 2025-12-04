@@ -11,6 +11,7 @@ import (
 
 const (
 	CurrentEngineVersin = "v1.0.0"
+	ReportStatusSuccess = 1
 )
 
 type TestReport struct {
@@ -168,11 +169,11 @@ func (pdb *psDatabase) UpdateTestReportAIContent(
         SET ai_content   = $2::jsonb,
             generated_at = now(),
             updated_at   = now(),
-            status = 1
+            status = $3
         WHERE public_id = $1
     `
 
-	res, err := pdb.db.ExecContext(ctx, q, publicId, aiContentJSON)
+	res, err := pdb.db.ExecContext(ctx, q, publicId, aiContentJSON, ReportStatusSuccess)
 	if err != nil {
 		log.Err(err).Msg("UpdateTestReportAIContent: exec failed")
 		return err
@@ -190,99 +191,5 @@ func (pdb *psDatabase) UpdateTestReportAIContent(
 	}
 
 	log.Debug().Int64("rows", affected).Msg("UpdateTestReportAIContent: done")
-	return nil
-}
-
-func (pdb *psDatabase) FinalizedTest(ctx context.Context, publicID string, businessType string) error {
-	if publicID == "" {
-		return errors.New("publicID must be non-empty")
-	}
-	if businessType == "" {
-		return errors.New("businessType must be non-empty")
-	}
-
-	log := pdb.log.With().
-		Str("public_id", publicID).
-		Str("business_type", businessType).
-		Logger()
-
-	log.Debug().Msg("FinalizedTest: start")
-
-	const updateRecordSQL = `
-		UPDATE app.tests_record
-		SET 
-			completed_at = now(),
-			updated_at   = now()
-		WHERE public_id = $1
-		  AND business_type = $2
-		RETURNING pay_order_id, wechat_openid
-	`
-
-	const incReportNoSQL = `
-		UPDATE app.user_profile
-		SET 
-			report_no  = COALESCE(report_no, 0) + 1,
-			updated_at = now()
-		WHERE uid = $1
-	`
-
-	const updateReportSQL = `
-		UPDATE app.test_reports
-		SET 
-			status     = 2,
-			updated_at = now()
-		WHERE public_id = $1
-	`
-
-	err := pdb.WithTx(ctx, func(tx *sql.Tx) error {
-		var inviteCode sql.NullString
-		var wechatOpenID sql.NullString
-
-		if err := tx.QueryRowContext(
-			ctx,
-			updateRecordSQL,
-			publicID,
-			businessType,
-		).Scan(&inviteCode, &wechatOpenID); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				log.Warn().Msg("FinalizedTest: no tests_record row matched")
-			} else {
-				log.Err(err).Msg("FinalizedTest: update tests_record failed")
-			}
-			return err
-		}
-
-		// 2) 分支：优先使用 wechat_openid 自增 user_profile.report_no
-		if wechatOpenID.Valid && wechatOpenID.String != "" {
-			res, err := tx.ExecContext(ctx, incReportNoSQL, wechatOpenID.String)
-			if err != nil {
-				log.Err(err).
-					Str("wechat_openid", wechatOpenID.String).
-					Msg("FinalizedTest: update user_profile.report_no failed")
-				return err
-			}
-			if rows, _ := res.RowsAffected(); rows == 0 {
-				// 没有 user_profile 的话这里我只是打个日志，不认为是致命错误
-				log.Warn().
-					Str("wechat_openid", wechatOpenID.String).
-					Msg("FinalizedTest: no user_profile row updated")
-			}
-		}
-
-		// 3) 更新 test_reports.status = 2
-		if _, err := tx.ExecContext(ctx, updateReportSQL, publicID); err != nil {
-			log.Err(err).Msg("FinalizedTest: update test_reports failed")
-			return err
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		log.Err(err).Msg("FinalizedTest: failed")
-		return err
-	}
-
-	log.Debug().Msg("FinalizedTest: done")
 	return nil
 }

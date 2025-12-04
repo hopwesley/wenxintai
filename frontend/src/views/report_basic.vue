@@ -19,7 +19,7 @@
           <div class="report-profile">
             <div class="report-profile-grid">
               <div class="report-field">
-                <span class="report-field__label">问心台账号</span>
+                <span class="report-field__label">用户</span>
                 <span class="report-field__value">
                 {{ overview.account || '——' }}
               </span>

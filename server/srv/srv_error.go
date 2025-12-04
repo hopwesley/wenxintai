@@ -8,13 +8,10 @@ import (
 type ErrorCode string
 
 const (
-	ErrorCodeBadRequest     ErrorCode = "BAD_REQUEST"
-	ErrorCodeNotFound       ErrorCode = "NOT_FOUND"
-	ErrorCodeConflict       ErrorCode = "CONFLICT"
-	ErrorCodeInternal       ErrorCode = "INTERNAL"
-	ErrorCodeInviteReserved ErrorCode = "RESERVED"
-	ErrorCodeInviteDisabled ErrorCode = "DISABLED"
-	ErrorCodeInviteRedeemed ErrorCode = "REDEEMED"
+	ErrorCodeBadRequest ErrorCode = "BAD_REQUEST"
+	ErrorCodeNotFound   ErrorCode = "NOT_FOUND"
+	ErrorCodeForbidden  ErrorCode = "FORBIDEEN"
+	ErrorCodeInternal   ErrorCode = "INTERNAL"
 )
 
 type ApiErr struct {

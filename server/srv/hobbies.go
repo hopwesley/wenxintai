@@ -108,5 +108,5 @@ func (s *HttpSrv) handleCurrentProduct(w http.ResponseWriter, r *http.Request) {
 		item.HasPaid = true
 	}
 
-	writeJSON(w, http.StatusOK, plan)
+	writeJSON(w, http.StatusOK, item)
 }

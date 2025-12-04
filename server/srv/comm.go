@@ -210,7 +210,8 @@ func parseStatusToRoute(status int, routes []string) (string, int) {
 }
 
 func (s *HttpSrv) checkTestSequence(ctx context.Context, publicID, testType string) (*dbSrv.TestRecord, error) {
-	record, dbErr := dbSrv.Instance().QueryUnfinishedTest(ctx, publicID)
+	uid := userIDFromContext(ctx)
+	record, dbErr := dbSrv.Instance().QueryUnfinishedTest(ctx, publicID, uid)
 	if dbErr != nil {
 		return nil, dbErr
 	}

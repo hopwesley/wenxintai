@@ -93,9 +93,10 @@ func (s *HttpSrv) handleTestSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	uid := userIDFromContext(ctx)
 	answersJSON, _ := json.Marshal(req.Answers)
 	if err := dbSrv.Instance().SaveAnswer(ctx, string(aiTestType),
-		req.TestPublicID, answersJSON, nextIdx); err != nil {
+		req.TestPublicID, uid, answersJSON, nextIdx); err != nil {
 		sLog.Err(err).Msg("保存答案失败")
 		writeError(w, ApiInternalErr("无效的试卷类型", err))
 		return

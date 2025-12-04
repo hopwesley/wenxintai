@@ -139,10 +139,10 @@ watch(
     }
 )
 
-
 onUnmounted(() => {
   stopPayPolling()
 })
+
 </script>
 
 <style scoped src="@/styles/payment_code.css"></style>

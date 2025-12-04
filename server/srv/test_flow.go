@@ -138,16 +138,18 @@ func (s *HttpSrv) updateBasicInfo(w http.ResponseWriter, r *http.Request) {
 	slog.Info().Msg("prepare to update basic info")
 
 	ctx := r.Context()
+	uid := userIDFromContext(ctx)
 	businessTyp, dbErr := dbSrv.Instance().UpdateBasicInfo(
 		ctx,
 		req.PublicId,
+		uid,
 		string(req.Grade),
 		string(req.Mode),
 		req.Hobby,
 		RecordStatusInTest,
 	)
 
-	if dbErr != nil {
+	if dbErr != nil || len(businessTyp) == 0 {
 		slog.Err(dbErr).Msg("更新基本信息失败")
 		writeError(w, NewApiError(http.StatusInternalServerError, "db_update_failed", "更新基本信息失败", err))
 		return

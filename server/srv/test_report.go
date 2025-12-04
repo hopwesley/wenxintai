@@ -1,6 +1,7 @@
 package srv
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,11 +10,11 @@ import (
 
 	"github.com/hopwesley/wenxintai/server/ai_api"
 	"github.com/hopwesley/wenxintai/server/dbSrv"
+	"github.com/rs/zerolog"
 )
 
 type tesReportRequest struct {
-	PublicID     string `json:"public_id"`
-	BusinessType string `json:"business_type"`
+	PublicID string `json:"public_id"`
 }
 
 func (req *tesReportRequest) parseObj(r *http.Request) *ApiErr {
@@ -22,9 +23,6 @@ func (req *tesReportRequest) parseObj(r *http.Request) *ApiErr {
 	}
 	if !IsValidPublicID(req.PublicID) {
 		return ApiInvalidReq("无效的问卷编号", nil)
-	}
-	if len(req.BusinessType) == 0 {
-		return ApiInvalidReq("无效的试卷类型", nil)
 	}
 	return nil
 }
@@ -65,7 +63,7 @@ func convertRIASEC(rawJSON []byte) ([]ai_api.RIASECAnswer, error) {
 		out = append(out, ai_api.RIASECAnswer{
 			ID:        r.ID,
 			Dimension: r.Dimension,
-			Score:     r.Value, // 👈 关键：value -> Score
+			Score:     r.Value,
 		})
 	}
 	return out, nil
@@ -82,7 +80,7 @@ func convertASC(rawJSON []byte) ([]ai_api.ASCAnswer, error) {
 		out = append(out, ai_api.ASCAnswer{
 			ID:      r.ID,
 			Subject: r.Subject,
-			Score:   r.Value, // 👈 关键：value -> Score
+			Score:   r.Value,
 			Reverse: r.Reverse,
 			Subtype: r.Subtype,
 		})
@@ -116,12 +114,13 @@ const ReportInvalidDuration = 6 * 30 * 24 * time.Hour
 type CombinedReport struct {
 	*dbSrv.UserProfile
 	Mode        string    `json:"mode"`
-	GeneratedAt time.Time `json:"generate_at"`
+	GeneratedAt time.Time `json:"generated_at"`
 	ExpiredAt   time.Time `json:"expired_at"`
 	*ai_api.EngineResult
+	AIContent string `json:"ai_content,omitempty"`
 }
 
-func (s *HttpSrv) generateReport(w http.ResponseWriter, r *http.Request) {
+func (s *HttpSrv) queryOrCreateReport(w http.ResponseWriter, r *http.Request) {
 
 	var req tesReportRequest
 	err := req.parseObj(r)
@@ -131,11 +130,10 @@ func (s *HttpSrv) generateReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sLog := s.log.With().
-		Str("business_type", req.BusinessType).
-		Str("public_id", req.PublicID).Logger()
+	sLog := s.log.With().Str("public_id", req.PublicID).Logger()
 
 	ctx := r.Context()
+	uid := userIDFromContext(ctx)
 
 	record, cErr := dbSrv.Instance().QueryRecordById(ctx, req.PublicID)
 	if cErr != nil {
@@ -144,25 +142,63 @@ func (s *HttpSrv) generateReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !record.PayOrderId.Valid || !record.PaidTime.Valid {
-		sLog.Error().Msg(" record is not paid")
-		writeError(w, ApiInternalErr("问卷尚未支付，请先支付再生产报告", cErr))
+	if record.WeChatID.String != uid {
+		sLog.Error().Msg("no right to find this test record")
+		writeError(w, NewApiError(http.StatusForbidden, ErrorCodeForbidden, "无权查看", nil))
 		return
 	}
 
-	sessions, dbErr := dbSrv.Instance().FindQASessionsForReport(ctx, req.PublicID)
+	if !record.PayOrderId.Valid || !record.PaidTime.Valid {
+		sLog.Error().Msg(" record is not paid")
+		writeError(w, ApiInternalErr("问卷尚未支付，请先支付再生产报告", nil))
+		return
+	}
+
+	report, dbErr := dbSrv.Instance().FindTestReportByPublicId(ctx, req.PublicID)
+	if dbErr != nil {
+		sLog.Err(dbErr).Msg(" report query error")
+		writeError(w, ApiInternalErr("查询已经生成报告时异常", dbErr))
+		return
+	}
+
+	user, pDBErr := dbSrv.Instance().FindUserProfileByUid(ctx, uid)
+	if pDBErr != nil || user == nil {
+		sLog.Err(pDBErr).Msg("failed to find user profile")
+		writeError(w, ApiInternalErr("查找用户基本信息失败", pDBErr))
+		return
+	}
+
+	var combinedResult *CombinedReport = nil
+	if report == nil {
+		combinedResult = s.newReport(ctx, w, req.PublicID, record.BusinessType, ai_api.Mode(record.Mode.String), sLog)
+
+	} else {
+		combinedResult = s.parseReport(w, report, sLog)
+	}
+
+	if combinedResult == nil {
+		return
+	}
+
+	combinedResult.UserProfile = user
+	writeJSON(w, http.StatusOK, combinedResult)
+}
+
+func (s *HttpSrv) newReport(ctx context.Context, w http.ResponseWriter, publicID, businessTyp string, mode ai_api.Mode, sLog zerolog.Logger) *CombinedReport {
+	sessions, dbErr := dbSrv.Instance().FindQASessionsForReport(ctx, publicID)
 	if dbErr != nil || len(sessions) == 0 {
 		sLog.Err(dbErr).Msg("FindQASessionsForReport failed")
 		writeError(w, ApiInternalErr("未找到问卷测试的题目与答案", dbErr))
-		return
+		return nil
 	}
 
 	var riasecJSON, ascJSON, oceanJSON []byte
 	for _, s := range sessions {
 		if len(s.Answers) == 0 {
-			sLog.Err(dbErr).Msg("no valid answer data for:" + s.TestType)
+			sLog.Error().Msg("no valid answer data for:" + s.TestType)
 			writeError(w, ApiInternalErr("问卷没有有效答案", nil))
-			return
+			return nil
+
 		}
 		switch ai_api.TestTyp(s.TestType) {
 		case ai_api.TypRIASEC:
@@ -182,7 +218,8 @@ func (s *HttpSrv) generateReport(w http.ResponseWriter, r *http.Request) {
 			" err:%s asc err:%s ocean err:%s", rErr, aErr, oErr)
 		sLog.Err(cErr).Msg("parse answer to ai param failed")
 		writeError(w, ApiInternalErr("解析问卷答案为 AI 参数失败", cErr))
-		return
+		return nil
+
 	}
 
 	answersMap := map[ai_api.TestTyp]any{
@@ -193,25 +230,26 @@ func (s *HttpSrv) generateReport(w http.ResponseWriter, r *http.Request) {
 
 	var resp *ai_api.EngineResult
 	var aiErr error
-	switch strings.ToLower(record.BusinessType) {
+	switch strings.ToLower(businessTyp) {
 	case BusinessTypeBasic:
-		resp, aiErr = ai_api.BasicBuildReportParam(ai_api.Mode(record.Mode.String), answersMap)
+		resp, aiErr = ai_api.BasicBuildReportParam(mode, answersMap)
 	case BusinessTypePro:
-		resp, aiErr = ai_api.ProBuildReportParam(ai_api.Mode(record.Mode.String), answersMap)
+		resp, aiErr = ai_api.ProBuildReportParam(mode, answersMap)
 	case BusinessTypeAdv:
-		resp, aiErr = ai_api.ProBuildReportParam(ai_api.Mode(record.Mode.String), answersMap)
+		resp, aiErr = ai_api.ProBuildReportParam(mode, answersMap)
 	case BusinessTypeSchool:
-		resp, aiErr = ai_api.SchoolBuildReportParam(ai_api.Mode(record.Mode.String), answersMap)
+		resp, aiErr = ai_api.SchoolBuildReportParam(mode, answersMap)
 	default:
 		sLog.Warn().Msg("unknown business type when building report param")
 		writeError(w, ApiInternalErr("未知的测试类型", aiErr))
-		return
+		return nil
+
 	}
 
 	if aiErr != nil || resp == nil {
-		sLog.Err(dbErr).Msg("failed to build report param")
+		sLog.Err(aiErr).Msg("failed to build report param")
 		writeError(w, ApiInternalErr("生成 AI 报告需要的参数失败", aiErr))
-		return
+		return nil
 	}
 
 	var aiParamForMode []byte
@@ -222,56 +260,79 @@ func (s *HttpSrv) generateReport(w http.ResponseWriter, r *http.Request) {
 		aiParamForMode, _ = json.Marshal(resp.Recommend312)
 	}
 
-	dbErr = dbSrv.Instance().SaveTestReportCore(ctx, req.PublicID, record.Mode.String, commonScore, aiParamForMode)
+	dbErr = dbSrv.Instance().SaveTestReportCore(ctx, publicID, string(mode), commonScore, aiParamForMode)
 	if dbErr != nil {
 		sLog.Err(dbErr).Msg("failed to save report param")
 		writeError(w, ApiInternalErr("保存 AI 报告需要的参数失败", dbErr))
-		return
+		return nil
 	}
 
 	sLog.Info().Msg("build param of report success")
-	user, pDBErr := dbSrv.Instance().FindUserProfileByUid(ctx, record.WeChatID.String)
-	if pDBErr != nil || user == nil {
-		sLog.Err(pDBErr).Msg("failed to find user profile")
-		writeError(w, ApiInternalErr("查找用户基本信息失败", pDBErr))
-		return
+
+	now := time.Now()
+	combinedResult := &CombinedReport{
+		Mode:         string(mode),
+		GeneratedAt:  now,
+		EngineResult: resp,
+	}
+
+	combinedResult.ExpiredAt = now.Add(ReportInvalidDuration)
+	return combinedResult
+}
+
+func (s *HttpSrv) parseReport(w http.ResponseWriter, report *dbSrv.TestReport, sLog zerolog.Logger) *CombinedReport {
+
+	var cs ai_api.FullScoreResult
+	if err := json.Unmarshal(report.CommonScore, &cs); err != nil {
+		sLog.Err(err).Msg("failed to Unmarshal common score")
+		writeError(w, ApiInternalErr("解析学科json 数据失败", err))
+		return nil
+	}
+
+	var resp = &ai_api.EngineResult{
+		CommonScore: &cs,
+	}
+
+	switch ai_api.Mode(report.Mode) {
+	case ai_api.Mode33:
+		{
+			var aiParamForMode ai_api.Mode33Section
+			if err := json.Unmarshal(report.ModeParam, &aiParamForMode); err != nil {
+				sLog.Err(err).Msg("failed to Unmarshal mode 33 param")
+				writeError(w, ApiInternalErr("解析3+3组合json 数据失败", err))
+				return nil
+			}
+			resp.Recommend33 = &aiParamForMode
+			break
+		}
+	case ai_api.Mode312:
+		{
+			var aiParamForMode ai_api.Mode312Section
+			if err := json.Unmarshal(report.ModeParam, &aiParamForMode); err != nil {
+				sLog.Err(err).Msg("failed to Unmarshal mode 312 param")
+				writeError(w, ApiInternalErr("解析3+1+2组合json 数据失败", err))
+				return nil
+			}
+			resp.Recommend312 = &aiParamForMode
+			break
+		}
+	default:
+		sLog.Error().Str("mode-indb", report.Mode).Msg("unknown mode")
+		writeError(w, ApiInternalErr("未知的科目模式", nil))
+		return nil
 	}
 
 	combinedResult := &CombinedReport{
-		UserProfile:  user,
-		Mode:         record.Mode.String,
-		GeneratedAt:  time.Now(),
+		Mode:         report.Mode,
+		GeneratedAt:  report.GeneratedAt,
 		EngineResult: resp,
 	}
 
 	combinedResult.ExpiredAt = combinedResult.GeneratedAt.Add(ReportInvalidDuration)
 
-	writeJSON(w, http.StatusOK, combinedResult)
-}
-
-func (s *HttpSrv) finishReport(w http.ResponseWriter, r *http.Request) {
-
-	var req tesReportRequest
-	err := req.parseObj(r)
-	if err != nil {
-		s.log.Err(err).Msgf("invalid test report request")
-		writeError(w, err)
-		return
+	if report.AIContent != nil {
+		combinedResult.AIContent = string(report.AIContent)
 	}
 
-	sLog := s.log.With().
-		Str("business_type", req.BusinessType).
-		Str("public_id", req.PublicID).Logger()
-
-	ctx := r.Context()
-
-	var dbErr = dbSrv.Instance().FinalizedTest(ctx, req.PublicID, req.BusinessType)
-	if dbErr != nil {
-		sLog.Err(dbErr).Msg("failed to finalized test")
-		writeError(w, ApiInternalErr("保存 AI 报告需要的参数失败", dbErr))
-		return
-	}
-
-	writeJSON(w, http.StatusOK,
-		&CommonRes{Ok: true, Msg: "完成报告设计"})
+	return combinedResult
 }

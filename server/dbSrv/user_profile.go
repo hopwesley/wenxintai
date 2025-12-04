@@ -8,11 +8,11 @@ import (
 )
 
 type UserProfile struct {
-	ID          int64     `json:"id"`
-	Uid         string    `json:"uid"`                   // 微信 UnionID
-	NickName    string    `json:"nick_name,omitempty"`   // 微信昵称
-	AvatarUrl   string    `json:"avatar_url,omitempty"`  // 微信头像 URL
-	Mobile      string    `json:"mobile,omitempty"`      // 手机号（可空）
+	ID          int64  `json:"id"`
+	Uid         string `json:"uid"`                  // 微信 UnionID
+	NickName    string `json:"nick_name,omitempty"`  // 微信昵称
+	AvatarUrl   string `json:"avatar_url,omitempty"` // 微信头像 URL
+	mobile      string
 	StudyId     string    `json:"study_id,omitempty"`    // 学号（可空）
 	SchoolName  string    `json:"school_name,omitempty"` // 学校名称（可空）
 	Province    string    `json:"province,omitempty"`    // 所在地区省（可空）
@@ -167,7 +167,7 @@ func (pdb *psDatabase) FindUserProfileByUid(
 		&u.Uid,
 		&u.NickName,
 		&u.AvatarUrl,
-		&u.Mobile,
+		&u.mobile,
 		&u.StudyId,
 		&u.SchoolName,
 		&u.Province,

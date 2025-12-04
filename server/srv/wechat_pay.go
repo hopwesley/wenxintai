@@ -162,8 +162,9 @@ func (s *HttpSrv) apiWeChatCreateNativeOrder(w http.ResponseWriter, r *http.Requ
 	}
 
 	sLog := s.log.With().Str("public_id", req.PublicId).Logger()
+	uid := userIDFromContext(ctx)
 
-	record, dbErr := dbSrv.Instance().QueryUnfinishedTest(ctx, req.PublicId)
+	record, dbErr := dbSrv.Instance().QueryUnfinishedTest(ctx, req.PublicId, uid)
 	if dbErr != nil || record == nil {
 		sLog.Err(dbErr).Msg("failed find test record")
 		writeError(w, ApiInvalidNoTestRecord(dbErr))

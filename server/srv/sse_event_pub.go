@@ -103,6 +103,7 @@ func (s *HttpSrv) handleQuestionSSEEvent(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
+
 	ctx := r.Context()
 
 	flusher, ok := w.(http.Flusher)
@@ -267,11 +268,6 @@ func sendSafe(ch chan *SSEMessage, msg *SSEMessage, log *zerolog.Logger) {
 	}
 }
 
-const (
-	ReportStatusInit = iota
-	ReportStatusSuccess
-)
-
 func (s *HttpSrv) handleReportSSEEvent(w http.ResponseWriter, r *http.Request) {
 	publicId, err := parseTestIDFromPath(r.URL.Path)
 	if err != nil {
@@ -306,7 +302,7 @@ func (s *HttpSrv) aiReportProcess(msgCh chan *SSEMessage, publicId string, sLog 
 
 	report, dbErr := dbSrv.Instance().FindTestReportByPublicId(bgCtx, publicId)
 	if dbErr != nil || report == nil {
-		sLog.Err(dbErr).Msg("FindTestReportByPublicId failed")
+		sLog.Err(dbErr).Msg("find finished report failed")
 		sendSafe(msgCh, &SSEMessage{
 			Typ: SSE_MT_ERROR,
 			Msg: "查询报告数据库记录失败:",
@@ -314,14 +310,14 @@ func (s *HttpSrv) aiReportProcess(msgCh chan *SSEMessage, publicId string, sLog 
 		return
 	}
 
-	if report.Status == ReportStatusSuccess {
+	if report.Status == dbSrv.ReportStatusSuccess {
 		if report.AIContent == nil {
 			sLog.Error().Msg("AIContent is nil")
 			sendSafe(msgCh, &SSEMessage{Typ: SSE_MT_ERROR, Msg: "AI报告内容丢失:"}, &s.log)
 			return
 		}
 		sendSafe(msgCh, &SSEMessage{Typ: SSE_MT_DONE, Msg: string(report.AIContent)}, &s.log)
-		sLog.Info().Msg("get generated success")
+		sLog.Info().Msg("got generated success")
 		return
 	}
 
@@ -344,7 +340,6 @@ func (s *HttpSrv) aiReportProcess(msgCh chan *SSEMessage, publicId string, sLog 
 		return nil
 	}
 
-	var aiStr json.RawMessage
 	var paramMode interface{} = nil
 	switch ai_api.Mode(report.Mode) {
 	case ai_api.Mode33:
@@ -375,9 +370,8 @@ func (s *HttpSrv) aiReportProcess(msgCh chan *SSEMessage, publicId string, sLog 
 		sendSafe(msgCh, &SSEMessage{Typ: SSE_MT_ERROR, Msg: "生成报告(3+3)失败:" + err.Error()}, &s.log)
 		return
 	}
-	aiStr, _ = json.Marshal(aiContent)
 
-	dbErr = dbSrv.Instance().UpdateTestReportAIContent(bgCtx, publicId, aiStr)
+	dbErr = dbSrv.Instance().UpdateTestReportAIContent(bgCtx, publicId, []byte(aiContent))
 	if dbErr != nil {
 		sLog.Err(dbErr).Msg("UpdateTestReportAIContent failed")
 		sendSafe(msgCh, &SSEMessage{Typ: SSE_MT_ERROR, Msg: "保存报告数据失败:" + dbErr.Error()}, &s.log)

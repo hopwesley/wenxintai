@@ -1,5 +1,5 @@
 // src/controller/useNativePayment.ts
-import {computed, ref} from 'vue'
+import {computed, onUnmounted, ref} from 'vue'
 import {API_PATHS, apiRequest, isApiErr} from '@/api'
 import {router} from "@/controller/router_index";
 import {useAlert} from "@/controller/useAlert";
@@ -77,7 +77,6 @@ export function useNativePayment(opts: UseNativePaymentOptions) {
         paySucceeded.value = false
     }
 
-    // 点击微信支付
     async function handleWeChatPayClick() {
         if (paying.value) return
         if (!opts.publicID) {
@@ -103,7 +102,6 @@ export function useNativePayment(opts: UseNativePaymentOptions) {
                 console.log('code:', e.code,'err:', e.err);
                 return
             }
-
             showAlert('发生未知错误，请稍后重试')
         } finally {
             paying.value = false
@@ -115,29 +113,27 @@ export function useNativePayment(opts: UseNativePaymentOptions) {
 
         inviteLoading.value = true
         errorMessage.value = ''
+
         try {
             const trimmed = code.value.trim()
-            await verifyInviteWithMessage(trimmed)
+            await apiRequest(API_PATHS.INVITE_PAYMENT, {
+                method: 'POST',
+                body: {
+                    invite_code: trimmed,
+                    public_id: opts.publicID,
+                },
+            })
             opts.onSuccess()
         } catch (e) {
-            errorMessage.value = e instanceof Error ? e.message : String(e)
+            if (isApiErr(e)) {
+                errorMessage.value = e.message;
+            }
             inputRef.value?.focus()
             return
         } finally {
             inviteLoading.value = false
         }
     }
-
-    async function verifyInviteWithMessage(rawCode: string) {
-        await apiRequest(API_PATHS.INVITE_PAYMENT, {
-            method: 'POST',
-            body: {
-                invite_code: rawCode,
-                public_id: opts.publicID,
-            },
-        })
-    }
-
 
     function handleCancel() {
         showAlert('您确定放弃本次测试报告吗？', () => {

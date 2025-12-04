@@ -31,7 +31,7 @@
         v-model:open="paymentDialogShow"
         :product="currentPlan"
         :publicId="publicId"
-        @success="() => generateReport"
+        @success="generateReport"
     />
   </TestLayout>
 </template>

@@ -110,11 +110,14 @@ func (pdb *psDatabase) SaveQuestion(
 
 func (pdb *psDatabase) SaveAnswer(
 	ctx context.Context,
-	testType, publicId string,
+	testType, publicId, uid string,
 	answersJSON []byte, status int,
 ) error {
 	if publicId == "" {
 		return errors.New("publicId must be non-empty")
+	}
+	if uid == "" {
+		return errors.New("wechat id must be non-empty")
 	}
 	if testType == "" {
 		return errors.New("testType must be non-empty")
@@ -150,6 +153,7 @@ func (pdb *psDatabase) SaveAnswer(
 		    status = GREATEST(status, $2),
 		    updated_at =  now()
 		WHERE public_id     = $1
+		  AND wechat_openid = $3
 	`
 
 	err := pdb.WithTx(ctx, func(tx *sql.Tx) error {
@@ -179,6 +183,7 @@ func (pdb *psDatabase) SaveAnswer(
 		res2, err := tx.ExecContext(ctx, updateTestRecordSQL,
 			publicId,
 			status,
+			uid,
 		)
 		if err != nil {
 			sLog.Err(err).Msg("SaveAnswer: update tests_record failed")

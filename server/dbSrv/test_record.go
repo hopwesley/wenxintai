@@ -74,7 +74,7 @@ func (pdb *psDatabase) QueryTestInProcess(ctx context.Context, uid, businessType
 }
 
 func (pdb *psDatabase) QueryUnfinishedTest(
-	ctx context.Context, publicId string,
+	ctx context.Context, publicId, uid string,
 ) (*TestRecord, error) {
 	log := pdb.log.With().Str("public_id", publicId).Logger()
 	log.Debug().Msg("QueryUnfinishedTest")
@@ -92,12 +92,13 @@ func (pdb *psDatabase) QueryUnfinishedTest(
             created_at
         FROM app.tests_record
         WHERE public_id = $1
+          AND wechat_openid = $2
           AND paid_time IS NULL
         ORDER BY created_at DESC
         LIMIT 1
     `
 
-	row := pdb.db.QueryRowContext(ctx, q, publicId)
+	row := pdb.db.QueryRowContext(ctx, q, publicId, uid)
 
 	var rec TestRecord
 	err := row.Scan(
@@ -170,6 +171,7 @@ func (pdb *psDatabase) NewTestRecord(
 func (pdb *psDatabase) UpdateBasicInfo(
 	ctx context.Context,
 	publicId string,
+	uid string,
 	grade string,
 	mode string,
 	hobby string,
@@ -177,18 +179,19 @@ func (pdb *psDatabase) UpdateBasicInfo(
 ) (string, error) {
 	const q = `
         UPDATE app.tests_record
-        SET grade = $2,
-            mode = $3,
-            hobby = NULLIF($4, ''),
-            status = $5,
-            updated_at = now()
-        WHERE public_id = $1
-        RETURNING business_type
+	SET grade = $3,
+	    mode = $4,
+	    hobby = NULLIF($5, ''),
+	    status = $6,
+	    updated_at = now()
+	WHERE public_id = $1
+	  AND wechat_openid = $2
+	RETURNING business_type
     `
 
 	var businessType string
 	err := pdb.db.QueryRowContext(ctx, q,
-		publicId, grade, mode, hobby, status,
+		publicId, uid, grade, mode, hobby, status,
 	).Scan(&businessType)
 	if err != nil {
 		return "", err

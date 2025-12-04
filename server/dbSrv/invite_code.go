@@ -102,15 +102,15 @@ func (pdb *psDatabase) UpdateInviteStatus(ctx context.Context, code string, newS
 }
 
 func (pdb *psDatabase) PayByInviteCode(ctx context.Context, publicId string, inviteCode string) error {
-	log := pdb.log.With().
+	sLog := pdb.log.With().
 		Str("public_id", publicId).
 		Str("invite_code", inviteCode).
 		Logger()
-	log.Debug().Msg("PayByInviteCode")
+	sLog.Debug().Msg("PayByInviteCode")
 
 	tx, err := pdb.db.BeginTx(ctx, nil)
 	if err != nil {
-		log.Err(err).Msg("begin tx failed")
+		sLog.Err(err).Msg("begin tx failed")
 		return err
 	}
 
@@ -124,18 +124,18 @@ func (pdb *psDatabase) PayByInviteCode(ctx context.Context, publicId string, inv
 	`
 	res1, err := tx.ExecContext(ctx, qUpdateTestRecord, inviteCode, publicId)
 	if err != nil {
-		log.Err(err).Msg("update tests_record failed")
+		sLog.Err(err).Msg("update tests_record failed")
 		_ = tx.Rollback()
 		return err
 	}
 	rows1, err := res1.RowsAffected()
 	if err != nil {
-		log.Err(err).Msg("rows affected (tests_record) failed")
+		sLog.Err(err).Msg("rows affected (tests_record) failed")
 		_ = tx.Rollback()
 		return err
 	}
 	if rows1 == 0 {
-		log.Warn().Msg("no tests_record updated")
+		sLog.Warn().Msg("no tests_record updated")
 		_ = tx.Rollback()
 		return sql.ErrNoRows
 	}
@@ -151,26 +151,27 @@ func (pdb *psDatabase) PayByInviteCode(ctx context.Context, publicId string, inv
 	`
 	res2, err := tx.ExecContext(ctx, qUpdateInvite, InviteStatusUsed, publicId, inviteCode)
 	if err != nil {
-		log.Err(err).Msg("update invites failed")
+		sLog.Err(err).Msg("update invites failed")
 		_ = tx.Rollback()
 		return err
 	}
 	rows2, err := res2.RowsAffected()
 	if err != nil {
-		log.Err(err).Msg("rows affected (invites) failed")
+		sLog.Err(err).Msg("rows affected (invites) failed")
 		_ = tx.Rollback()
 		return err
 	}
 	if rows2 == 0 {
-		log.Warn().Msg("no invites updated")
+		sLog.Warn().Msg("no invites updated")
 		_ = tx.Rollback()
 		return sql.ErrNoRows
 	}
 
 	if err = tx.Commit(); err != nil {
-		log.Err(err).Msg("commit tx failed")
+		sLog.Err(err).Msg("commit tx failed")
 		return err
 	}
 
+	sLog.Info().Msg("update record status to paid success")
 	return nil
 }

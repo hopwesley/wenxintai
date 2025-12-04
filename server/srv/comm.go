@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/hopwesley/wenxintai/server/ai_api"
 	"github.com/hopwesley/wenxintai/server/dbSrv"
@@ -362,9 +363,11 @@ func (s *HttpSrv) forwardCallback(w http.ResponseWriter, r *http.Request, target
 	}
 	u.RawQuery = r.URL.RawQuery
 
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	// 3. 用原始 method 转发（GET/POST 都适用）
 	forwardReq, err := http.NewRequestWithContext(
-		r.Context(),
+		ctx,
 		r.Method,
 		u.String(),
 		bytes.NewReader(body),
@@ -424,6 +427,13 @@ func nullToString(ns sql.NullString) string {
 		return ns.String
 	}
 	return ""
+}
+
+func safeStr(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
 }
 
 type ctxKey string

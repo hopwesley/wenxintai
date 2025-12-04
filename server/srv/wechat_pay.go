@@ -1,8 +1,6 @@
 package srv
 
 import (
-	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -27,19 +25,20 @@ func (s *HttpSrv) apiWeChatPayCallBack(w http.ResponseWriter, r *http.Request) {
 	s.processWeChatPayment(w, r)
 }
 
-func safeStr(p *string) string {
-	if p == nil {
-		return ""
-	}
-	return *p
-}
+type PaymentStatus int16
+
+const (
+	PaymentInit PaymentStatus = iota
+	PaymentSuccess
+	PaymentFailed
+)
 
 func (s *HttpSrv) processWeChatPayment(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	log := s.log.With().Str("handler", "processWeChatPayment").Logger()
+	sLog := s.log.With().Str("handler", "processWeChatPayment").Logger()
 
 	if s.wxNotifyHandler == nil {
-		log.Error().Msg("wxNotifyHandler not initialized")
+		sLog.Error().Msg("wxNotifyHandler not initialized")
 		http.Error(w, "server error", http.StatusInternalServerError)
 		return
 	}
@@ -47,15 +46,19 @@ func (s *HttpSrv) processWeChatPayment(w http.ResponseWriter, r *http.Request) {
 	tx := new(payments.Transaction)
 	notifyReq, err := s.wxNotifyHandler.ParseNotifyRequest(ctx, r, tx)
 	if err != nil {
-		log.Error().Err(err).Msg("parse notify failed")
+		sLog.Err(err).Msg("parse notify failed")
 		http.Error(w, "invalid notify", http.StatusBadRequest)
 		return
 	}
 
 	outTradeNo := safeStr(tx.OutTradeNo)
 	tradeState := safeStr(tx.TradeState)
+	transID := safeStr(tx.TransactionId)
+	openID := safeStr(tx.Payer.Openid)
+	paidAt, _ := time.Parse(time.RFC3339, *tx.SuccessTime)
+	rawBody, _ := json.Marshal(tx)
 
-	log.Info().
+	sLog.Info().
 		Str("event_type", notifyReq.EventType).
 		Str("summary", notifyReq.Summary).
 		Str("out_trade_no", outTradeNo).
@@ -63,64 +66,39 @@ func (s *HttpSrv) processWeChatPayment(w http.ResponseWriter, r *http.Request) {
 		Str("transaction_id", safeStr(tx.TransactionId)).
 		Msg("wechat payment notify")
 
+	var tState = PaymentInit
 	switch tradeState {
-	case "SUCCESS", "REFUND", "CLOSED", "PAYERROR":
-		if err := s.updateWeChatOrderStatusFromTransaction(ctx, tx); err != nil {
-			log.Error().Err(err).Str("out_trade_no", outTradeNo).Msg("updateWeChatOrderStatus failed")
-		}
+	case "SUCCESS":
+		tState = PaymentSuccess
+		break
+	case "REFUND", "CLOSED", "PAYERROR":
+		tState = PaymentFailed
+		break
 	default:
-		// NOTPAY 等状态，看你业务要不要处理
+		tState = PaymentInit
+	}
+
+	if err := dbSrv.Instance().UpdateWeChatOrderStatus(
+		ctx,
+		outTradeNo,
+		int16(tState),
+		transID,
+		openID,
+		paidAt,
+		rawBody,
+	); err != nil {
+		sLog.Err(err).Str("out_trade_no", outTradeNo).Msg("updateWeChatOrderStatus failed")
+		writeJSON(w, http.StatusOK, map[string]string{
+			"code":    "FAILED",
+			"message": "失败",
+		})
+		return
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{
 		"code":    "SUCCESS",
 		"message": "成功",
 	})
-}
-
-func (s *HttpSrv) updateWeChatOrderStatusFromTransaction(
-	ctx context.Context,
-	t *payments.Transaction,
-) error {
-	if t == nil || t.OutTradeNo == nil {
-		return fmt.Errorf("transaction or out_trade_no nil")
-	}
-
-	orderID := *t.OutTradeNo
-
-	tradeState := ""
-	if t.TradeState != nil {
-		tradeState = *t.TradeState
-	}
-
-	var transID *string
-	if t.TransactionId != nil && *t.TransactionId != "" {
-		transID = t.TransactionId
-	}
-
-	var openID *string
-	if t.Payer != nil && t.Payer.Openid != nil && *t.Payer.Openid != "" {
-		openID = t.Payer.Openid
-	}
-
-	var paidAt *time.Time
-	if tradeState == "SUCCESS" && t.SuccessTime != nil && *t.SuccessTime != "" {
-		if tt, err := time.Parse(time.RFC3339, *t.SuccessTime); err == nil {
-			paidAt = &tt
-		}
-	}
-
-	rawBody, _ := json.Marshal(t)
-
-	return dbSrv.Instance().UpdateWeChatOrderStatus(
-		ctx,
-		orderID,
-		tradeState,
-		transID,
-		openID,
-		paidAt,
-		rawBody,
-	)
 }
 
 // ========================= 创建 Native 订单 =========================
@@ -211,10 +189,16 @@ func (s *HttpSrv) apiWeChatCreateNativeOrder(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// 落库
-	var wxUnionID = userIDFromContext(ctx)
+	po := &dbSrv.WeChatOrder{
+		OrderID:     outTradeNo,
+		PublicID:    req.PublicId,
+		PlanKey:     plan.PlanKey,
+		AmountTotal: amount,
+		Currency:    "CNY",
+		Description: plan.Description,
+	}
 
-	if err := s.saveWeChatOrder(ctx, outTradeNo, record.BusinessType, record.BusinessType, amount, plan.Description, wxUnionID); err != nil {
+	if err := dbSrv.Instance().InsertWeChatOrder(ctx, po); err != nil {
 		sLog.Err(err).Str("out_trade_no", outTradeNo).Msg("save order failed")
 		writeError(w, ApiInternalErr("保存原始订单失败", nil))
 		return
@@ -234,91 +218,36 @@ func (s *HttpSrv) apiWeChatCreateNativeOrder(w http.ResponseWriter, r *http.Requ
 type WeChatOrderStatusRes struct {
 	Ok         bool   `json:"ok"`
 	OrderID    string `json:"order_id"`
-	Paid       bool   `json:"paid"`
-	Status     string `json:"status"`
+	Status     int16  `json:"status"`
 	ErrMessage string `json:"err_message,omitempty"`
 }
 
 func (s *HttpSrv) apiWeChatOrderStatus(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	log := s.log.With().Str("handler", "apiWeChatOrderStatus").Logger()
 
 	orderID := strings.TrimSpace(r.URL.Query().Get("order_id"))
 	if orderID == "" {
-		writeJSON(w, http.StatusBadRequest, &WeChatOrderStatusRes{
-			Ok:         false,
-			ErrMessage: "missing order_id",
-		})
+		writeError(w, ApiInvalidReq("查询状态时需要订单编号", nil))
 		return
 	}
 
-	order, err := s.getWeChatOrder(ctx, orderID)
-	if err != nil {
-		log.Error().Err(err).Str("order_id", orderID).Msg("getWeChatOrder failed")
-		writeJSON(w, http.StatusInternalServerError, &WeChatOrderStatusRes{
-			Ok:         false,
-			OrderID:    orderID,
-			ErrMessage: "query order failed",
-		})
+	sLog := s.log.With().Str("order_id", orderID).Logger()
+	order, err := dbSrv.Instance().FindWeChatOrderByID(ctx, orderID)
+	if err != nil || order == nil {
+		sLog.Err(err).Msg("getWeChatOrder failed")
+		writeError(w, ApiInternalErr("无效的订单编号"+orderID, err))
 		return
-	}
-	if order == nil {
-		writeJSON(w, http.StatusNotFound, &WeChatOrderStatusRes{
-			Ok:         false,
-			OrderID:    orderID,
-			ErrMessage: "order not found",
-		})
-		return
-	}
-
-	// 如果不是终态，可以调用微信侧查询最新状态（可选）
-	if order.TradeState != "SUCCESS" && order.TradeState != "REFUND" && order.TradeState != "CLOSED" {
-		if s.wxNativeService != nil {
-			tx, _, err := s.wxNativeService.QueryOrderByOutTradeNo(ctx, native.QueryOrderByOutTradeNoRequest{
-				OutTradeNo: core.String(orderID),
-				Mchid:      core.String(s.payment.MchID),
-			})
-			if err == nil && tx != nil && tx.TradeState != nil {
-				order.TradeState = *tx.TradeState
-				_ = s.updateWeChatOrderStatusFromTransaction(ctx, (*payments.Transaction)(tx))
-			}
-		}
 	}
 
 	writeJSON(w, http.StatusOK, &WeChatOrderStatusRes{
 		Ok:      true,
 		OrderID: orderID,
-		Paid:    order.TradeState == "SUCCESS",
 		Status:  order.TradeState,
 	})
+
+	sLog.Debug().Int16("status", order.TradeState).Str("order_id", orderID).Msg("query payment order status success")
 }
 
 func (s *HttpSrv) generateOutTradeNo() string {
-	return fmt.Sprintf("WXT%s%06d", time.Now().Format("20060102150405"), rand.Intn(1000000))
-}
-
-func (s *HttpSrv) saveWeChatOrder(
-	ctx context.Context,
-	orderID, businessType, planKey string,
-	amount int64,
-	desc string,
-	wxUnionID string,
-) error {
-	po := &dbSrv.WeChatOrder{
-		OrderID:      orderID,
-		BusinessType: businessType,
-		PlanKey:      planKey,
-		AmountTotal:  amount,
-		Currency:     "CNY",
-		Description:  desc,
-		TradeState:   "NOTPAY",
-	}
-	if wxUnionID != "" {
-		po.WeChatUnionID = sql.NullString{String: wxUnionID, Valid: true}
-	}
-	return dbSrv.Instance().InsertWeChatOrder(ctx, po)
-}
-
-func (s *HttpSrv) getWeChatOrder(ctx context.Context, orderID string) (*dbSrv.WeChatOrder, error) {
-	return dbSrv.Instance().FindWeChatOrderByID(ctx, orderID)
+	return fmt.Sprintf("WXT_%s%06d", time.Now().Format("20060102150405"), rand.Intn(1000000))
 }

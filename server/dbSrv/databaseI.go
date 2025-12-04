@@ -45,10 +45,10 @@ type DbService interface {
 	UpdateWeChatOrderStatus(
 		ctx context.Context,
 		orderID string,
-		tradeState string,
-		transactionID *string,
-		payerOpenID *string,
-		paidAt *time.Time,
+		tradeState int16,
+		transactionID string,
+		payerOpenID string,
+		paidAt time.Time,
 		notifyRaw []byte,
 	) error
 	InsertWeChatOrder(ctx context.Context, d *WeChatOrder) error

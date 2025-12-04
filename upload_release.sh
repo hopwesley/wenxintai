@@ -5,7 +5,7 @@ set -e
 
 KEY="$HOME/Documents/conf/tx_ninja.pem"
 HOST="root@43.138.18.5"
-REMOTE_DIR="/root/wenxintai"
+REMOTE_DIR="/root/wenxintai/upload"
 
 STATIC_LOCAL="./release/static"
 BIN_LOCAL="./release/wxt_lnx"

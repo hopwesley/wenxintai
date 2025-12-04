@@ -12,8 +12,16 @@ export interface NativeCreateOrderResponse {
     description: string
 }
 
+export type PaymentStatus = 0 | 1 | 2
+export const PaymentInit :PaymentStatus = 0;
+export const PaymentSuccess :PaymentStatus = 1;
+export const PaymentFailed :PaymentStatus = 2;
+
 export interface QueryOrderStatusResponse {
-    paid: boolean
+    ok: boolean
+    order_id: string
+    status: PaymentStatus
+    err_message?: string
 }
 
 interface UseNativePaymentOptions {
@@ -21,6 +29,7 @@ interface UseNativePaymentOptions {
     onClose: () => void
     publicID: string
 }
+
 
 export function useNativePayment(opts: UseNativePaymentOptions) {
     const paying = ref(false)
@@ -37,22 +46,27 @@ export function useNativePayment(opts: UseNativePaymentOptions) {
     const {showAlert} = useAlert()
     const {showLoading, hideLoading} = useGlobalLoading()
 
-    async function queryOrderStatus(orderId: string): Promise<QueryOrderStatusResponse> {
-        return apiRequest<QueryOrderStatusResponse>(
-            API_PATHS.WECHAT_NATIVE_ORDER_STATUS+`?order_id=${encodeURIComponent(orderId)}`
-        )
-    }
-
     function startPayPolling(orderId: string) {
         stopPayPolling()
 
         payPollingTimer.value = window.setInterval(async () => {
             try {
-                const status = await queryOrderStatus(orderId)
-                if (status.paid) {
+                const status = await apiRequest<QueryOrderStatusResponse>(
+                    API_PATHS.WECHAT_NATIVE_ORDER_STATUS + `?order_id=${encodeURIComponent(orderId)}`
+                )
+                if (status.status === PaymentSuccess) {
                     paySucceeded.value = true
                     stopPayPolling()
                     opts.onSuccess()
+                } else if (status.status === PaymentFailed) {
+                    paySucceeded.value = false
+                    stopPayPolling()
+                    showAlert("支付失败：" + (status.err_message || ""),()=>{
+                        payOrder.value = null
+                        paying.value = false
+                    })
+                } else {
+                    console.log("continue to polling status:", status.status)
                 }
             } catch (err) {
                 console.error('[Pay] queryOrderStatus error', err)
@@ -99,7 +113,7 @@ export function useNativePayment(opts: UseNativePaymentOptions) {
             console.error('[Pay] create native order error', e)
             if (isApiErr(e)) {
                 showAlert(e.message)
-                console.log('code:', e.code,'err:', e.err);
+                console.log('code:', e.code, 'err:', e.err);
                 return
             }
             showAlert('发生未知错误，请稍后重试')

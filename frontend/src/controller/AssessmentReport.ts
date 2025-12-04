@@ -623,7 +623,6 @@ export function useReportPage() {
                 method: 'POST',
                 body: {
                     public_id: publicId,
-                    business_type: businessType.value
                 },
             })
             const hasPaid = currentPlan.value.has_paid || false;

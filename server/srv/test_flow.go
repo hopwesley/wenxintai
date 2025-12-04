@@ -30,7 +30,7 @@ type TestFlowStep struct {
 type TestRecordDTO struct {
 	PublicId     string     `json:"public_id"`
 	BusinessType string     `json:"business_type"`
-	InviteCode   string     `json:"invite_code,omitempty"`
+	PayOrderId   string     `json:"pay_order_id,omitempty"`
 	WeChatID     string     `json:"wechat_id,omitempty"`
 	Grade        string     `json:"grade,omitempty"`
 	Mode         string     `json:"mode,omitempty"`
@@ -55,7 +55,7 @@ func toRecordDTO(rec dbSrv.TestRecord) TestRecordDTO {
 	return TestRecordDTO{
 		PublicId:     rec.PublicId,
 		BusinessType: rec.BusinessType,
-		InviteCode:   nullToString(rec.InviteCode),
+		PayOrderId:   nullToString(rec.PayOrderId),
 		WeChatID:     nullToString(rec.WeChatID),
 		Grade:        nullToString(rec.Grade),
 		Mode:         nullToString(rec.Mode),

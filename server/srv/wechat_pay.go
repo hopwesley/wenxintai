@@ -126,8 +126,7 @@ func (s *HttpSrv) updateWeChatOrderStatusFromTransaction(
 // ========================= 创建 Native 订单 =========================
 
 type WeChatNativeCreateReq struct {
-	BusinessType string `json:"business_type"`
-	PublicId     string `json:"public_id"`
+	PublicId string `json:"public_id"`
 }
 
 func (req *WeChatNativeCreateReq) parseObj(r *http.Request) *ApiErr {
@@ -135,9 +134,6 @@ func (req *WeChatNativeCreateReq) parseObj(r *http.Request) *ApiErr {
 		return ApiInvalidReq("invalid request body", err)
 	}
 
-	if !isValidBusinessType(req.BusinessType) {
-		return ApiInvalidReq("无效的测试类型", nil)
-	}
 	if !IsValidPublicID(req.PublicId) {
 		return ApiInvalidReq("无效的问卷编号", nil)
 	}
@@ -165,7 +161,7 @@ func (s *HttpSrv) apiWeChatCreateNativeOrder(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	sLog := s.log.With().Str("public_id", req.PublicId).Str("business_type", req.BusinessType).Logger()
+	sLog := s.log.With().Str("public_id", req.PublicId).Logger()
 
 	record, dbErr := dbSrv.Instance().QueryUnfinishedTest(ctx, req.PublicId)
 	if dbErr != nil || record == nil {
@@ -217,7 +213,7 @@ func (s *HttpSrv) apiWeChatCreateNativeOrder(w http.ResponseWriter, r *http.Requ
 	// 落库
 	var wxUnionID = userIDFromContext(ctx)
 
-	if err := s.saveWeChatOrder(ctx, outTradeNo, req.BusinessType, record.BusinessType, amount, plan.Description, wxUnionID); err != nil {
+	if err := s.saveWeChatOrder(ctx, outTradeNo, record.BusinessType, record.BusinessType, amount, plan.Description, wxUnionID); err != nil {
 		sLog.Err(err).Str("out_trade_no", outTradeNo).Msg("save order failed")
 		writeError(w, ApiInternalErr("保存原始订单失败", nil))
 		return

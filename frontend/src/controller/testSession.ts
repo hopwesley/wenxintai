@@ -12,7 +12,7 @@ const STORAGE_KEY = 'wenxintai:test-session'
 export interface TestRecordDTO {
     public_id: string
     business_type: PlanKey
-    invite_code?: string
+    pay_order_id?: string
     wechat_id?: string
     grade?: string
     mode: ModeOption|''

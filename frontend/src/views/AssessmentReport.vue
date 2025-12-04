@@ -80,7 +80,6 @@ const currentMainComponent = computed(() => {
       return ReportBasic
   }
 })
-
 </script>
 
 <style scoped src="@/styles/assessment-report.css"></style>

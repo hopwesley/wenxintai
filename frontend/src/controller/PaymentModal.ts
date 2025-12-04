@@ -1,6 +1,6 @@
 // src/controller/useNativePayment.ts
 import {computed, ref} from 'vue'
-import {API_PATHS, apiRequest} from '@/api'
+import {API_PATHS, apiRequest, isApiErr} from '@/api'
 import {router} from "@/controller/router_index";
 import {useAlert} from "@/controller/useAlert";
 import {useGlobalLoading} from "@/controller/useGlobalLoading";
@@ -39,7 +39,7 @@ export function useNativePayment(opts: UseNativePaymentOptions) {
 
     async function queryOrderStatus(orderId: string): Promise<QueryOrderStatusResponse> {
         return apiRequest<QueryOrderStatusResponse>(
-            `/api/pay/wechat/order-status?order_id=${encodeURIComponent(orderId)}`
+            API_PATHS.WECHAT_NATIVE_ORDER_STATUS+`?order_id=${encodeURIComponent(orderId)}`
         )
     }
 
@@ -87,10 +87,10 @@ export function useNativePayment(opts: UseNativePaymentOptions) {
 
         try {
             paying.value = true
-            const res = await apiRequest<NativeCreateOrderResponse>('/api/pay/wechat/native-create', {
+            const res = await apiRequest<NativeCreateOrderResponse>(API_PATHS.WECHAT_CREATE_NATIVE_ORDER, {
                 method: 'POST',
                 body: {
-                    public_id: opts.publicID
+                    public_id: opts.publicID,
                 },
             })
 
@@ -98,6 +98,13 @@ export function useNativePayment(opts: UseNativePaymentOptions) {
             startPayPolling(res.order_id)
         } catch (e) {
             console.error('[Pay] create native order error', e)
+            if (isApiErr(e)) {
+                showAlert(e.message)
+                console.log('code:', e.code,'err:', e.err);
+                return
+            }
+
+            showAlert('发生未知错误，请稍后重试')
         } finally {
             paying.value = false
         }

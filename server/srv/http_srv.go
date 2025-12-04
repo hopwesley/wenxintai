@@ -44,9 +44,9 @@ const (
 	apiWeChatMyProfile      = "/api/auth/profile"
 
 	apiInvitePayment           = "/api/pay/use_invite"
-	apiWeChatPayment           = "/api/pay/"
-	apiWeChatCreateNativeOrder = "/api/pay/wechat/native/create"
-	apiWeChatNativeOrderStatus = "/api/pay/wechat/order-status"
+	apiWeChatPaymentCallBack   = "/api/wechat/payment_callback/"
+	apiWeChatCreateNativeOrder = "/api/pay/wechat/order_create"
+	apiWeChatNativeOrderStatus = "/api/pay/wechat/order_status"
 )
 
 var (
@@ -181,7 +181,7 @@ func (s *HttpSrv) initRouter() error {
 
 		{apiWeChatSignIn, http.MethodGet, s.wechatSignStatus, false},
 		{apiWeChatSignInCallBack, http.MethodGet, s.wechatSignInCallBack, false},
-		{apiWeChatPayment, http.MethodPost, s.apiWeChatPayCallBack, false},
+		{apiWeChatPaymentCallBack, http.MethodPost, s.apiWeChatPayCallBack, false},
 		{apiWeChatLogOut, http.MethodPost, s.wechatLogout, false},
 
 		{apiTestFlow, http.MethodPost, s.handleTestFlow, true},

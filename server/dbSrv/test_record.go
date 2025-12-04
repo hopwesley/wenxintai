@@ -37,7 +37,7 @@ func (pdb *psDatabase) QueryTestInProcess(ctx context.Context, uid, businessType
             mode,
             hobby,
             status,
-            created_at,
+            created_at
         FROM app.tests_record
         WHERE wechat_openid = $1
       		AND business_type = $2

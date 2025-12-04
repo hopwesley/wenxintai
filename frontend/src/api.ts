@@ -4,51 +4,30 @@ interface RequestOptions {
     headers?: Record<string, string>
 }
 
-type ApiError = Error & { code?: string; body?: any }
-
-export async function apiRequest<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
-    const init: RequestInit = {
-        method: options.method ?? 'GET',
-        headers: {...options.headers},
-        credentials: 'include',
-    }
-
-    if (options.body !== undefined) {
-        init.body = JSON.stringify(options.body)
-        init.headers = {'Content-Type': 'application/json', ...init.headers}
-    }
-
-    const resp = await fetch(path, init)
-
-    if (resp.ok) {
-        try {
-            return (await resp.json()) as T
-        } catch {
-            return undefined as T
-        }
-    }
-
-    let body: any
-    try {
-        body = await resp.json()
-    } catch {
-        body = null
-    }
-
-    const code = (body?.code && String(body?.code)) || ''
-    const message = (body?.message && String(body?.message)) || '请求失败，请稍后重试'
-
-    // 只对外暴露 code + message（UI 显示 message，必要时可读 err.code）
-    const err = new Error(message) as ApiError
-    if (code) {
-        err.name = code
-        err.code = code
-    }
-    err.body = body // 便于上层需要时做额外处理/埋点
-
-    console.debug('[API ERROR]', resp.status, path, body)
-    throw err
-}
+// export async function apiRequest<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
+//     const init: RequestInit = {
+//         method: options.method ?? 'GET',
+//         headers: {...options.headers},
+//         credentials: 'include',
+//     }
+//
+//     if (options.body !== undefined) {
+//         init.body = JSON.stringify(options.body)
+//         init.headers = {'Content-Type': 'application/json', ...init.headers}
+//     }
+//     try {
+//         const resp = await fetch(path, init)
+//         if (resp.ok) {
+//             return (await resp.json()) as T
+//         }
+//
+//         const body = await resp.text()
+//         console.log("------>>>body", body)
+//         return undefined as T
+//     } catch (e) {
+//         throw e
+//     }
+// }
 
 export const API_PATHS = {
     HEALTH: '/api/health',
@@ -74,6 +53,72 @@ export const API_PATHS = {
 
     WECHAT_PAYMENT: '/api/pay/',
     INVITE_PAYMENT: '/api/pay/use_invite',
-    WECHAT_CREATE_NATIVE_ORDER: '/api/pay/wechat/native/create',
-    WECHAT_NATIVE_ORDER_STATUS: '/api/pay/wechat/order-status',
+    WECHAT_CREATE_NATIVE_ORDER: '/api/pay/wechat/order_create',
+    WECHAT_NATIVE_ORDER_STATUS: '/api/pay/wechat/order_status',
 } as const
+
+interface ApiErr {
+    code: string;
+    message: string;
+    err?: any;
+}
+
+export async function apiRequest<T = any>(
+    path: string,
+    options: RequestOptions = {}
+): Promise<T> {
+    const init: RequestInit = {
+        method: options.method ?? 'GET',
+        headers: {...options.headers},
+        credentials: 'include',
+    };
+
+    if (options.body !== undefined) {
+        init.body = JSON.stringify(options.body);
+        init.headers = {'Content-Type': 'application/json', ...init.headers};
+    }
+
+    let resp: Response;
+    try {
+        resp = await fetch(path, init);
+        if (resp.ok) {
+            const text = await resp.text();
+            return text ? JSON.parse(text) as T : undefined as T;
+        }
+    } catch (networkErr) {
+        console.error('Network error:', networkErr);
+        const error = new Error("网络异常，请检查网络后重试:" + (networkErr as Error).message) as Error & ApiErr;
+        error.code = 'NETWORK_ERROR';
+        error.err = networkErr;
+        throw error;
+    }
+
+    const contentType = resp.headers.get('content-type') || '';
+    let body: any;
+    try {
+        body = contentType.includes('json') ? await resp.json() : await resp.text();
+    } catch (e) {
+        body = null;
+    }
+
+    if (isApiErr(body)) {
+        throw body;
+    }
+
+    const error = new Error("系统错误，请稍后重试:"+body) as Error & ApiErr;
+    error.code = 'SYSTEM_ERROR';
+    error.err = {status: resp.status, raw: body};
+    throw error;
+}
+
+export function isApiErr(error: unknown): error is (Error & ApiErr) {
+    return error !== null &&
+        typeof error === 'object' &&
+        'code' in error &&
+        'message' in error &&
+        typeof (error as any).code === 'string' &&
+        typeof (error as any).message === 'string';
+}
+
+
+

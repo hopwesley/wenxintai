@@ -77,19 +77,19 @@ func (s *HttpSrv) handleCurrentProduct(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	sLog := s.log.With().Str("public_id", req.PublicId).Str("business_type", req.BusinessType).Logger()
-
-	plan, planErr := dbSrv.Instance().PlanByKey(ctx, req.BusinessType)
-	if planErr != nil {
-		sLog.Err(planErr).Msg("failed find product price info")
-		writeError(w, ApiInternalErr("查询产品价格信息失败", planErr))
-		return
-	}
+	sLog := s.log.With().Str("public_id", req.PublicId).Logger()
 
 	record, dbError := dbSrv.Instance().QueryRecordById(ctx, req.PublicId)
 	if dbError != nil {
 		sLog.Err(dbError).Msg("failed find test record")
-		writeError(w, ApiInternalErr("查询问卷状态失败", planErr))
+		writeError(w, ApiInternalErr("查询问卷状态失败", dbError))
+		return
+	}
+
+	plan, planErr := dbSrv.Instance().PlanByKey(ctx, record.BusinessType)
+	if planErr != nil {
+		sLog.Err(planErr).Msg("failed find product price info")
+		writeError(w, ApiInternalErr("查询产品价格信息失败", planErr))
 		return
 	}
 

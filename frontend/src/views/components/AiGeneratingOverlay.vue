@@ -64,9 +64,8 @@ const headerInfo = computed(() => ({
   grade: record.value?.grade ?? '',
   mode: record.value?.mode ?? '',
   hobby: record.value?.hobby ?? '',
-  inviteCode: record.value?.invite_code ?? '',
+  pay_order_id: record.value?.pay_order_id ?? '',
 }))
-
 
 const props = defineProps<{
   title: string

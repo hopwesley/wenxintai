@@ -31,7 +31,6 @@ export interface UserProfile {
     created_at: string
     updated_at: string
     city: string | null
-    report_no: number
 }
 
 /**

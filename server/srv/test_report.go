@@ -336,3 +336,17 @@ func (s *HttpSrv) parseReport(w http.ResponseWriter, report *dbSrv.TestReport, s
 
 	return combinedResult
 }
+
+func (s *HttpSrv) finalizedReport(w http.ResponseWriter, r *http.Request) {
+	var req tesReportRequest
+	err := req.parseObj(r)
+	if err != nil {
+		s.log.Err(err).Msgf("invalid test report request")
+		writeError(w, err)
+		return
+	}
+	uid := userIDFromRequest(r)
+	sLog := s.log.With().Str("public_id", req.PublicID).Str("wechat_id", uid).Logger()
+	writeJSON(w, http.StatusOK, CommonRes{Ok: true, Msg: "成功完成测试"})
+	sLog.Debug().Msg("finish report success")
+}

@@ -35,6 +35,7 @@ const (
 	apiSSEReportSub   = "/api/sub/report/"
 	apiSubmitTest     = "/api/test_submit"
 	apiGenerateReport = "/api/generate_report"
+	apiFinishReport   = "/api/finish_report"
 
 	apiWeChatSignIn         = "/api/auth/wx/status"
 	apiWeChatSignInCallBack = "/api/wechat_signin"
@@ -193,6 +194,7 @@ func (s *HttpSrv) initRouter() error {
 
 		{apiSSEReportSub, http.MethodGet, s.handleReportSSEEvent, true},
 		{apiGenerateReport, http.MethodPost, s.queryOrCreateReport, true},
+		{apiFinishReport, http.MethodPost, s.finalizedReport, true},
 
 		{apiWeChatUpdateProfile, http.MethodPost, s.apiWeChatUpdateProfile, true},
 		{apiWeChatMyProfile, http.MethodGet, s.apiWeChatMyProfile, true},

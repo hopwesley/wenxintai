@@ -20,7 +20,6 @@ type UserProfile struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at,omitempty"`
 	LastLoginAt time.Time `json:"last_login_at,omitempty"` // 最近登录时间
-	ReportNo    int       `json:"report_no"`
 }
 
 func (pdb *psDatabase) InsertOrUpdateUserProfileBasic(
@@ -152,8 +151,7 @@ func (pdb *psDatabase) FindUserProfileByUid(
         COALESCE(city, ''),
         created_at,
         updated_at,
-        last_login_at,
-        report_no
+        last_login_at
     FROM app.user_profile
     WHERE uid = $1
     LIMIT 1
@@ -175,7 +173,6 @@ func (pdb *psDatabase) FindUserProfileByUid(
 		&u.CreatedAt,
 		&u.UpdatedAt,
 		&u.LastLoginAt,
-		&u.ReportNo,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Warn().Msg("FindUserProfileByUid: no record")

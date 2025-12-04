@@ -24,7 +24,7 @@
 
           <div class="my-tests-profile-meta">
             <span>测评次数：{{ list.length }}</span>
-            <span>已生成报告：{{ profile?.report_no ?? completedCount }}</span>
+            <span>已生成报告：{{ completedCount }}</span>
           </div>
         </div>
       </div>

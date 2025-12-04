@@ -41,7 +41,7 @@
 import StepIndicator from '@/views/components/StepIndicator.vue'
 import TestLayout from '@/views/components/TestLayout.vue'
 import AiGeneratingOverlay from '@/views/components/AiGeneratingOverlay.vue'
-import {useReportPage} from '@/controller/AssessmentReport'
+import {useReportController} from '@/controller/report_manager'
 import {computed} from "vue";
 
 import ReportBasic from '@/views/report_basic.vue'
@@ -61,7 +61,7 @@ const {
   currentPlan,
   publicId,
   generateReport,
-} = useReportPage()
+} = useReportController()
 
 const businessType = computed(() =>
     String(route.params.typ ?? "")

@@ -4,7 +4,7 @@
       <section class="report-card report-card--overview">
         <header class="report-card__header">
           <div class="report-card__title-row">
-            <h1 class="report-card__title">智能选科分析报告</h1>
+            <h1 class="report-card__title">智择未来 · AI选科全景分析报告</h1>
             <span v-if="overview.mode" class="report-card__mode-pill">
             {{ overview.mode }}
           </span>
@@ -505,7 +505,7 @@
 </template>
 
 <script setup lang="ts">
-import {useReportPage} from '@/controller/AssessmentReport'
+import {useReportView} from '@/controller/report_manager'
 import SubjectRadarChart from "@/views/components/SubjectRadarChart.vue";
 import SubjectAbilityBarChart from '@/views/components/SubjectAbilityBarChart.vue'
 import ComboScoreChart from '@/views/components/ComboScoreChart.vue'
@@ -521,7 +521,7 @@ const {
   mode312OverviewStrips,
   finalReport,
   reportPageRoot,
-} = useReportPage()
+} = useReportView()
 
 </script>
 

@@ -894,12 +894,12 @@
 </template>
 
 <script setup lang="ts">
-import {useReportPage} from '@/controller/AssessmentReport'
 import SubjectRadarChart from "@/views/components/SubjectRadarChart.vue";
 import SubjectAbilityBarChart from '@/views/components/SubjectAbilityBarChart.vue'
 import ComboScoreChart from '@/views/components/ComboScoreChart.vue'
 import {aiReportData} from '@/controller/AssessmentReport'
 import {subjectLabelMap} from "@/controller/common";
+import {useReportView} from "@/controller/report_manager";
 
 const {
   overview,
@@ -911,7 +911,7 @@ const {
   mode312OverviewStrips,
   finalReport,
   reportPageRoot,
-} = useReportPage()
+} = useReportView()
 
 
 // z 值格式化：保留 2 位小数，空值显示 --

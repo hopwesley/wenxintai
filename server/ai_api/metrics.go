@@ -21,7 +21,7 @@ var metricRegistry = map[string]MetricDef{
 	},
 	"combo312.score": {
 		RawMin:         0.0,
-		RawMax:         0.60, // 理论上限约 0.58，留一点余量
+		RawMax:         0.70,
 		HigherIsBetter: true,
 	},
 	"common.global_cosine": {

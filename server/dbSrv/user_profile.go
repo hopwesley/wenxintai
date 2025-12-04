@@ -8,11 +8,11 @@ import (
 )
 
 type UserProfile struct {
-	ID          int64  `json:"id"`
-	Uid         string `json:"uid"`                  // 微信 UnionID
-	NickName    string `json:"nick_name,omitempty"`  // 微信昵称
-	AvatarUrl   string `json:"avatar_url,omitempty"` // 微信头像 URL
-	mobile      string
+	ID          int64     `json:"id"`
+	Uid         string    `json:"uid"`                  // 微信 UnionID
+	NickName    string    `json:"nick_name,omitempty"`  // 微信昵称
+	AvatarUrl   string    `json:"avatar_url,omitempty"` // 微信头像 URL
+	Mobile      string    `json:"mobile,omitempty"`
 	StudyId     string    `json:"study_id,omitempty"`    // 学号（可空）
 	SchoolName  string    `json:"school_name,omitempty"` // 学校名称（可空）
 	Province    string    `json:"province,omitempty"`    // 所在地区省（可空）
@@ -159,13 +159,17 @@ func (pdb *psDatabase) FindUserProfileByUid(
 
 	row := pdb.db.QueryRowContext(ctx, q, uid)
 
-	var u UserProfile
+	var (
+		mobileRaw string
+		u         UserProfile
+	)
+
 	if err := row.Scan(
 		&u.ID,
 		&u.Uid,
 		&u.NickName,
 		&u.AvatarUrl,
-		&u.mobile,
+		&mobileRaw,
 		&u.StudyId,
 		&u.SchoolName,
 		&u.Province,
@@ -181,6 +185,8 @@ func (pdb *psDatabase) FindUserProfileByUid(
 		log.Err(err).Msg("FindUserProfileByUid: query failed")
 		return nil, err
 	}
+
+	u.Mobile = maskMobile(mobileRaw)
 
 	log.Debug().Msg("FindUserProfileByUid: done")
 	return &u, nil

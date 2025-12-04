@@ -1,6 +1,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { apiRequest } from '@/api'
+import {API_PATHS, apiRequest} from '@/api'
 import { useGlobalLoading } from '@/controller/useGlobalLoading'
 import { useAlert } from '@/controller/useAlert'
 
@@ -63,14 +63,18 @@ export function useWechatProfile() {
     const router = useRouter()
     const { showLoading, hideLoading } = useGlobalLoading()
     const { showAlert } = useAlert()
-
     const loading = ref(false)
-
-    // 🔹 用户档案
     const profile = ref<UserProfile | null>(null)
-
-    // 🔹 当前用户的所有测试记录
     const list = ref<MyTestItem[]>([])
+
+    const editingExtra = ref(false)
+    const extraForm = ref({
+        mobile: '',
+        study_id: '',
+        school_name: '',
+        province: '',
+        city: '',
+    })
 
     const ongoingList = computed(() =>
         list.value.filter((item) => item.status === 'RUNNING'),
@@ -128,10 +132,19 @@ export function useWechatProfile() {
         showLoading('正在加载你的测评记录…')
         try {
             // 后端实现：GET /api/tests/my -> MyTestsResponse
-            const resp = await apiRequest<MyTestsResponse>('/api/auth/profile')
+            const resp = await apiRequest<MyTestsResponse>(API_PATHS.WECHAT_MY_PROFILE)
             if (resp) {
                 profile.value = resp.profile
                 list.value = resp.tests || []
+
+                extraForm.value = {
+                    mobile: resp.profile.mobile || '',
+                    study_id: resp.profile.study_id || '',
+                    school_name: resp.profile.school_name || '',
+                    province: resp.profile.province || '',
+                    city: resp.profile.city || '',
+                }
+
             } else {
                 profile.value = null
                 list.value = []
@@ -144,6 +157,55 @@ export function useWechatProfile() {
             hideLoading()
         }
     }
+
+
+    function startEditExtra() {
+        editingExtra.value = true
+        // 手机号让用户重新输入完整的
+        extraForm.value.mobile = ''
+    }
+
+    function cancelEditExtra() {
+        editingExtra.value = false
+        if (profile.value) {
+            extraForm.value = {
+                mobile: profile.value.mobile || '',
+                study_id: profile.value.study_id || '',
+                school_name: profile.value.school_name || '',
+                province: profile.value.province || '',
+                city: profile.value.city || '',
+            }
+        }
+    }
+
+    async function saveExtra() {
+        if (!profile.value) return
+
+        showLoading('正在保存你的资料…')
+        try {
+            await apiRequest(API_PATHS.WECHAT_UPDATE_PROFILE, {
+                method: 'POST',
+                body: {
+                    mobile: extraForm.value.mobile || '',
+                    study_id: extraForm.value.study_id || '',
+                    school_name: extraForm.value.school_name || '',
+                    province: extraForm.value.province || '',
+                    city: extraForm.value.city || '',
+                },
+            })
+
+            // 保存成功后重新拉一次，拿后端脱敏后的 mobile
+            await fetchMyTests()
+            editingExtra.value = false
+            showAlert('资料已保存')
+        } catch (e) {
+            console.error('[MyTests] saveExtra failed', e)
+            showAlert('保存资料失败，请稍后重试')
+        } finally {
+            hideLoading()
+        }
+    }
+
 
     async function handleContinueTest(item: MyTestItem) {
         showLoading('正在为你恢复测试进度…')
@@ -208,5 +270,11 @@ export function useWechatProfile() {
         handleOpenReport,
         handleClickCompletedNoReport,
         handleBackHome,
+
+        editingExtra,
+        extraForm,
+        startEditExtra,
+        cancelEditExtra,
+        saveExtra,
     }
 }

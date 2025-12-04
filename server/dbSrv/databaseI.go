@@ -3,6 +3,7 @@ package dbSrv
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/hopwesley/wenxintai/server/ai_api"
@@ -53,4 +54,19 @@ type DbService interface {
 	) error
 	InsertWeChatOrder(ctx context.Context, d *WeChatOrder) error
 	PayByInviteCode(ctx context.Context, publicId string, inviteCode string) error
+}
+
+func maskMobile(m string) string {
+	m = strings.TrimSpace(m)
+	if len(m) < 7 {
+		// 太短的就不处理，直接返回
+		return m
+	}
+	// 默认认为是类似 11 位手机号：保留前三位 + **** + 剩余
+	start := 3
+	end := 7
+	if len(m) < end {
+		end = len(m)
+	}
+	return m[:start] + "****" + m[end:]
 }

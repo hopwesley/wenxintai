@@ -120,7 +120,7 @@
 import {ref, computed, watch} from 'vue'
 import {chinaProvinces} from '@/controller/chinaRegions'
 import {useAuthStore} from '@/controller/wx_auth'
-import {apiRequest} from "@/api";
+import {API_PATHS, apiRequest} from "@/api";
 import {isValidChinaMobile} from "@/controller/common";
 
 const props = defineProps<{
@@ -174,14 +174,14 @@ async function handleConfirm(action: 'confirm' | 'skip' = 'confirm') {
     }
 
     try {
-      await apiRequest('/api/user/update_profile', {
+      await apiRequest(API_PATHS.WECHAT_UPDATE_PROFILE, {
         method: 'POST',
         body: {
           province: selectedProvince.value,
           city: selectedCity.value,
           school_name: schoolName.value || undefined,
           study_id: studentId.value || undefined,
-          parent_phone: parentPhone.value || undefined,
+          mobile: parentPhone.value || undefined,
         },
       })
       authStore.dismissNewUserInfoHint()

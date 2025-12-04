@@ -284,11 +284,11 @@ func (s *HttpSrv) wechatLogout(w http.ResponseWriter, _ *http.Request) {
 }
 
 type UsrProfileExtra struct {
-	City        string `json:"city"`
-	Province    string `json:"province"`
-	ParentPhone string `json:"parent_phone,omitempty"`
-	StudyId     string `json:"study_id,omitempty"`
-	SchoolName  string `json:"school_name"`
+	City       string `json:"city"`
+	Province   string `json:"province"`
+	Mobile     string `json:"mobile,omitempty"`
+	StudyId    string `json:"study_id,omitempty"`
+	SchoolName string `json:"school_name,omitempty"`
 }
 
 func (upe *UsrProfileExtra) parseObj(r *http.Request) *ApiErr {
@@ -320,7 +320,7 @@ func (s *HttpSrv) apiWeChatUpdateProfile(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var err = dbSrv.Instance().UpdateUserProfileExtra(ctx, uid, extraData.ParentPhone, extraData.StudyId,
+	var err = dbSrv.Instance().UpdateUserProfileExtra(ctx, uid, extraData.Mobile, extraData.StudyId,
 		extraData.SchoolName, extraData.Province, extraData.City)
 	if err != nil {
 		s.log.Err(err).Msg("apiWeChatUpdateProfile: update user profile failed")

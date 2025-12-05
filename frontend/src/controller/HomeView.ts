@@ -27,7 +27,6 @@ export function useHomeView() {
 
     const activePlan = ref<PlanKey>('basic')
     type TabKey = (typeof tabDefs)[number]['key']
-    const {showAlert} = useAlert()
     const router = useRouter()
     const route = useRoute()
     const {resetSession} = useTestSession()

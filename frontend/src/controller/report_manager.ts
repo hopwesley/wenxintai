@@ -612,9 +612,6 @@ export function useReportController(options?: ReportControllerOptions) {
                 sseCtrl.start()
             } else {
                 let aiContent = JSON.parse(resp.ai_content) as AIReportPayload
-                if (typeof aiContent === 'string') {
-                    aiContent = JSON.parse(aiContent) as AIReportPayload
-                }
                 aiReportData.value = aiContent
             }
         } catch (e) {

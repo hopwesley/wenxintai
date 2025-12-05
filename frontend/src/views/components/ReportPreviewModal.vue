@@ -13,19 +13,7 @@
         </button>
       </header>
       <div class="report-preview-body">
-        <TestLayout>
-          <template #header>
-            <StepIndicator />
-          </template>
-          <component :is="currentMainComponent" />
-          <AiGeneratingOverlay
-              v-if="aiLoading"
-              title="AI 正在为你生成专属报告…"
-              subtitle="正在分析你的测试各项参数，为您全面展示智能分析结果"
-              :log-lines="truncatedLatestMessage"
-              stage="AI报告"
-          />
-        </TestLayout>
+        <component :is="currentMainComponent" />
       </div>
     </div>
   </div>
@@ -33,13 +21,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import TestLayout from '@/views/components/TestLayout.vue'
-import StepIndicator from '@/views/components/StepIndicator.vue'
-import AiGeneratingOverlay from '@/views/components/AiGeneratingOverlay.vue'
 import ReportBasic from '@/views/report_basic.vue'
 import ReportPro from '@/views/report_pro.vue'
 import { TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool } from '@/controller/common'
-import { useReportController } from '@/controller/report_manager'
 
 interface ReportPreviewModalProps {
   visible: boolean
@@ -64,11 +48,6 @@ const headerTitle = computed(() => {
     default:
       return '基础能力测评报告'
   }
-})
-
-const { aiLoading, truncatedLatestMessage } = useReportController({
-  businessType: computed(() => props.businessType),
-  publicId: computed(() => props.publicId),
 })
 
 const currentMainComponent = computed(() => {

@@ -283,46 +283,18 @@ func (s *HttpSrv) wechatLogout(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-type UsrProfileExtra struct {
-	City       string `json:"city"`
-	Province   string `json:"province"`
-	Mobile     string `json:"mobile,omitempty"`
-	StudyId    string `json:"study_id,omitempty"`
-	SchoolName string `json:"school_name,omitempty"`
-}
-
-func (upe *UsrProfileExtra) parseObj(r *http.Request) *ApiErr {
-	if r.Method != http.MethodPost {
-		return ApiMethodInvalid
-	}
-	if err := json.NewDecoder(r.Body).Decode(upe); err != nil {
-		return ApiInvalidReq("invalid request body", err)
-	}
-	if len(upe.Province) == 0 {
-		return ApiInvalidReq("无效的省信息", nil)
-	}
-	if len(upe.City) == 0 {
-		return ApiInvalidReq("无效的市信息", nil)
-	}
-	return nil
-}
-
 func (s *HttpSrv) apiWeChatUpdateProfile(w http.ResponseWriter, r *http.Request) {
-
 	ctx := r.Context()
-
 	uid := userIDFromContext(ctx)
 
-	var extraData UsrProfileExtra
-	if err := extraData.parseObj(r); err != nil {
-		s.log.Err(err).Msg("apiWeChatUpdateProfile: parseObj failed")
-		writeError(w, err)
+	var extraData dbSrv.UsrProfileExtra
+	if err := json.NewDecoder(r.Body).Decode(&extraData); err != nil {
+		s.log.Err(err).Msg("apiWeChatUpdateProfile: parameter of request invalid")
+		writeError(w, ApiInvalidReq("invalid request body", err))
 		return
 	}
 
-	var err = dbSrv.Instance().UpdateUserProfileExtra(ctx, uid, extraData.Mobile, extraData.StudyId,
-		extraData.SchoolName, extraData.Province, extraData.City)
-	if err != nil {
+	if err := dbSrv.Instance().UpdateUserProfileExtra(ctx, uid, extraData); err != nil {
 		s.log.Err(err).Msg("apiWeChatUpdateProfile: update user profile failed")
 		writeError(w, ApiInternalErr("更新基本信息失败", err))
 		return

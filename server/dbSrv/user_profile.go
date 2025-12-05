@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -65,62 +67,90 @@ func (pdb *psDatabase) InsertOrUpdateUserProfileBasic(
 	return nil
 }
 
+type UsrProfileExtra struct {
+	City       *string `json:"city,omitempty"`
+	Province   *string `json:"province,omitempty"`
+	Mobile     *string `json:"mobile,omitempty"`
+	StudyId    *string `json:"study_id,omitempty"`
+	SchoolName *string `json:"school_name,omitempty"`
+}
+
 func (pdb *psDatabase) UpdateUserProfileExtra(
 	ctx context.Context,
 	uid string,
-	mobile string,
-	studyId string,
-	schoolName string,
-	province string,
-	city string,
+	extra UsrProfileExtra,
 ) error {
 	if uid == "" {
 		return errors.New("uid must be non-empty")
 	}
 
-	log := pdb.log.With().
-		Str("uid", uid).
-		Logger()
+	sLog := pdb.log.With().Str("uid", uid).Logger()
+	sLog.Debug().Msg("UpdateUserProfileExtra: start")
 
-	log.Debug().Msg("UpdateUserProfileExtra: start")
+	// 动态拼接 SET 子句
+	sets := make([]string, 0, 5)
+	args := make([]any, 0, 6)
 
-	const q = `
-		UPDATE app.user_profile
-		SET
-			mobile      = $2,
-			study_id    = $3,
-			school_name = $4,
-			province    = $5,
-			city    = $6,
-			updated_at  = now()
-		WHERE uid = $1
-	`
+	args = append(args, uid)
+	idx := 2
 
-	res, err := pdb.db.ExecContext(ctx, q,
-		uid,
-		mobile,
-		studyId,
-		schoolName,
-		province,
-		city,
-	)
+	if extra.Mobile != nil {
+		sets = append(sets, fmt.Sprintf("mobile = $%d", idx))
+		args = append(args, *extra.Mobile)
+		idx++
+	}
+	if extra.StudyId != nil {
+		sets = append(sets, fmt.Sprintf("study_id = $%d", idx))
+		args = append(args, *extra.StudyId)
+		idx++
+	}
+	if extra.SchoolName != nil {
+		sets = append(sets, fmt.Sprintf("school_name = $%d", idx))
+		args = append(args, *extra.SchoolName)
+		idx++
+	}
+	if extra.Province != nil {
+		sets = append(sets, fmt.Sprintf("province = $%d", idx))
+		args = append(args, *extra.Province)
+		idx++
+	}
+	if extra.City != nil {
+		sets = append(sets, fmt.Sprintf("city = $%d", idx))
+		args = append(args, *extra.City)
+		idx++
+	}
+
+	if len(sets) == 0 {
+		sLog.Debug().Msg("UpdateUserProfileExtra: no fields to update")
+		return nil
+	}
+
+	sets = append(sets, "updated_at = now()")
+
+	q := fmt.Sprintf(`
+        UPDATE app.user_profile
+        SET %s
+        WHERE uid = $1
+    `, strings.Join(sets, ", "))
+
+	res, err := pdb.db.ExecContext(ctx, q, args...)
 	if err != nil {
-		log.Err(err).Msg("UpdateUserProfileExtra: exec failed")
+		sLog.Err(err).Msg("UpdateUserProfileExtra: exec failed")
 		return err
 	}
 
 	affected, err := res.RowsAffected()
 	if err != nil {
-		log.Err(err).Msg("UpdateUserProfileExtra: RowsAffected failed")
+		sLog.Err(err).Msg("UpdateUserProfileExtra: RowsAffected failed")
 		return err
 	}
 	if affected == 0 {
 		err := errors.New("no user_profile found for uid=" + uid)
-		log.Warn().Err(err).Msg("UpdateUserProfileExtra: not found")
+		sLog.Warn().Err(err).Msg("UpdateUserProfileExtra: not found")
 		return err
 	}
 
-	log.Debug().Int64("rows", affected).Msg("UpdateUserProfileExtra: done")
+	sLog.Debug().Int64("rows", affected).Msg("UpdateUserProfileExtra: done")
 	return nil
 }
 
@@ -193,95 +223,58 @@ func (pdb *psDatabase) FindUserProfileByUid(
 }
 
 type TestItem struct {
-	PublicID          string `json:"public_id"`
-	BusinessType      string `json:"business_type"`
-	Mode              string `json:"mode"`
-	Status            string `json:"status"`
-	ReportStatus      *int64 `json:"report_status,omitempty"`
-	CreateAt          string `json:"create_at"`
-	CompletedAt       string `json:"completed_at,omitempty"`
-	ReportGeneratedAt string `json:"report_generated_at,omitempty"`
+	PublicID     string `json:"public_id"`
+	BusinessType string `json:"business_type"`
+	Mode         string `json:"mode"`
+	ReportStatus int16  `json:"report_status,omitempty"`
+	CreateAt     string `json:"create_at"`
 }
 
-func (pdb *psDatabase) QueryTestInfos(ctx context.Context, uid string) ([]*TestItem, error) {
-	// 注意：这里假设 tests_record.wechat_openid 存的就是这个 uid
-	// 如果你实际是别的字段（例如 uid），只需要把 WHERE 条件里的列名改掉即可。
+func (pdb *psDatabase) QueryTestInfos(ctx context.Context, wechatOpenId string) ([]*TestItem, error) {
 	const q = `
 SELECT
     r.public_id,
     r.business_type,
     COALESCE(r.mode, '') AS mode,
-    CASE
-        WHEN r.completed_at IS NULL THEN 'RUNNING_FORM'
-        WHEN rep.status = 1 THEN 'COMPLETED_WITH_REPORT'
-        ELSE 'RUNNING_REPORT'
-    END AS status,
     r.created_at,
-    r.completed_at,
-    rep.generated_at,
-    rep.status
+    COALESCE(rep.status, 0) AS status
 FROM app.tests_record AS r
 LEFT JOIN app.test_reports AS rep
     ON rep.public_id = r.public_id
 WHERE r.wechat_openid = $1
 ORDER BY r.created_at DESC;
 `
+	sLog := pdb.log.With().Str("wechat_id", wechatOpenId).Logger()
 
-	rows, err := pdb.db.QueryContext(ctx, q, uid)
+	rows, err := pdb.db.QueryContext(ctx, q, wechatOpenId)
 	if err != nil {
+		sLog.Err(err).Msg("query user test info failed")
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var items []*TestItem
 
 	for rows.Next() {
-		var (
-			publicID     string
-			businessType string
-			mode         string
-			status       string
-			createdAt    time.Time
-			completedAt  sql.NullTime
-			reportAt     sql.NullTime
-			reportStatus sql.NullInt64
-		)
+		var item TestItem
 
 		if err := rows.Scan(
-			&publicID,
-			&businessType,
-			&mode,
-			&status,
-			&createdAt,
-			&completedAt,
-			&reportAt,
-			&reportStatus,
+			&item.PublicID,
+			&item.BusinessType,
+			&item.Mode,
+			&item.CreateAt,
+			&item.ReportStatus,
 		); err != nil {
+			pdb.log.Err(err).Msg("parse database item failed")
 			return nil, err
 		}
 
-		item := &TestItem{
-			PublicID:     publicID,
-			BusinessType: businessType,
-			Mode:         mode,
-			Status:       status,
-			CreateAt:     createdAt.Format(time.RFC3339),
-		}
-
-		if completedAt.Valid {
-			item.CompletedAt = completedAt.Time.Format(time.RFC3339)
-		}
-		if reportAt.Valid {
-			item.ReportGeneratedAt = reportAt.Time.Format(time.RFC3339)
-		}
-		if reportStatus.Valid {
-			item.ReportStatus = &reportStatus.Int64
-		}
-
-		items = append(items, item)
+		items = append(items, &item)
 	}
 
 	if err := rows.Err(); err != nil {
+		pdb.log.Err(err).Msg("iterate rows failed")
 		return nil, err
 	}
 

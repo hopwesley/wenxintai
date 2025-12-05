@@ -376,3 +376,122 @@
         margin-left: 0;
     }
 }
+
+
+/* --- Tabs --- */
+.my-tests-tabs {
+    margin-top: 24px;
+    margin-bottom: 8px;
+    display: inline-flex;
+    gap: 8px;
+    border-radius: 999px;
+    padding: 4px;
+    background: rgba(148, 163, 184, 0.12);
+}
+
+.my-tests-tab {
+    border: none;
+    background: transparent;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+}
+
+.my-tests-tab__badge {
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 11px;
+    background: rgba(15, 23, 42, 0.08);
+    color: var(--text-secondary);
+}
+
+.my-tests-tab--active {
+    background: #ffffff;
+    color: var(--brand);
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.12);
+}
+
+.my-tests-tab--active .my-tests-tab__badge {
+    background: rgba(90, 96, 234, 0.12);
+    color: var(--brand);
+}
+
+/* 统计卡片不再是按钮，但保留 hover 效果 */
+.my-tests-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(148, 163, 184, 0.06);
+    border-radius: 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.my-tests-stat .label {
+    color: var(--text-third);
+}
+
+.my-tests-stat .value {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.my-tests-stat--link {
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.my-tests-stat--link:hover {
+    border-color: var(--brand);
+    box-shadow: 0 4px 14px rgba(90, 96, 234, 0.14);
+    background: rgba(90, 96, 234, 0.04);
+}
+
+/* 卡片内的行内输入框 */
+.my-tests-form-input--inline {
+    min-width: 180px;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+/* 窄屏下 Tabs 撑满宽度 */
+@media (max-width: 640px) {
+    .my-tests-tabs {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .my-tests-tab {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+.my-tests-profile-extra-readonly {
+    margin-top: 8px;
+    display: flex;
+    gap: 24px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.my-tests-profile-extra-edit {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 16px;
+}
+
+.my-tests-profile-extra-edit .my-tests-form-input {
+    width: 100%;
+}

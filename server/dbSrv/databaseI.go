@@ -39,7 +39,7 @@ type DbService interface {
 
 	FindUserProfileByUid(ctx context.Context, uid string) (*UserProfile, error)
 	InsertOrUpdateUserProfileBasic(ctx context.Context, id string, name string, url string) error
-	UpdateUserProfileExtra(ctx context.Context, uid, mobile, studentId, schoolName, province, city string) error
+	UpdateUserProfileExtra(ctx context.Context, uid string, extra UsrProfileExtra) error
 	QueryTestInfos(ctx context.Context, uid string) ([]*TestItem, error)
 
 	FindWeChatOrderByID(ctx context.Context, id string) (*WeChatOrder, error)

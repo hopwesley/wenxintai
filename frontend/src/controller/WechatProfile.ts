@@ -1,23 +1,17 @@
-import { ref, computed, onMounted } from 'vue'
+import {ref, computed, onMounted, watch} from 'vue'
 import { useRouter } from 'vue-router'
 import { API_PATHS, apiRequest } from '@/api'
 import { useGlobalLoading } from '@/controller/useGlobalLoading'
 import { useAlert } from '@/controller/useAlert'
-
-export type MyTestStatus =
-    | 'RUNNING_FORM'
-    | 'RUNNING_REPORT'
-    | 'COMPLETED_WITH_REPORT'
+import {chinaProvinces} from "@/controller/chinaRegions";
+import {isValidChinaMobile} from "@/controller/common";
 
 export interface MyTestItem {
     public_id: string
     business_type: string
     mode: string
     created_at: string
-    status: MyTestStatus
     report_status?: number | null
-    completed_at?: string | null
-    report_generated_at: string | null
 }
 
 /**
@@ -70,7 +64,6 @@ export function useWechatProfile() {
     const loading = ref(false)
     const profile = ref<UserProfile | null>(null)
     const list = ref<MyTestItem[]>([])
-
     const editingExtra = ref(false)
     const extraForm = ref({
         mobile: '',
@@ -79,20 +72,37 @@ export function useWechatProfile() {
         province: '',
         city: '',
     })
-
     const ongoingList = computed(() =>
         list.value.filter(
-            (item) => item.status === 'RUNNING_FORM' || item.status === 'RUNNING_REPORT',
+            (item) => item.report_status === undefined || item.report_status === 0,
         ),
     )
-
     const completedList = computed(() =>
-        list.value.filter((item) => item.status === 'COMPLETED_WITH_REPORT'),
+        list.value.filter((item) => item.report_status === 1),
     )
-
     const completedCount = computed(() => completedList.value.length)
-
     const latestCompleted = computed(() => completedList.value[0] || null)
+    const activeTab = ref<'ongoing' | 'completed'>('ongoing')
+
+    // 省市下拉
+    const provinces = chinaProvinces
+    const selectedProvince = ref<string>('')
+    const selectedCity = ref<string>('')
+
+    const currentCities = computed(() => {
+        const prov = provinces.find(p => p.name === selectedProvince.value)
+        return prov ? prov.cities : []
+    })
+
+    watch(selectedProvince, () => {
+        selectedCity.value = ''
+    })
+
+
+
+    function setActiveTab(tab: 'ongoing' | 'completed') {
+        activeTab.value = tab
+    }
 
     function renderTitle(item: MyTestItem): string {
         const base = businessTypeLabelMap[item.business_type] || '我的测试'
@@ -101,15 +111,11 @@ export function useWechatProfile() {
     }
 
     function renderStatusText(item: MyTestItem): string {
-        switch (item.status) {
-            case 'RUNNING_FORM':
-                return '进行中'
-            case 'RUNNING_REPORT':
-                return '已完成问卷，报告生成中'
-            case 'COMPLETED_WITH_REPORT':
-                return '已完成'
+        switch (item.report_status) {
+            case 1:
+                return '完成'
             default:
-                return ''
+                return '进行中'
         }
     }
 
@@ -164,15 +170,7 @@ export function useWechatProfile() {
         }
     }
 
-
     function startEditExtra() {
-        editingExtra.value = true
-        // 手机号让用户重新输入完整的
-        extraForm.value.mobile = ''
-    }
-
-    function cancelEditExtra() {
-        editingExtra.value = false
         if (profile.value) {
             extraForm.value = {
                 mobile: profile.value.mobile || '',
@@ -181,27 +179,56 @@ export function useWechatProfile() {
                 province: profile.value.province || '',
                 city: profile.value.city || '',
             }
+
+            selectedProvince.value = profile.value.province || ''
+            selectedCity.value = profile.value.city || ''
         }
+        editingExtra.value = true
+    }
+
+
+    function cancelEditExtra() {
+        editingExtra.value = false
     }
 
     async function saveExtra() {
         if (!profile.value) return
 
+        const originalMobile = (profile.value.mobile || '').trim()
+        const currentMobile = (extraForm.value.mobile || '').trim()
+        const mobileChanged = currentMobile !== originalMobile
+
+        // 要发给后端的 body
+        const body: any = {
+            study_id: extraForm.value.study_id || undefined,
+            school_name: extraForm.value.school_name || undefined,
+            province: selectedProvince.value || undefined,
+            city: selectedCity.value || undefined,
+        }
+
+        if (mobileChanged) {
+            // 用户确实对手机号做了修改
+            if (currentMobile !== '') {
+                // 填了非空 → 必须是合法手机号
+                if (!isValidChinaMobile(currentMobile)) {
+                    showAlert('请输入有效的中国大陆手机号码')
+                    return
+                }
+                body.mobile = currentMobile       // 新手机号
+            } else {
+                // 用户明确把手机号删空：允许清空
+                body.mobile = ''                  // 会被后端当成“清空手机号”
+            }
+        }
+
         showLoading('正在保存你的资料…')
         try {
             await apiRequest(API_PATHS.WECHAT_UPDATE_PROFILE, {
                 method: 'POST',
-                body: {
-                    mobile: extraForm.value.mobile || '',
-                    study_id: extraForm.value.study_id || '',
-                    school_name: extraForm.value.school_name || '',
-                    province: extraForm.value.province || '',
-                    city: extraForm.value.city || '',
-                },
+                body,
             })
 
-            // 保存成功后重新拉一次，拿后端脱敏后的 mobile
-            await fetchMyTests()
+            await fetchMyTests()   // 再次拿到脱敏后的 profile（比如 138****0000）
             editingExtra.value = false
             showAlert('资料已保存')
         } catch (e) {
@@ -212,26 +239,14 @@ export function useWechatProfile() {
         }
     }
 
-
+    function handleClickCompletedStat() {
+        if (completedList.value.length === 0) return
+        activeTab.value = 'completed'
+    }
     async function handleContinueTest(item: MyTestItem) {
         showLoading('正在为你恢复测试进度…')
         try {
-            if (item.status === 'RUNNING_REPORT') {
-                router.push({
-                    name: 'test-report',
-                    params: { typ: item.business_type },
-                    query: { public_id: item.public_id },
-                })
-            } else {
-                const resp = await apiRequest<{ path: string }>(
-                    `/api/tests/${encodeURIComponent(item.public_id)}/next-route`,
-                )
-                if (resp?.path) {
-                    router.push(resp.path)
-                } else {
-                    showAlert('暂时无法恢复这次测试，请稍后重试')
-                }
-            }
+
         } catch (e) {
             console.error('[MyTests] handleContinueTest failed', e)
             showAlert('恢复测试失败，请稍后重试')
@@ -312,5 +327,13 @@ export function useWechatProfile() {
         startEditExtra,
         cancelEditExtra,
         saveExtra,
+        activeTab,
+        setActiveTab,
+        handleClickCompletedStat,
+
+        provinces,
+        selectedProvince,
+        selectedCity,
+        currentCities,
     }
 }

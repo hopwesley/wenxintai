@@ -1,5 +1,5 @@
 <template>
-  <div v-if="visible" class="report-preview-modal">
+  <div class="report-preview-modal">
     <div class="report-preview-backdrop"></div>
     <div class="report-preview-panel" :key="panelKey">
       <header class="report-preview-header">
@@ -16,21 +16,22 @@
         </button>
       </header>
       <div class="report-preview-body">
-        <component :is="currentMainComponent"/>
+        <div class="report-page report-page--pdf">
+          <component :is="currentMainComponent" />
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import {computed} from 'vue'
+import {computed, ref, watch} from 'vue'
 import ReportBasic from '@/views/report_basic.vue'
 import ReportPro from '@/views/report_pro.vue'
 import {TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool} from '@/controller/common'
 import {useReportController} from "@/controller/report_manager";
 
 interface ReportPreviewModalProps {
-  visible: boolean
   businessType: string
   publicId: string
 }
@@ -41,8 +42,28 @@ const emit = defineEmits(['close'])
 const panelKey = computed(() => `${props.businessType}-${props.publicId}`)
 
 const {
-  handleExportPdf
-} = useReportController()
+  handleExportPdf,
+  generateReport,
+} = useReportController({
+  publicId: computed(() => props.publicId),
+  businessType: computed(() => props.businessType),
+  autoQueryOnMounted: false,     // 关键：不要在 onMounted 里自动请求
+})
+
+watch(
+    () => props.publicId,
+    async (newId, oldId) => {
+      // 没有 id 直接忽略
+      if (!newId) return
+      // 如果你真的每次都要刷，即使 newId === oldId 也重新拉，就不要这个判断
+      if (newId === oldId) return
+
+      await generateReport()
+    },
+    {
+      immediate: true,   // 如果组件创建时就已经有有效 publicId，会立刻拉一次
+    },
+)
 
 const headerTitle = computed(() => {
   switch (props.businessType) {
@@ -71,7 +92,6 @@ const currentMainComponent = computed(() => {
   }
 })
 </script>
-
 <style scoped>
 .report-preview-modal {
   position: fixed;

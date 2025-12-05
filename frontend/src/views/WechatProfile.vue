@@ -274,7 +274,7 @@
     </main>
 
     <ReportPreviewModal
-        :visible="reportPreviewVisible"
+        v-if="reportPreviewVisible"
         :business-type="reportPreviewTarget?.business_type || ''"
         :public-id="reportPreviewTarget?.public_id || ''"
         @close="closeReportPreview"

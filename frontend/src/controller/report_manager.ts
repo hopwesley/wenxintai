@@ -523,6 +523,7 @@ const finalReport = computed<FinalAIReport | null>(() => {
 interface ReportControllerOptions {
     publicId?: string | Ref<string>
     businessType?: string | Ref<string>
+    autoQueryOnMounted?: boolean
 }
 
 export function useReportController(options?: ReportControllerOptions) {
@@ -680,6 +681,7 @@ export function useReportController(options?: ReportControllerOptions) {
     }
 
     onMounted(async () => {
+        if (options?.autoQueryOnMounted === false) return
         await queryCurPlan()
     })
 

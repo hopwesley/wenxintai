@@ -22,30 +22,52 @@ type TestRecord struct {
 	PaidTime     sql.NullTime
 }
 
-func (pdb *psDatabase) QueryTestInProcess(ctx context.Context, uid, businessType string) (*TestRecord, error) {
-	log := pdb.log.With().Str("wechat_id", uid).Str("", businessType).Logger()
+func (pdb *psDatabase) QueryTestInProcess(ctx context.Context, uid, bType, publicId string) (*TestRecord, error) {
+	log := pdb.log.With().
+		Str("wechat_id", uid).
+		Str("business_type", bType).
+		Str("public_id", publicId).
+		Logger()
 	log.Debug().Msg("QueryTestInProcess")
 
-	const q = `
+	q := `
         SELECT 
-            public_id,
-            business_type,
-            pay_order_id,
-            wechat_openid,
-            grade,
-            mode,
-            hobby,
-            status,
-            created_at
-        FROM app.tests_record
-        WHERE wechat_openid = $1
-      		AND business_type = $2
-      		AND paid_time IS NULL
-        ORDER BY created_at DESC
+            t.public_id,
+            t.business_type,
+            t.pay_order_id,
+            t.wechat_openid,
+            t.grade,
+            t.mode,
+            t.hobby,
+            t.status,
+            t.created_at
+        FROM app.tests_record t
+        WHERE t.wechat_openid = $1
+          AND t.business_type = $2
+          AND (
+                t.paid_time IS NULL
+                OR NOT EXISTS (
+                    SELECT 1
+                    FROM app.test_reports r
+                    WHERE r.public_id = t.public_id
+                      AND r.status = 1
+                )
+          )
+    `
+
+	args := []any{uid, bType}
+
+	if publicId != "" {
+		q += ` AND t.public_id = $3`
+		args = append(args, publicId)
+	}
+
+	q += `
+        ORDER BY t.created_at DESC
         LIMIT 1
     `
 
-	row := pdb.db.QueryRowContext(ctx, q, uid, businessType)
+	row := pdb.db.QueryRowContext(ctx, q, args...)
 
 	var rec TestRecord
 	err := row.Scan(

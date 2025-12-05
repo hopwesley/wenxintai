@@ -20,7 +20,7 @@ type DbService interface {
 
 	GetInviteByCode(ctx context.Context, code string) (*Invite, error)
 
-	QueryTestInProcess(ctx context.Context, uid, businessType string) (*TestRecord, error)
+	QueryTestInProcess(ctx context.Context, uid, bType, publicId string) (*TestRecord, error)
 	QueryUnfinishedTest(ctx context.Context, publicId, uid string) (*TestRecord, error)
 	NewTestRecord(ctx context.Context, businessType string, weChatId string) (string, error)
 	QueryRecordById(ctx context.Context, publicID string) (*TestRecord, error)

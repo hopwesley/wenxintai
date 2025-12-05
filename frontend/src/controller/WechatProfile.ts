@@ -1,10 +1,11 @@
 import {ref, computed, onMounted, watch} from 'vue'
-import { useRouter } from 'vue-router'
-import { API_PATHS, apiRequest } from '@/api'
-import { useGlobalLoading } from '@/controller/useGlobalLoading'
-import { useAlert } from '@/controller/useAlert'
+import {useRouter} from 'vue-router'
+import {API_PATHS, apiRequest} from '@/api'
+import {useGlobalLoading} from '@/controller/useGlobalLoading'
+import {useAlert} from '@/controller/useAlert'
 import {chinaProvinces} from "@/controller/chinaRegions";
-import {isValidChinaMobile} from "@/controller/common";
+import {isValidChinaMobile, PlanKey} from "@/controller/common";
+import {useTestLauncher} from "@/controller/useTestLauncher";
 
 export interface MyTestItem {
     public_id: string
@@ -18,7 +19,7 @@ export interface MyTestItem {
  * 对应 app.user_profile
  */
 export interface UserProfile {
-    id:number
+    id: number
     uid: string
     nick_name: string
     avatar_url: string
@@ -59,8 +60,8 @@ function formatDateTime(iso: string | null | undefined): string {
 
 export function useWechatProfile() {
     const router = useRouter()
-    const { showLoading, hideLoading } = useGlobalLoading()
-    const { showAlert } = useAlert()
+    const {showLoading, hideLoading} = useGlobalLoading()
+    const {showAlert} = useAlert()
     const profile = ref<UserProfile | null>(null)
     const list = ref<MyTestItem[]>([])
     const editingExtra = ref(false)
@@ -96,7 +97,7 @@ export function useWechatProfile() {
     watch(selectedProvince, () => {
         selectedCity.value = ''
     })
-
+    const {launchTest} = useTestLauncher()
 
 
     function setActiveTab(tab: 'ongoing' | 'completed') {
@@ -229,15 +230,11 @@ export function useWechatProfile() {
 
 
     async function handleContinueTest(item: MyTestItem) {
-        showLoading('正在为你恢复测试进度…')
-        try {
-
-        } catch (e) {
-            console.error('[MyTests] handleContinueTest failed', e)
-            showAlert('恢复测试失败，请稍后重试')
-        } finally {
-            hideLoading()
-        }
+        await launchTest({
+            businessType: item.business_type as PlanKey,
+            publicId: item.public_id,
+            loadingText: '正在为你恢复测试进度…',
+        })
     }
 
     const reportPreviewVisible = ref(false)
@@ -259,7 +256,7 @@ export function useWechatProfile() {
 
     function handleBackHome() {
         showLoading("返回首页......")
-        router.push({ name: 'home' }).finally(()=>hideLoading())
+        router.push({name: 'home'}).finally(() => hideLoading())
     }
 
     onMounted(() => {

@@ -10,6 +10,7 @@ import (
 
 type testFlowRequest struct {
 	BusinessType string `json:"business_type"`
+	PublicId     string `json:"public_id,omitempty"`
 }
 
 func (req *testFlowRequest) parseObj(r *http.Request) *ApiErr {
@@ -79,7 +80,7 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 
 	uid := userIDFromContext(ctx)
 
-	record, dbErr := dbSrv.Instance().QueryTestInProcess(ctx, uid, req.BusinessType)
+	record, dbErr := dbSrv.Instance().QueryTestInProcess(ctx, uid, req.BusinessType, req.PublicId)
 	if dbErr != nil {
 		sLog.Err(dbErr).Msg("failed find test record")
 		writeError(w, ApiInvalidNoTestRecord(dbErr))

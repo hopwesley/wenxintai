@@ -12,6 +12,7 @@ import {
     type TestFlowStep,
 } from "@/controller/common";
 import {useGlobalLoading} from "@/controller/useGlobalLoading";
+import {useTestLauncher} from "@/controller/useTestLauncher";
 
 export interface FetchTestFlowResponse {
     record: TestRecordDTO
@@ -39,6 +40,7 @@ export function useHomeView() {
     const userMenuWrapperRef = ref<HTMLElement | null>(null)
     const activeTab = ref<TabKey>('start')
     const scrollY = ref(0)
+    const {launchTest} = useTestLauncher()
 
     watch(
         () => route.fullPath,
@@ -72,33 +74,10 @@ export function useHomeView() {
             openLogin()
             return
         }
-
-        showLoading("进入测试环节")
-
-        try {
-            const resp = await apiRequest<FetchTestFlowResponse>(API_PATHS.TEST_FLOW, {
-                method: 'POST',
-                body: {business_type: typ},
-            });
-
-            const steps = resp.steps || []
-            if (!steps.length) {
-                handleFlowError('测试流程异常，未配置任何测试阶段')
-                return
-            }
-            const currentStage = resp.current_stage || StageBasic
-            const currentIndex = resp.current_index
-
-            setRecord(resp.record)
-
-            setTestFlow(steps)
-            setNextRouteItem(currentStage, currentIndex)
-            await pushStageRoute(router, typ, currentStage)
-        } catch (e) {
-            showAlert("创建问卷测试失败:" + e)
-        } finally {
-            hideLoading()
-        }
+        await launchTest({
+            businessType: typ,
+            loadingText: '进入测试环节',
+        })
     }
 
     function handleTabClick(tab: typeof tabDefs[number]) {

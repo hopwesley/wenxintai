@@ -1,7 +1,6 @@
 import {onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {TestRecordDTO, useTestSession} from '@/controller/testSession'
-import {useAlert} from '@/controller/useAlert'
 import {useAuthStore} from '@/controller/wx_auth'
 import {
     loadProducts,

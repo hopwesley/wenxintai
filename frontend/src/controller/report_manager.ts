@@ -1,9 +1,9 @@
-import { Ref, computed, onMounted, onUnmounted, reactive, ref, unref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useGlobalLoading } from '@/controller/useGlobalLoading'
-import { type TestRecordDTO, useTestSession } from '@/controller/testSession'
+import {computed, onMounted, onUnmounted, reactive, Ref, ref, unref} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
+import {useGlobalLoading} from '@/controller/useGlobalLoading'
+import {type TestRecordDTO, useTestSession} from '@/controller/testSession'
 import {API_PATHS, apiRequest, isApiErr} from '@/api'
-import { useAlert } from '@/controller/useAlert'
+import {useAlert} from '@/controller/useAlert'
 import {
     Mode312,
     Mode33,
@@ -611,8 +611,7 @@ export function useReportController(options?: ReportControllerOptions) {
             if (!resp.ai_content) {
                 sseCtrl.start()
             } else {
-                let aiContent = JSON.parse(resp.ai_content) as AIReportPayload
-                aiReportData.value = aiContent
+                aiReportData.value = JSON.parse(resp.ai_content) as AIReportPayload
             }
         } catch (e) {
             if (isApiErr(e)) {

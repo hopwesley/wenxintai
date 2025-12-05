@@ -283,7 +283,7 @@ function applyReportOverview(data: ReportRawData) {
     // 原代码写成了省+省，这里顺便修正为 省+市
     const prov = data.province || ''
     const city = data.city || ''
-    overview.studentLocation = `${prov ? prov + '省' : ''}${city ? city + '市' : ''}`
+    overview.studentLocation = `${prov ? prov : ''}${city ? city: ''}`
 
     overview.studentNo = data.study_id || ''
     overview.schoolName = data.school_name || ''
@@ -653,6 +653,8 @@ export function useReportController(options?: ReportControllerOptions) {
     }
 
     const handleLetterConfirm = async () => {
+        showFinishLetter.value = false
+        showLoading()
         try {
             await apiRequest<ReportRawData>(API_PATHS.FINISH_REPORT, {
                 method: 'POST',
@@ -665,8 +667,9 @@ export function useReportController(options?: ReportControllerOptions) {
             console.error('结束报告失败：' + e)
         } finally {
             resetSession()
-            showFinishLetter.value = false
-            router.replace('/').then()
+            router.replace('/home').finally(()=>{
+                hideLoading()
+            })
         }
     }
 
@@ -687,6 +690,13 @@ export function useReportController(options?: ReportControllerOptions) {
 
     onMounted(async () => {
         if (options?.autoQueryOnMounted === false) return
+        if (!publicId.value){
+            showAlert("未找到问卷编号信息",()=>{
+                showLoading();
+                 router.replace('/home').finally(()=>hideLoading())
+            })
+            return
+        }
         await queryCurPlan()
     })
 

@@ -31,9 +31,22 @@
                 :class="{ 'question--highlight': isQuestionHighlighted(question.id) }"
             >
               <!-- 题干：序号 + 文本 -->
-              <p class="question__text">
+              <p
+                  class="question__text"
+                  :class="{
+    'question__text--reverse': isAscStage && question.reverse
+  }"
+              >
+                <!-- 反向题提示标签，只在 ASC 阶段 + reverse=true 时出现 -->
+                <span
+                    v-if="isAscStage && question.reverse"
+                    class="question__reverse-tag"
+                >
+    【请认真理解本题】
+  </span>
                 {{ pageStartIndex + idx + 1 }}. {{ question.text }}
               </p>
+
 
               <!-- 选项：5 个尺度 -->
               <div class="question__options">
@@ -121,6 +134,7 @@ const {
   handlePrev,
   handleNext,
   currentStepTitle,
+  isAscStage,
 } = useQuestionsStagePage()
 
 </script>

@@ -10,10 +10,10 @@ export type PlanKey = typeof TestTypeBasic | typeof TestTypePro | typeof TestTyp
 
 export const StageBasic = "basic-info"
 export const StageReport = "report"
-export const StageRiasec = "riasec"
-export const StageAsc = "asc"
-export const StageOcean = "ocean"
-export const StageMotivation = "motivation"
+export const StageRiasec = "RIASEC"
+export const StageAsc = "ASC"
+export const StageOcean = "OCEAN"
+export const StageMotivation = "MOTIVATION"
 
 export interface TestFlowStep {
     stage: string      // "basic-info" / "riasec" / "asc" / ...

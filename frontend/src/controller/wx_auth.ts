@@ -91,13 +91,6 @@ export const useAuthStore = defineStore('auth', () => {
         wechatLoginOpen.value = false
     }
 
-    /**
-     * 开始一次新的微信扫码登录流程：
-     * 1) 生成 state
-     * 2) 打开弹窗
-     * 3) 等待 DOM 更新后，用 WxLogin.js 渲染二维码
-     * 4) 轮询后端登录状态
-     */
     async function startWeChatLogin() {
 
         await ensureWxConfig()
@@ -156,7 +149,7 @@ export const useAuthStore = defineStore('auth', () => {
 
         try {
             const res = await apiRequest<WxLoginStatusResponse>(
-                `/api/auth/wx/status?state=${encodeURIComponent(loginState.value)}`,
+                `${API_PATHS.WECHAT_SIGN_IN}?state=${encodeURIComponent(loginState.value)}`,
                 {method: 'GET'},
             )
 
@@ -237,7 +230,7 @@ export const useAuthStore = defineStore('auth', () => {
      */
     async function logout() {
         try {
-            await apiRequest('/api/auth/logout', {method: 'POST'})
+            await apiRequest(API_PATHS.WECHAT_LOGOUT, {method: 'POST'})
         } catch (e) {
             console.error('[auth] logout failed', e)
             // 即使接口失败，本地也可以先清状态

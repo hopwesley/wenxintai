@@ -134,6 +134,7 @@ func (s *HttpSrv) queryOrCreateReport(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	uid := userIDFromContext(ctx)
+	sLog.Debug().Msg("preparing report")
 
 	record, cErr := dbSrv.Instance().QueryRecordByPid(ctx, req.PublicID)
 	if cErr != nil {
@@ -161,13 +162,6 @@ func (s *HttpSrv) queryOrCreateReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, pDBErr := dbSrv.Instance().QueryUserProfileUid(ctx, uid)
-	if pDBErr != nil || user == nil {
-		sLog.Err(pDBErr).Msg("failed to find user profile")
-		writeError(w, ApiInternalErr("查找用户基本信息失败", pDBErr))
-		return
-	}
-
 	var combinedResult *CombinedReport = nil
 	if report == nil {
 		combinedResult = s.newReport(ctx, w, req.PublicID, record.BusinessType, ai_api.Mode(record.Mode.String), sLog)
@@ -177,14 +171,24 @@ func (s *HttpSrv) queryOrCreateReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if combinedResult == nil {
+		sLog.Error().Msg("report query or create failed")
+		writeError(w, ApiInternalErr("生成或查询报告时异常", nil))
 		return
 	}
 
+	user, pDBErr := dbSrv.Instance().QueryUserProfileUid(ctx, uid)
+	if pDBErr != nil || user == nil {
+		sLog.Err(pDBErr).Msg("failed to find user profile")
+		writeError(w, ApiInternalErr("查找用户基本信息失败", pDBErr))
+		return
+	}
 	combinedResult.UserProfile = user
 	writeJSON(w, http.StatusOK, combinedResult)
+
 }
 
 func (s *HttpSrv) newReport(ctx context.Context, w http.ResponseWriter, publicID, businessTyp string, mode ai_api.Mode, sLog zerolog.Logger) *CombinedReport {
+	sLog.Debug().Str("business_type", businessTyp).Str("mode", string(mode)).Msg("creating new report")
 	sessions, dbErr := dbSrv.Instance().FindQASessionsForReport(ctx, publicID)
 	if dbErr != nil || len(sessions) == 0 {
 		sLog.Err(dbErr).Msg("FindQASessionsForReport failed")
@@ -334,6 +338,7 @@ func (s *HttpSrv) parseReport(w http.ResponseWriter, report *dbSrv.TestReport, s
 		combinedResult.AIContent = string(report.AIContent)
 	}
 
+	sLog.Info().Msg("parse report success")
 	return combinedResult
 }
 

@@ -96,6 +96,7 @@ export function useQuestionsStagePage() {
     const testStage = computed(() =>
         String(route.params.testStage ?? '')
     )
+    const isAscStage = computed(() => testStage.value === StageAsc)
 
     const {
         truncatedLatestMessage,
@@ -499,5 +500,6 @@ export function useQuestionsStagePage() {
         handlePrev,
         handleNext,
         currentStepTitle,
+        isAscStage,
     }
 }

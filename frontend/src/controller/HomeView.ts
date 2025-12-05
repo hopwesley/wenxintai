@@ -107,8 +107,11 @@ export function useHomeView() {
 
     // “我的测试”
     async function handleGoMyTests() {
+        showLoading()
         isUserMenuOpen.value = false
-        await router.push({name: 'my-tests'})
+        router.push({name: 'my-tests'}).finally(() => {
+            hideLoading()
+        })
     }
 
     // “退出登录”

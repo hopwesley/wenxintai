@@ -230,7 +230,7 @@ func (pdb *psDatabase) QueryRecordOfUser(ctx context.Context, uid, bType string)
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		sLog.Err(err).Msg("QueryRecordOfUser no record")
+		sLog.Info().Msg("QueryRecordOfUser no record")
 		return nil, nil
 	}
 

@@ -150,7 +150,7 @@ func (pdb *psDatabase) SaveAnswer(
 	const updateTestRecordSQL = `
 		UPDATE app.tests_record
 		SET 
-		    status = GREATEST(status, $2),
+		    cur_stage = GREATEST(cur_stage, $2),
 		    updated_at =  now()
 		WHERE public_id     = $1
 		  AND wechat_openid = $3

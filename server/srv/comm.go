@@ -80,8 +80,8 @@ const (
 	StageOcean    = ai_api.TypOCEAN
 	StageOceanDes = "性格测试"
 
-	StageMotivation    = "motivation"
-	StageMotivationDes = "价值观测试"
+	StageMotivation    ai_api.TestTyp = "MOTIVATION"
+	StageMotivationDes                = "价值观测试"
 
 	BusinessTypeBasic  = "basic"
 	BusinessTypePro    = "pro"
@@ -243,7 +243,7 @@ func previousRoute(businessType string, stage ai_api.TestTyp) ai_api.TestTyp {
 			break
 		}
 	}
-	if idx <= 1 {
+	if idx < 1 {
 		return StageReport
 	}
 

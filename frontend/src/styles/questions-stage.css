@@ -181,3 +181,20 @@
     box-shadow: 0 18px 45px rgba(15, 23, 42, 0.25);
     font-size: 16px;
 }
+
+/* 反向题：整体题干略微偏红，提示“慎重理解”而不是“错误” */
+.question__text--reverse {
+    color: #b91c1c;          /* 深一点的红，强调但不刺眼 */
+}
+
+/* 反向题的小红标签 */
+.question__reverse-tag {
+    display: inline-block;
+    margin-right: 6px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background-color: #fee2e2; /* 浅红背景 */
+    color: #b91c1c;
+    font-size: 12px;
+    font-weight: 600;
+}

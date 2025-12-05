@@ -95,16 +95,24 @@ func (s *HttpSrv) handleQuestionSSEEvent(w http.ResponseWriter, r *http.Request)
 
 	q := r.URL.Query()
 	businessTyp := q.Get("business_type")
-	testType := q.Get("test_type")
+	testType := ai_api.TestTyp(q.Get("test_type"))
 
 	sLog := s.log.With().Str("public_id", publicId).
-		Str("business_type", businessTyp).Str("test_type", testType).Logger()
+		Str("business_type", businessTyp).
+		Str("test_type", string(testType)).Logger()
+
+	ctx := r.Context()
+
+	err = s.checkPreviousStageIfReady(ctx, publicId, businessTyp, testType)
+	if err != nil {
+		sLog.Err(err).Msg("SSE previous stage check failed")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-
-	ctx := r.Context()
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -113,35 +121,15 @@ func (s *HttpSrv) handleQuestionSSEEvent(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	aiTestType := parseAITestTyp(testType, businessTyp)
-	if len(aiTestType) == 0 || aiTestType == ai_api.TypUnknown {
-		sLog.Error().Str("channel", publicId).Msg("Invalid scaleKey or testType")
-		_ = writeSSE(w, flusher, &SSEMessage{
-			Typ: SSE_MT_ERROR,
-			Msg: "需要正确的测试类型和测试阶段参数",
-		}, &s.log)
-		return
-	}
-
-	if _, rErr := s.checkTestSequence(ctx, publicId, testType); rErr != nil {
-		sLog.Err(rErr).Msg("find next route error")
-		_ = writeSSE(w, flusher, &SSEMessage{
-			Typ: SSE_MT_ERROR,
-			Msg: "请按照测试顺利进行测试:" + rErr.Error(),
-		}, &s.log)
-
-		return
-	}
-
 	s.log.Info().
 		Str("channel", publicId).
 		Str("business_type", businessTyp).
-		Str("testType", testType).
+		Str("testType", string(testType)).
 		Msg("SSE channel created")
 
 	msgCh := make(chan *SSEMessage, 64)
 
-	go s.aiQuestionProcess(msgCh, publicId, aiTestType)
+	go s.aiQuestionProcess(msgCh, publicId, testType)
 
 	s.streamSSE(ctx, publicId, msgCh, w, flusher)
 }
@@ -216,7 +204,7 @@ func (s *HttpSrv) aiQuestionProcess(msgCh chan *SSEMessage, publicId string, aiT
 		return
 	}
 
-	bi, dbErr := dbSrv.Instance().QueryBasicInfo(bgCtx, publicId)
+	bi, dbErr := dbSrv.Instance().QueryRecordBasicInfo(bgCtx, publicId)
 	if dbErr != nil {
 		sLog.Err(dbErr).Msg("Query basic info from SSE channel error")
 		msg := &SSEMessage{Msg: "查询基本信息失败：" + dbErr.Error(), Typ: SSE_MT_ERROR}
@@ -300,7 +288,7 @@ func (s *HttpSrv) handleReportSSEEvent(w http.ResponseWriter, r *http.Request) {
 func (s *HttpSrv) aiReportProcess(msgCh chan *SSEMessage, publicId string, sLog zerolog.Logger) {
 	bgCtx := context.Background()
 
-	report, dbErr := dbSrv.Instance().FindTestReportByPublicId(bgCtx, publicId)
+	report, dbErr := dbSrv.Instance().QueryReportByPublicId(bgCtx, publicId)
 	if dbErr != nil || report == nil {
 		sLog.Err(dbErr).Msg("find finished report failed")
 		sendSafe(msgCh, &SSEMessage{
@@ -371,9 +359,9 @@ func (s *HttpSrv) aiReportProcess(msgCh chan *SSEMessage, publicId string, sLog 
 		return
 	}
 
-	dbErr = dbSrv.Instance().UpdateTestReportAIContent(bgCtx, publicId, []byte(aiContent))
+	dbErr = dbSrv.Instance().UpdateReportAIContent(bgCtx, publicId, []byte(aiContent))
 	if dbErr != nil {
-		sLog.Err(dbErr).Msg("UpdateTestReportAIContent failed")
+		sLog.Err(dbErr).Msg("UpdateReportAIContent failed")
 		sendSafe(msgCh, &SSEMessage{Typ: SSE_MT_ERROR, Msg: "保存报告数据失败:" + dbErr.Error()}, &s.log)
 		return
 	}

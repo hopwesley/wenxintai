@@ -1,7 +1,9 @@
 package srv
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/hopwesley/wenxintai/server/ai_api"
@@ -56,6 +58,26 @@ func (req *tesSubmitRequest) parseObj(r *http.Request) *ApiErr {
 	return nil
 }
 
+func (s *HttpSrv) checkPreviousStageIfReady(ctx context.Context, publicId, bTyp string, stage ai_api.TestTyp) error {
+	preStage := previousRoute(bTyp, stage)
+	switch preStage {
+	case StageBasic:
+		record, err := dbSrv.Instance().QueryRecordByPid(ctx, publicId)
+		if err != nil || !record.Mode.Valid {
+			return fmt.Errorf("请先选择科目选择模式")
+		}
+		return nil
+	case StageReport:
+		return fmt.Errorf("没有找到前置流程")
+	default:
+		answers, err := dbSrv.Instance().FindQASession(ctx, string(preStage), publicId)
+		if err != nil || answers == nil {
+			return fmt.Errorf("请先完成【%s】阶段的问题", preStage)
+		}
+	}
+
+	return nil
+}
 func (s *HttpSrv) handleTestSubmit(w http.ResponseWriter, r *http.Request) {
 	var req tesSubmitRequest
 	err := req.parseObj(r)
@@ -70,23 +92,16 @@ func (s *HttpSrv) handleTestSubmit(w http.ResponseWriter, r *http.Request) {
 		Int("answer", len(req.Answers)).Logger()
 	ctx := r.Context()
 
-	if _, rErr := s.checkTestSequence(ctx, req.TestPublicID, req.TestType); rErr != nil {
-		sLog.Err(rErr).Msg("invalid test sequence request")
-		writeError(w, ApiInvalidTestSequence(rErr))
-		return
-	}
-
 	sLog.Info().Msg("prepare to parse answers")
 
-	aiTestType := parseAITestTyp(req.TestType, req.BusinessType)
-	if len(aiTestType) == 0 || aiTestType == ai_api.TypUnknown {
-		s.log.Error().Msg("Invalid TestType or BusinessType")
-		writeError(w, ApiInvalidReq("无效的试卷类型", nil))
+	cErr := s.checkPreviousStageIfReady(ctx, req.TestPublicID, req.BusinessType, ai_api.TestTyp(req.TestType))
+	if cErr != nil {
+		sLog.Err(cErr).Msg("previous stage check failed")
+		writeError(w, ApiInvalidTestSequence(cErr))
 		return
 	}
 
-	nextIdx, nextR, rErr := nextRoute(req.BusinessType, req.TestType)
-
+	nextR, nextIdx, rErr := nextRoute(req.BusinessType, ai_api.TestTyp(req.TestType))
 	if rErr != nil {
 		s.log.Err(rErr).Msg("failed to find next route ")
 		writeError(w, ApiInternalErr("未找到下一轮状态", rErr))
@@ -95,7 +110,7 @@ func (s *HttpSrv) handleTestSubmit(w http.ResponseWriter, r *http.Request) {
 
 	uid := userIDFromContext(ctx)
 	answersJSON, _ := json.Marshal(req.Answers)
-	if err := dbSrv.Instance().SaveAnswer(ctx, string(aiTestType),
+	if err := dbSrv.Instance().SaveAnswer(ctx, req.TestType,
 		req.TestPublicID, uid, answersJSON, nextIdx); err != nil {
 		sLog.Err(err).Msg("保存答案失败")
 		writeError(w, ApiInternalErr("无效的试卷类型", err))
@@ -104,8 +119,8 @@ func (s *HttpSrv) handleTestSubmit(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK,
 		&CommonRes{Ok: true, Msg: "保存答案成功",
-			NextRoute: nextR,
+			NextRoute: string(nextR),
 			NextRid:   nextIdx})
 
-	sLog.Info().Int("next-route-id", nextIdx).Str("next-route", nextR).Msg("save answers success")
+	sLog.Info().Int("next-route-id", nextIdx).Str("next-route", string(nextR)).Msg("save answers success")
 }

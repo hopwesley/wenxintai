@@ -104,21 +104,21 @@ func (s *HttpSrv) wechatSignInCallBack(w http.ResponseWriter, r *http.Request) {
 		Str("avatar", avatarURL).
 		Msg("WeChat oauth success")
 
-	existing, err := dbSrv.Instance().FindUserProfileByUid(ctx, token.UnionID)
+	existing, err := dbSrv.Instance().QueryUserProfileUid(ctx, token.UnionID)
 	if err != nil {
-		s.log.Error().Err(err).Msg("FindUserProfileByUid failed")
+		s.log.Error().Err(err).Msg("QueryUserProfileUid failed")
 		http.Error(w, "wechat auth failed", http.StatusBadGateway)
 		return
 	}
 	isNew := existing == nil
 
-	if err := dbSrv.Instance().InsertOrUpdateUserProfileBasic(
+	if err := dbSrv.Instance().InsertOrUpdateWeChatInfo(
 		ctx,
 		token.UnionID,
 		nickName,
 		avatarURL,
 	); err != nil {
-		s.log.Error().Err(err).Msg("InsertOrUpdateUserProfileBasic failed")
+		s.log.Error().Err(err).Msg("InsertOrUpdateWeChatInfo failed")
 		http.Error(w, "wechat auth failed", http.StatusBadGateway)
 		return
 	}
@@ -206,7 +206,7 @@ func (s *HttpSrv) wechatSignStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, dbErr := dbSrv.Instance().FindUserProfileByUid(r.Context(), uid)
+	user, dbErr := dbSrv.Instance().QueryUserProfileUid(r.Context(), uid)
 	if dbErr != nil || user == nil {
 		resp.Status = "expired"
 	} else {
@@ -320,7 +320,7 @@ func (s *HttpSrv) apiWeChatMyProfile(w http.ResponseWriter, r *http.Request) {
 		writeError(w, ApiInternalErr("查询问卷数据失败", dbErr))
 		return
 	}
-	user, pDBErr := dbSrv.Instance().FindUserProfileByUid(ctx, uid)
+	user, pDBErr := dbSrv.Instance().QueryUserProfileUid(ctx, uid)
 	if pDBErr != nil {
 		s.log.Err(pDBErr).Msg("apiWeChatMyProfile: query user profile failed")
 		writeError(w, ApiInternalErr("查询用户数据失败", dbErr))

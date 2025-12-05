@@ -17,133 +17,9 @@ type TestRecord struct {
 	Grade        sql.NullString
 	Mode         sql.NullString
 	Hobby        sql.NullString
-	Status       int16
+	CurStage     int16
 	CreatedAt    time.Time
 	PaidTime     sql.NullTime
-}
-
-func (pdb *psDatabase) QueryTestInProcess(ctx context.Context, uid, bType, publicId string) (*TestRecord, error) {
-	log := pdb.log.With().
-		Str("wechat_id", uid).
-		Str("business_type", bType).
-		Str("public_id", publicId).
-		Logger()
-	log.Debug().Msg("QueryTestInProcess")
-
-	q := `
-        SELECT 
-            t.public_id,
-            t.business_type,
-            t.pay_order_id,
-            t.wechat_openid,
-            t.grade,
-            t.mode,
-            t.hobby,
-            t.status,
-            t.created_at
-        FROM app.tests_record t
-        WHERE t.wechat_openid = $1
-          AND t.business_type = $2
-          AND (
-                t.paid_time IS NULL
-                OR NOT EXISTS (
-                    SELECT 1
-                    FROM app.test_reports r
-                    WHERE r.public_id = t.public_id
-                      AND r.status = 1
-                )
-          )
-    `
-
-	args := []any{uid, bType}
-
-	if publicId != "" {
-		q += ` AND t.public_id = $3`
-		args = append(args, publicId)
-	}
-
-	q += `
-        ORDER BY t.created_at DESC
-        LIMIT 1
-    `
-
-	row := pdb.db.QueryRowContext(ctx, q, args...)
-
-	var rec TestRecord
-	err := row.Scan(
-		&rec.PublicId,
-		&rec.BusinessType,
-		&rec.PayOrderId,
-		&rec.WeChatID,
-		&rec.Grade,
-		&rec.Mode,
-		&rec.Hobby,
-		&rec.Status,
-		&rec.CreatedAt,
-	)
-	if errors.Is(err, sql.ErrNoRows) {
-		log.Err(err).Msg("no record")
-		return nil, nil
-	}
-	if err != nil {
-		log.Err(err).Msg("database query error")
-		return nil, err
-	}
-
-	log.Debug().Msg("find record")
-	return &rec, nil
-}
-
-func (pdb *psDatabase) QueryUnfinishedTest(
-	ctx context.Context, publicId, uid string,
-) (*TestRecord, error) {
-	log := pdb.log.With().Str("public_id", publicId).Logger()
-	log.Debug().Msg("QueryUnfinishedTest")
-
-	const q = `
-        SELECT 
-            public_id,
-            business_type,
-            pay_order_id,
-            wechat_openid,
-            grade,
-            mode,
-            hobby,
-            status,
-            created_at
-        FROM app.tests_record
-        WHERE public_id = $1
-          AND wechat_openid = $2
-          AND paid_time IS NULL
-        ORDER BY created_at DESC
-        LIMIT 1
-    `
-
-	row := pdb.db.QueryRowContext(ctx, q, publicId, uid)
-
-	var rec TestRecord
-	err := row.Scan(
-		&rec.PublicId,
-		&rec.BusinessType,
-		&rec.PayOrderId,
-		&rec.WeChatID,
-		&rec.Grade,
-		&rec.Mode,
-		&rec.Hobby,
-		&rec.Status,
-		&rec.CreatedAt,
-	)
-	if errors.Is(err, sql.ErrNoRows) {
-		log.Err(err).Msg("no record")
-		return nil, nil
-	}
-	if err != nil {
-		log.Err(err).Msg("database query error")
-		return nil, err
-	}
-
-	log.Debug().Msg("find record")
-	return &rec, nil
 }
 
 func (pdb *psDatabase) NewTestRecord(
@@ -189,30 +65,27 @@ func (pdb *psDatabase) NewTestRecord(
 	return publicID, nil
 }
 
-func (pdb *psDatabase) UpdateBasicInfo(
+func (pdb *psDatabase) UpdateRecordBasicInfo(
 	ctx context.Context,
-	publicId string,
 	uid string,
-	grade string,
-	mode string,
-	hobby string,
-	status int,
+	bi *ai_api.BasicInfo,
+	status int16,
 ) (string, error) {
 	const q = `
         UPDATE app.tests_record
-	SET grade = $3,
-	    mode = $4,
-	    hobby = NULLIF($5, ''),
-	    status = $6,
+	SET grade = $2,
+	    mode = $3,
+	    hobby = NULLIF($4, ''),
+	    cur_stage = $5,
 	    updated_at = now()
 	WHERE public_id = $1
-	  AND wechat_openid = $2
+	AND wechat_openid = $6
 	RETURNING business_type
     `
 
 	var businessType string
 	err := pdb.db.QueryRowContext(ctx, q,
-		publicId, uid, grade, mode, hobby, status,
+		bi.PublicId, bi.Grade, bi.Mode, bi.Hobby, status, uid,
 	).Scan(&businessType)
 	if err != nil {
 		return "", err
@@ -220,7 +93,7 @@ func (pdb *psDatabase) UpdateBasicInfo(
 	return businessType, nil
 }
 
-func (pdb *psDatabase) QueryBasicInfo(ctx context.Context, publicId string) (*ai_api.BasicInfo, error) {
+func (pdb *psDatabase) QueryRecordBasicInfo(ctx context.Context, publicId string) (*ai_api.BasicInfo, error) {
 
 	const q = `
         SELECT public_id, grade, mode, COALESCE(hobby, '')
@@ -234,24 +107,15 @@ func (pdb *psDatabase) QueryBasicInfo(ctx context.Context, publicId string) (*ai
 		modeStr    string
 		hobbyStr   string
 	)
+	sLog := pdb.log.With().Str("public_id", publicId).Logger()
 
-	pdb.log.Debug().
-		Str("public_id", publicId).
-		Msg("QueryBasicInfo: start")
+	sLog.Debug().Msg("QueryRecordBasicInfo: start")
 
 	err := pdb.db.
 		QueryRowContext(ctx, q, publicId).
 		Scan(&publicIDDB, &gradeStr, &modeStr, &hobbyStr)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			pdb.log.Warn().
-				Str("public_id", publicId).
-				Msg("QueryBasicInfo: no record found")
-		} else {
-			pdb.log.Err(err).
-				Str("public_id", publicId).
-				Msg("QueryBasicInfo failed")
-		}
+		sLog.Err(err).Msg("QueryRecordBasicInfo failed")
 		return nil, err
 	}
 
@@ -264,37 +128,34 @@ func (pdb *psDatabase) QueryBasicInfo(ctx context.Context, publicId string) (*ai
 		info.Hobby = hobbyStr
 	}
 
-	pdb.log.Debug().
-		Str("public_id", publicId).
-		Interface("basic_info", info).
-		Msg("QueryBasicInfo: done")
-
+	sLog.Debug().Msg("QueryRecordBasicInfo: done")
 	return info, nil
 }
 
-func (pdb *psDatabase) QueryRecordById(ctx context.Context, publicID string) (*TestRecord, error) {
-	log := pdb.log.With().
+func (pdb *psDatabase) QueryRecordByPid(ctx context.Context, publicID string) (*TestRecord, error) {
+	sLog := pdb.log.With().
 		Str("public_id", publicID).
 		Logger()
-	log.Debug().Msg("QueryRecordById")
+
+	sLog.Debug().Msg("QueryRecordByPid")
 
 	const q = `
-		SELECT 
-			public_id,
-			business_type,
-			pay_order_id,
-			wechat_openid,
-			grade,
-			mode,
-			hobby,
-			status,
-			created_at,
-			paid_time
-		FROM app.tests_record
-		WHERE public_id = $1
-		ORDER BY paid_time DESC
-		LIMIT 1
-	`
+      SELECT 
+         public_id,
+         business_type,
+         pay_order_id,
+         wechat_openid,
+         grade,
+         mode,
+         hobby,
+         cur_stage,
+         created_at,
+         paid_time
+      FROM app.tests_record
+      WHERE public_id = $1
+      ORDER BY created_at DESC
+      LIMIT 1
+   `
 
 	row := pdb.db.QueryRowContext(ctx, q, publicID)
 
@@ -307,13 +168,74 @@ func (pdb *psDatabase) QueryRecordById(ctx context.Context, publicID string) (*T
 		&rec.Grade,
 		&rec.Mode,
 		&rec.Hobby,
-		&rec.Status,
+		&rec.CurStage,
 		&rec.CreatedAt,
 		&rec.PaidTime,
 	)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		sLog.Err(err).Msg("QueryRecordByPid no record")
+		return nil, nil
+	}
+
 	if err != nil {
-		// 包括 sql.ErrNoRows 在内，都直接返回给上层
-		log.Err(err).Msg("QueryRecordById failed")
+		sLog.Err(err).Msg("QueryRecordByPid failed")
+		return nil, err
+	}
+
+	return &rec, nil
+}
+
+func (pdb *psDatabase) QueryRecordOfUser(ctx context.Context, uid, bType string) (*TestRecord, error) {
+	sLog := pdb.log.With().
+		Str("wechat_id", uid).
+		Str("business_type", bType).
+		Logger()
+
+	sLog.Debug().Msg("QueryRecordOfUser")
+
+	const q = `
+      SELECT 
+         public_id,
+         business_type,
+         pay_order_id,
+         wechat_openid,
+         grade,
+         mode,
+         hobby,
+         cur_stage,
+         created_at,
+         paid_time
+      FROM app.tests_record
+      WHERE wechat_openid = $1
+      AND business_type = $2
+      ORDER BY created_at DESC
+      LIMIT 1
+   `
+
+	row := pdb.db.QueryRowContext(ctx, q, uid, bType)
+
+	var rec TestRecord
+	err := row.Scan(
+		&rec.PublicId,
+		&rec.BusinessType,
+		&rec.PayOrderId,
+		&rec.WeChatID,
+		&rec.Grade,
+		&rec.Mode,
+		&rec.Hobby,
+		&rec.CurStage,
+		&rec.CreatedAt,
+		&rec.PaidTime,
+	)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		sLog.Err(err).Msg("QueryRecordOfUser no record")
+		return nil, nil
+	}
+
+	if err != nil {
+		sLog.Err(err).Msg("QueryRecordOfUser failed")
 		return nil, err
 	}
 

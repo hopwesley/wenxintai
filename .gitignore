@@ -41,3 +41,6 @@ go.work.sum
 .idea
 /config/
 /server/go.sum
+/miniapp/node_modules/
+/miniapp/project.private.config.json
+/miniapp/package-lock.json

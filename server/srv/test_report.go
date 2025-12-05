@@ -135,7 +135,7 @@ func (s *HttpSrv) queryOrCreateReport(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	uid := userIDFromContext(ctx)
 
-	record, cErr := dbSrv.Instance().QueryRecordById(ctx, req.PublicID)
+	record, cErr := dbSrv.Instance().QueryRecordByPid(ctx, req.PublicID)
 	if cErr != nil {
 		sLog.Err(cErr).Msg("no record found ")
 		writeError(w, ApiInvalidNoTestRecord(cErr))
@@ -154,14 +154,14 @@ func (s *HttpSrv) queryOrCreateReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	report, dbErr := dbSrv.Instance().FindTestReportByPublicId(ctx, req.PublicID)
+	report, dbErr := dbSrv.Instance().QueryReportByPublicId(ctx, req.PublicID)
 	if dbErr != nil {
 		sLog.Err(dbErr).Msg(" report query error")
 		writeError(w, ApiInternalErr("查询已经生成报告时异常", dbErr))
 		return
 	}
 
-	user, pDBErr := dbSrv.Instance().FindUserProfileByUid(ctx, uid)
+	user, pDBErr := dbSrv.Instance().QueryUserProfileUid(ctx, uid)
 	if pDBErr != nil || user == nil {
 		sLog.Err(pDBErr).Msg("failed to find user profile")
 		writeError(w, ApiInternalErr("查找用户基本信息失败", pDBErr))
@@ -260,7 +260,7 @@ func (s *HttpSrv) newReport(ctx context.Context, w http.ResponseWriter, publicID
 		aiParamForMode, _ = json.Marshal(resp.Recommend312)
 	}
 
-	dbErr = dbSrv.Instance().SaveTestReportCore(ctx, publicID, string(mode), commonScore, aiParamForMode)
+	dbErr = dbSrv.Instance().SaveReportCore(ctx, publicID, string(mode), commonScore, aiParamForMode)
 	if dbErr != nil {
 		sLog.Err(dbErr).Msg("failed to save report param")
 		writeError(w, ApiInternalErr("保存 AI 报告需要的参数失败", dbErr))

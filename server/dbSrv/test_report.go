@@ -28,7 +28,7 @@ type TestReport struct {
 	UpdatedAt     time.Time       `json:"updated_at"`
 }
 
-func (pdb *psDatabase) SaveTestReportCore(
+func (pdb *psDatabase) SaveReportCore(
 	ctx context.Context,
 	publicId string,
 	mode string,
@@ -53,7 +53,7 @@ func (pdb *psDatabase) SaveTestReportCore(
 		Str("mode", mode).
 		Logger()
 
-	log.Debug().Msg("SaveTestReportCore: start")
+	log.Debug().Msg("SaveReportCore: start")
 
 	const q = `
         INSERT INTO app.test_reports (
@@ -77,15 +77,15 @@ func (pdb *psDatabase) SaveTestReportCore(
 		CurrentEngineVersin,
 	)
 	if err != nil {
-		log.Err(err).Msg("SaveTestReportCore: exec failed")
+		log.Err(err).Msg("SaveReportCore: exec failed")
 		return err
 	}
 
-	log.Debug().Msg("SaveTestReportCore: done")
+	log.Debug().Msg("SaveReportCore: done")
 	return nil
 }
 
-func (pdb *psDatabase) FindTestReportByPublicId(
+func (pdb *psDatabase) QueryReportByPublicId(
 	ctx context.Context,
 	publicId string,
 ) (*TestReport, error) {
@@ -97,7 +97,7 @@ func (pdb *psDatabase) FindTestReportByPublicId(
 		Str("public_id", publicId).
 		Logger()
 
-	log.Debug().Msg("FindTestReportByPublicId: start")
+	log.Debug().Msg("QueryReportByPublicId: start")
 
 	const q = `
         SELECT
@@ -135,18 +135,18 @@ func (pdb *psDatabase) FindTestReportByPublicId(
 		&r.UpdatedAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			log.Warn().Msg("FindTestReportByPublicId: no record")
+			log.Warn().Msg("QueryReportByPublicId: no record")
 			return nil, nil
 		}
-		log.Err(err).Msg("FindTestReportByPublicId: query failed")
+		log.Err(err).Msg("QueryReportByPublicId: query failed")
 		return nil, err
 	}
 
-	log.Debug().Msg("FindTestReportByPublicId: done")
+	log.Debug().Msg("QueryReportByPublicId: done")
 	return &r, nil
 }
 
-func (pdb *psDatabase) UpdateTestReportAIContent(
+func (pdb *psDatabase) UpdateReportAIContent(
 	ctx context.Context,
 	publicId string,
 	aiContentJSON []byte,
@@ -162,7 +162,7 @@ func (pdb *psDatabase) UpdateTestReportAIContent(
 		Str("public_id", publicId).
 		Logger()
 
-	log.Debug().Msg("UpdateTestReportAIContent: start")
+	log.Debug().Msg("UpdateReportAIContent: start")
 
 	const q = `
         UPDATE app.test_reports
@@ -175,21 +175,21 @@ func (pdb *psDatabase) UpdateTestReportAIContent(
 
 	res, err := pdb.db.ExecContext(ctx, q, publicId, aiContentJSON, ReportStatusSuccess)
 	if err != nil {
-		log.Err(err).Msg("UpdateTestReportAIContent: exec failed")
+		log.Err(err).Msg("UpdateReportAIContent: exec failed")
 		return err
 	}
 
 	affected, err := res.RowsAffected()
 	if err != nil {
-		log.Err(err).Msg("UpdateTestReportAIContent: RowsAffected failed")
+		log.Err(err).Msg("UpdateReportAIContent: RowsAffected failed")
 		return err
 	}
 	if affected == 0 {
 		err := fmt.Errorf("no test_report found for public_id=%s", publicId)
-		log.Warn().Err(err).Msg("UpdateTestReportAIContent: not found")
+		log.Warn().Err(err).Msg("UpdateReportAIContent: not found")
 		return err
 	}
 
-	log.Debug().Int64("rows", affected).Msg("UpdateTestReportAIContent: done")
+	log.Debug().Int64("rows", affected).Msg("UpdateReportAIContent: done")
 	return nil
 }

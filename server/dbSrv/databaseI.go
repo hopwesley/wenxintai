@@ -20,29 +20,27 @@ type DbService interface {
 
 	GetInviteByCode(ctx context.Context, code string) (*Invite, error)
 
-	QueryTestInProcess(ctx context.Context, uid, bType, publicId string) (*TestRecord, error)
-	QueryUnfinishedTest(ctx context.Context, publicId, uid string) (*TestRecord, error)
 	NewTestRecord(ctx context.Context, businessType string, weChatId string) (string, error)
-	QueryRecordById(ctx context.Context, publicID string) (*TestRecord, error)
-
-	UpdateBasicInfo(ctx context.Context, publicId, uid, grade, mode, hobby string, status int) (string, error)
-	QueryBasicInfo(ctx context.Context, publicId string) (*ai_api.BasicInfo, error)
+	QueryRecordByPid(ctx context.Context, publicId string) (*TestRecord, error)
+	QueryRecordOfUser(ctx context.Context, uid, bType string) (*TestRecord, error)
+	UpdateRecordBasicInfo(ctx context.Context, uid string, bi *ai_api.BasicInfo, status int16) (string, error)
+	QueryRecordBasicInfo(ctx context.Context, publicId string) (*ai_api.BasicInfo, error)
 
 	FindQASession(ctx context.Context, testType, publicId string) (*QASession, error)
 	SaveQuestion(ctx context.Context, testType, publicId string, questionsJSON []byte) error
 	SaveAnswer(ctx context.Context, testType, publicId, uid string, answersJSON []byte, status int) error
-
 	FindQASessionsForReport(ctx context.Context, publicId string) ([]*QASession, error)
-	SaveTestReportCore(ctx context.Context, publicId, mode string, commonScoreJSON []byte, modeParamJSON []byte) error
-	UpdateTestReportAIContent(ctx context.Context, publicId string, aiContentJSON []byte) error
-	FindTestReportByPublicId(ctx context.Context, publicId string) (*TestReport, error)
 
-	FindUserProfileByUid(ctx context.Context, uid string) (*UserProfile, error)
-	InsertOrUpdateUserProfileBasic(ctx context.Context, id string, name string, url string) error
+	SaveReportCore(ctx context.Context, publicId, mode string, commonScoreJSON []byte, modeParamJSON []byte) error
+	UpdateReportAIContent(ctx context.Context, publicId string, aiContentJSON []byte) error
+	QueryReportByPublicId(ctx context.Context, publicId string) (*TestReport, error)
+
+	QueryUserProfileUid(ctx context.Context, uid string) (*UserProfile, error)
+	InsertOrUpdateWeChatInfo(ctx context.Context, id string, name string, url string) error
 	UpdateUserProfileExtra(ctx context.Context, uid string, extra UsrProfileExtra) error
 	QueryTestInfos(ctx context.Context, uid string) ([]*TestItem, error)
 
-	FindWeChatOrderByID(ctx context.Context, id string) (*WeChatOrder, error)
+	QueryWeChatOrderByID(ctx context.Context, id string) (*WeChatOrder, error)
 	UpdateWeChatOrderStatus(
 		ctx context.Context,
 		orderID string,

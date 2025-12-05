@@ -12,6 +12,7 @@ const (
 	ErrorCodeNotFound   ErrorCode = "NOT_FOUND"
 	ErrorCodeForbidden  ErrorCode = "FORBIDEEN"
 	ErrorCodeInternal   ErrorCode = "INTERNAL"
+	ErrorCodeSequence   ErrorCode = "BAD_SEQ"
 )
 
 type ApiErr struct {
@@ -20,10 +21,6 @@ type ApiErr struct {
 	Err     error     `json:"err,omitempty"`
 	status  int
 }
-
-var (
-	ApiMethodInvalid = NewApiError(http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "method not allowed", nil)
-)
 
 func ApiInvalidReq(msg string, err error) *ApiErr {
 	return NewApiError(http.StatusBadRequest, ErrorCodeBadRequest, msg, err)
@@ -34,11 +31,11 @@ func ApiInternalErr(msg string, err error) *ApiErr {
 }
 
 func ApiInvalidTestSequence(err error) *ApiErr {
-	return NewApiError(http.StatusInternalServerError, ErrorCodeInternal, "请按照测试顺序进行测试", err)
+	return NewApiError(http.StatusInternalServerError, ErrorCodeSequence, "请按照测试顺序进行测试", err)
 }
 
 func ApiInvalidNoTestRecord(err error) *ApiErr {
-	return NewApiError(http.StatusInternalServerError, ErrorCodeInternal, "未找到问卷数据", err)
+	return NewApiError(http.StatusInternalServerError, ErrorCodeNotFound, "未找到问卷数据", err)
 }
 
 func (e *ApiErr) Error() string {

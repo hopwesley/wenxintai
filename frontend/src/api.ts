@@ -33,7 +33,7 @@ export const API_PATHS = {
     HEALTH: '/api/health',
     LOAD_HOBBIES: '/api/hobbies',
     LOAD_PRODUCTS: '/api/products',
-    LOAD_CUR_PRODUCT: '/api/current_product',
+    LOAD_CUR_PRODUCT: '/api/prepare_pay',
 
     TEST_FLOW: '/api/test_flow',
 

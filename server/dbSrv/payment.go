@@ -63,7 +63,7 @@ INSERT INTO app.pay_orders (
 	return nil
 }
 
-func (pdb *psDatabase) FindWeChatOrderByID(ctx context.Context, orderID string) (*WeChatOrder, error) {
+func (pdb *psDatabase) QueryWeChatOrderByID(ctx context.Context, orderID string) (*WeChatOrder, error) {
 	log := pdb.log.With().
 		Str("order_id", orderID).
 		Logger()
@@ -110,11 +110,11 @@ LIMIT 1
 		&po.UpdatedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
-		log.Debug().Msg("FindWeChatOrderByID no rows")
+		log.Debug().Msg("QueryWeChatOrderByID no rows")
 		return nil, nil
 	}
 	if err != nil {
-		log.Error().Err(err).Msg("FindWeChatOrderByID failed")
+		log.Error().Err(err).Msg("QueryWeChatOrderByID failed")
 		return nil, err
 	}
 

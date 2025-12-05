@@ -25,7 +25,7 @@ const (
 	apiHealthy        = "/api/health"
 	apiLoadHobbies    = "/api/hobbies"
 	apiLoadProducts   = "/api/products"
-	apiLoadCurProduct = "/api/current_product"
+	apiLoadCurProduct = "/api/prepare_pay"
 
 	apiTestFlow = "/api/test_flow"
 
@@ -177,7 +177,7 @@ func (s *HttpSrv) initRouter() error {
 	routes := []route{
 		{apiLoadHobbies, http.MethodGet, s.handleHobbies, false},
 		{apiLoadProducts, http.MethodGet, s.handleProducts, false},
-		{apiLoadCurProduct, http.MethodPost, s.handleCurrentProduct, false},
+		{apiLoadCurProduct, http.MethodPost, s.preparePayForReport, false},
 
 		{apiWeChatSignIn, http.MethodGet, s.wechatSignStatus, false},
 		{apiWeChatSignInCallBack, http.MethodGet, s.wechatSignInCallBack, false},

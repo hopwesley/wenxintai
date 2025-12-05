@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/hopwesley/wenxintai/server/ai_api"
 	"github.com/hopwesley/wenxintai/server/dbSrv"
 )
 
@@ -23,11 +24,6 @@ func (req *testFlowRequest) parseObj(r *http.Request) *ApiErr {
 	return nil
 }
 
-type TestFlowStep struct {
-	Stage string `json:"stage"` // 路由用的 key，例如 "basic-info" / "riasec" / ...
-	Title string `json:"title"` // 展示给用户的标题，例如 "基础信息" / "兴趣测试"
-}
-
 type TestRecordDTO struct {
 	PublicId     string     `json:"public_id"`
 	BusinessType string     `json:"business_type"`
@@ -36,7 +32,7 @@ type TestRecordDTO struct {
 	Grade        string     `json:"grade,omitempty"`
 	Mode         string     `json:"mode,omitempty"`
 	Hobby        string     `json:"hobby,omitempty"`
-	Status       int16      `json:"status"`
+	CurStage     int16      `json:"cur_stage"`
 	CreatedAt    time.Time  `json:"created_at"`
 	CompletedAt  *time.Time `json:"completed_at,omitempty"`
 }
@@ -45,7 +41,7 @@ type testFlowResponse struct {
 	Record       TestRecordDTO  `json:"record"`
 	Steps        []TestFlowStep `json:"steps"`         // 全部阶段（key + title）
 	CurrentStage string         `json:"current_stage"` // 当前阶段的 stage key，比如 "riasec"
-	CurrentIndex int            `json:"current_index"` // 当前阶段在 Steps 里的下标（0-based）
+	CurrentIndex int16          `json:"current_index"` // 当前阶段在 Steps 里的下标（0-based）
 }
 
 func toRecordDTO(rec dbSrv.TestRecord) TestRecordDTO {
@@ -58,7 +54,7 @@ func toRecordDTO(rec dbSrv.TestRecord) TestRecordDTO {
 		Grade:        nullToString(rec.Grade),
 		Mode:         nullToString(rec.Mode),
 		Hobby:        nullToString(rec.Hobby),
-		Status:       rec.Status,
+		CurStage:     rec.CurStage,
 		CreatedAt:    rec.CreatedAt,
 		CompletedAt:  completed,
 	}
@@ -75,24 +71,43 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 
-	sLog := s.log.With().Str("business_type", req.BusinessType).Logger()
+	sLog := s.log.With().Str("business_type", req.BusinessType).Str("public_id", req.PublicId).Logger()
 	sLog.Info().Msg("start test flow")
 
 	uid := userIDFromContext(ctx)
 
-	record, dbErr := dbSrv.Instance().QueryTestInProcess(ctx, uid, req.BusinessType, req.PublicId)
-	if dbErr != nil {
-		sLog.Err(dbErr).Msg("failed find test record")
-		writeError(w, ApiInvalidNoTestRecord(dbErr))
-		return
+	var (
+		dto    TestRecordDTO
+		record *dbSrv.TestRecord
+		dbErr  error = nil
+	)
+
+	if len(req.PublicId) > 0 {
+		if !IsValidPublicID(req.PublicId) {
+			sLog.Error().Msg("invalid public id")
+			writeError(w, ApiInvalidReq("问卷变化错误", nil))
+			return
+		}
+		record, dbErr = dbSrv.Instance().QueryRecordByPid(ctx, req.PublicId)
+		if record == nil || dbErr != nil {
+			sLog.Err(dbErr).Msg("query data by public id failed")
+			writeError(w, ApiInvalidNoTestRecord(dbErr))
+			return
+		}
+
+	} else {
+		record, dbErr = dbSrv.Instance().QueryRecordOfUser(ctx, uid, req.BusinessType)
+		if dbErr != nil {
+			sLog.Err(dbErr).Msg("failed find test record by user and type")
+			writeError(w, ApiInternalErr("访问数据库失败", dbErr))
+			return
+		}
 	}
 
-	stageFlow := getTestRoutes(req.BusinessType)
 	steps := getTestFlowSteps(req.BusinessType)
 
 	var currentStage = StageBasic
-	var currentIndex = 0
-	var dto TestRecordDTO
+	var currentIndex int16 = 0
 	if record == nil {
 		pid, dbErr := dbSrv.Instance().NewTestRecord(ctx, req.BusinessType, uid)
 		if dbErr != nil {
@@ -103,23 +118,24 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 		dto.PublicId = pid
 		dto.BusinessType = req.BusinessType
 		currentStage, currentIndex = StageBasic, RecordStatusInit
-		sLog.Info().Str("public_id", pid).Msg("create new test record")
+		sLog.Info().Str("new_public_id", pid).Msg("create new test record")
 	} else {
-		currentStage, currentIndex = parseStatusToRoute(int(record.Status), stageFlow)
 		dto = toRecordDTO(*record)
-		sLog.Info().Str("public_id", dto.PublicId).Msg("find test record in database")
+		currentIndex = dto.CurStage
+		currentStage = getStageIndex(steps, currentIndex)
+		sLog.Info().Msg("find test record in database")
 	}
 
 	resp := testFlowResponse{
 		Record:       dto,
 		Steps:        steps,
-		CurrentStage: currentStage,
+		CurrentStage: string(currentStage),
 		CurrentIndex: currentIndex,
 	}
 
 	sLog.Debug().
-		Str("current_stage", currentStage).
-		Int("current_index", currentIndex).
+		Str("current_stage", string(currentStage)).
+		Int16("current_index", currentIndex).
 		Msg("test record proceed success in test flow")
 
 	writeJSON(w, http.StatusOK, resp)
@@ -139,13 +155,10 @@ func (s *HttpSrv) updateBasicInfo(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	uid := userIDFromContext(ctx)
-	businessTyp, dbErr := dbSrv.Instance().UpdateBasicInfo(
+	businessTyp, dbErr := dbSrv.Instance().UpdateRecordBasicInfo(
 		ctx,
-		req.PublicId,
 		uid,
-		string(req.Grade),
-		string(req.Mode),
-		req.Hobby,
+		(*ai_api.BasicInfo)(&req),
 		RecordStatusInTest,
 	)
 
@@ -155,19 +168,19 @@ func (s *HttpSrv) updateBasicInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nri, nextR, rErr := nextRoute(businessTyp, StageBasic)
+	nextStage, nextStageIdx, rErr := nextRoute(businessTyp, StageBasic)
 	if rErr != nil {
 		slog.Err(rErr).Msg("获取下一级路由失败")
-		writeError(w, NewApiError(http.StatusInternalServerError, "db_update_failed", "未找到一下", err))
+		writeError(w, ApiInvalidTestSequence(err))
 		return
 	}
 
 	writeJSON(w, http.StatusOK, &CommonRes{
 		Ok:        true,
 		Msg:       "更新基本信息成功",
-		NextRoute: nextR,
-		NextRid:   nri,
+		NextRoute: string(nextStage),
+		NextRid:   nextStageIdx,
 	})
 
-	slog.Info().Str("next-route", nextR).Int("next-route-index", nri).Msg("update basic info success")
+	slog.Info().Str("next-route", string(nextStage)).Int("next-route-index", nextStageIdx).Msg("update basic info success")
 }

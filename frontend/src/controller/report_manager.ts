@@ -2,7 +2,7 @@ import { Ref, computed, onMounted, onUnmounted, reactive, ref, unref } from 'vue
 import { useRoute, useRouter } from 'vue-router'
 import { useGlobalLoading } from '@/controller/useGlobalLoading'
 import { type TestRecordDTO, useTestSession } from '@/controller/testSession'
-import { API_PATHS, apiRequest } from '@/api'
+import {API_PATHS, apiRequest, isApiErr} from '@/api'
 import { useAlert } from '@/controller/useAlert'
 import {
     Mode312,
@@ -618,7 +618,12 @@ export function useReportController(options?: ReportControllerOptions) {
                 aiReportData.value = aiContent
             }
         } catch (e) {
-            showAlert('生成 AI 参数失败:' + e)
+            if (isApiErr(e)) {
+                showAlert(e.message)
+                console.log("生成 AI 数据失败：",e)
+            }else{
+                showAlert('生成 AI 参数失败:未知错误')
+            }
         } finally {
             hideLoading()
         }

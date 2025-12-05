@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/hopwesley/wenxintai/server/ai_api"
-	"github.com/hopwesley/wenxintai/server/dbSrv"
 )
 
 type CommonRes struct {
@@ -33,7 +32,6 @@ func IsValidPublicID(publicID string) bool {
 type BasicInfoReq ai_api.BasicInfo
 
 func (bi *BasicInfoReq) parseObj(r *http.Request) *ApiErr {
-
 	if err := json.NewDecoder(r.Body).Decode(bi); err != nil {
 		return ApiInvalidReq("无效的请求体", err)
 	}
@@ -46,7 +44,6 @@ func (bi *BasicInfoReq) parseObj(r *http.Request) *ApiErr {
 	if !bi.Mode.IsValid() {
 		return ApiInvalidReq("模式不合法，只能是：Mode33 或 Mode312", nil)
 	}
-
 	return nil
 }
 
@@ -65,24 +62,22 @@ func writeError(w http.ResponseWriter, err *ApiErr) {
 const (
 	RecordStatusInit   = 0
 	RecordStatusInTest = 1
-
-	RecordStatusInReport = 100
 )
 
 const (
-	StageBasic    = "basic-info"
-	StageBasicDes = "基础信息"
+	StageBasic    ai_api.TestTyp = "basic-info"
+	StageBasicDes                = "基础信息"
 
-	StageReport    = "report"
-	StageReportDes = "测评报告"
+	StageReport    ai_api.TestTyp = "report"
+	StageReportDes                = "测评报告"
 
-	StageRiasec    = "riasec"
+	StageRiasec    = ai_api.TypRIASEC
 	StageRiasecDes = "兴趣测试"
 
-	StageAsc    = "asc"
+	StageAsc    = ai_api.TypASC
 	StageAscDes = "能力测试"
 
-	StageOcean    = "ocean"
+	StageOcean    = ai_api.TypOCEAN
 	StageOceanDes = "性格测试"
 
 	StageMotivation    = "motivation"
@@ -94,11 +89,6 @@ const (
 	BusinessTypeSchool = "school"
 )
 
-var testFlowForBasic = []string{StageBasic, StageRiasec, StageAsc, StageReport}
-var testFlowForPro = []string{StageBasic, StageRiasec, StageAsc, StageReport}
-var testFlowForAdv = []string{StageBasic, StageRiasec, StageAsc, StageOcean, StageMotivation, StageReport}
-var testFlowForSchool = []string{StageBasic, StageRiasec, StageAsc, StageOcean, StageMotivation, StageReport}
-
 func isValidBusinessType(businessTyp string) bool {
 	switch businessTyp {
 	case BusinessTypeBasic, BusinessTypePro, BusinessTypeAdv, BusinessTypeSchool:
@@ -108,234 +98,156 @@ func isValidBusinessType(businessTyp string) bool {
 	}
 }
 
-func nextRoute(businessTyp, curStage string) (int, string, error) {
-	var flow []string
+type TestFlowStep struct {
+	Stage ai_api.TestTyp `json:"stage"`
+	Title string         `json:"title"`
+}
 
-	switch businessTyp {
-	case BusinessTypeBasic:
-		flow = testFlowForBasic
-	case BusinessTypePro:
-		flow = testFlowForPro
-	case BusinessTypeAdv:
-		flow = testFlowForAdv
-	case BusinessTypeSchool:
-		flow = testFlowForSchool
-	default:
-		return -1, "", fmt.Errorf("unknown business type: %s", businessTyp)
+var basicTestFlow = []TestFlowStep{
+	{
+		Stage: StageBasic,
+		Title: StageBasicDes,
+	},
+	{
+		Stage: StageRiasec,
+		Title: StageRiasecDes,
+	},
+	{
+		Stage: StageAsc,
+		Title: StageAscDes,
+	},
+	{
+		Stage: StageReport,
+		Title: StageReportDes,
+	},
+}
+var proTestFlow = []TestFlowStep{
+	{
+		Stage: StageBasic,
+		Title: StageBasicDes,
+	},
+	{
+		Stage: StageRiasec,
+		Title: StageRiasecDes,
+	},
+	{
+		Stage: StageAsc,
+		Title: StageAscDes,
+	},
+	{
+		Stage: StageReport,
+		Title: StageReportDes,
+	},
+}
+var advTestFlow = []TestFlowStep{
+	{
+		Stage: StageBasic,
+		Title: StageBasicDes,
+	},
+	{
+		Stage: StageRiasec,
+		Title: StageRiasecDes,
+	},
+	{
+		Stage: StageAsc,
+		Title: StageAscDes,
+	},
+	{
+		Stage: StageOcean,
+		Title: StageOceanDes,
+	},
+	{
+		Stage: StageMotivation,
+		Title: StageMotivationDes,
+	},
+	{
+		Stage: StageReport,
+		Title: StageReportDes,
+	},
+}
+var schoolTestFlow = []TestFlowStep{
+	{
+		Stage: StageBasic,
+		Title: StageBasicDes,
+	},
+	{
+		Stage: StageRiasec,
+		Title: StageRiasecDes,
+	},
+	{
+		Stage: StageAsc,
+		Title: StageAscDes,
+	},
+	{
+		Stage: StageOcean,
+		Title: StageOceanDes,
+	},
+	{
+		Stage: StageMotivation,
+		Title: StageMotivationDes,
+	},
+	{
+		Stage: StageReport,
+		Title: StageReportDes,
+	},
+}
+
+var testFlowMap = map[string][]TestFlowStep{
+	BusinessTypeBasic:  basicTestFlow,
+	BusinessTypePro:    proTestFlow,
+	BusinessTypeAdv:    advTestFlow,
+	BusinessTypeSchool: schoolTestFlow,
+}
+
+func getTestFlowSteps(businessType string) []TestFlowStep {
+	return testFlowMap[businessType]
+}
+
+func getStageIndex(flow []TestFlowStep, stage int16) ai_api.TestTyp {
+	if int(stage) >= len(flow) {
+		return StageReport
 	}
+	return flow[stage].Stage
+}
 
-	if len(curStage) == 0 {
-		return 0, flow[0], nil
-	}
-
-	// 在对应流程里查找当前阶段
+func nextRoute(businessType string, stage ai_api.TestTyp) (ai_api.TestTyp, int, error) {
+	flow := testFlowMap[businessType]
 	idx := -1
-	for i, s := range flow {
-		if s == curStage {
+	if len(flow) == 0 {
+		return "", idx, fmt.Errorf("no flow data for type:[%s]", businessType)
+	}
+
+	for i := 0; i < len(flow); i++ {
+		if flow[i].Stage == stage {
 			idx = i
 			break
 		}
 	}
 
-	if idx == -1 {
-		return -1, "", fmt.Errorf("invalid stage %s for business type %s", curStage, businessTyp)
+	if idx == -1 || idx+1 >= len(flow) {
+		return "", -1, fmt.Errorf("no next route stage")
 	}
-
-	// 已经是最后一个阶段（通常是 StageReport）——按你的要求返回错误
-	if idx == len(flow)-1 {
-		return -1, "", fmt.Errorf("stage %s is last stage for business type %s", curStage, businessTyp)
-	}
-
-	return idx + 1, flow[idx+1], nil
+	return flow[idx+1].Stage, idx + 1, nil
 }
 
-func getTestRoutes(testType string) []string {
-	switch testType {
-	case BusinessTypeBasic:
-		return testFlowForBasic
-	case BusinessTypePro:
-		return testFlowForPro
-	case BusinessTypeAdv:
-		return testFlowForAdv
-	case BusinessTypeSchool:
-		return testFlowForSchool
-	default:
-		return nil
-	}
-}
-
-var testFlowDescForBasic = []string{
-	StageBasicDes,
-	StageRiasecDes,
-	StageAscDes,
-	StageReportDes,
-}
-
-var testFlowDescForPro = []string{
-	StageBasicDes,
-	StageRiasecDes,
-	StageAscDes,
-	StageReportDes,
-}
-
-var testFlowDescForAdv = []string{
-	StageBasicDes,
-	StageRiasecDes,
-	StageAscDes,
-	StageOceanDes,
-	StageMotivationDes,
-	StageReportDes,
-}
-
-var testFlowDescForSchool = []string{
-	StageBasicDes,
-	StageRiasecDes,
-	StageAscDes,
-	StageOceanDes,
-	StageMotivationDes,
-	StageReportDes,
-}
-
-func parseStatusToRoute(status int, routes []string) (string, int) {
-	if status >= len(routes) {
-		return StageReport, len(routes) - 1
-	}
-	switch {
-	case status == RecordStatusInit:
-		return StageBasic, RecordStatusInit
-	case status >= RecordStatusInTest && status < RecordStatusInReport:
-		return routes[status], status
-	default:
-		return StageBasic, RecordStatusInit
-	}
-}
-
-func (s *HttpSrv) checkTestSequence(ctx context.Context, publicID, testType string) (*dbSrv.TestRecord, error) {
-	uid := userIDFromContext(ctx)
-	record, dbErr := dbSrv.Instance().QueryUnfinishedTest(ctx, publicID, uid)
-	if dbErr != nil {
-		return nil, dbErr
-	}
-
-	if record == nil {
-		return nil, fmt.Errorf("没有找到当前测试问卷")
-	}
-
-	flow := getTestRoutes(record.BusinessType)
+func previousRoute(businessType string, stage ai_api.TestTyp) ai_api.TestTyp {
+	flow := testFlowMap[businessType]
 	if len(flow) == 0 {
-		return nil, fmt.Errorf("no test flow configured for business type %s", record.BusinessType)
+		return StageReport
 	}
 
-	currentStage, currentIdx := parseStatusToRoute(int(record.Status), flow)
-
-	// 3. 计算请求阶段在流程中的下标
-	reqIdx := -1
-	for i, stage := range flow {
-		if stage == testType {
-			reqIdx = i
+	idx := -1
+	for i := 0; i < len(flow); i++ {
+		if flow[i].Stage == stage {
+			idx = i
 			break
 		}
 	}
-	if reqIdx == -1 {
-		return nil, fmt.Errorf("invalid requested stage %s for business type %s", testType, record.BusinessType)
+	if idx <= 1 {
+		return StageReport
 	}
 
-	if reqIdx > currentIdx {
-		return nil, fmt.Errorf(
-			"mismatched route, need stage index <= %d (%s) but got %d (%s)",
-			currentIdx, currentStage, reqIdx, testType,
-		)
-	}
-
-	return record, nil
-}
-
-func getTestFlowSteps(businessType string) []TestFlowStep {
-	var stages []string
-	var titles []string
-
-	switch businessType {
-	case BusinessTypeBasic:
-		stages = testFlowForBasic
-		titles = testFlowDescForBasic
-	case BusinessTypePro:
-		stages = testFlowForPro
-		titles = testFlowDescForPro
-	case BusinessTypeAdv:
-		stages = testFlowForAdv
-		titles = testFlowDescForAdv
-	case BusinessTypeSchool:
-		stages = testFlowForSchool
-		titles = testFlowDescForSchool
-	default:
-		return nil
-	}
-
-	if len(stages) != len(titles) {
-		// 理论上不会发生，如果发生了说明上面的常量维护出了问题
-		// 为了安全起见，取两者较短长度
-		n := len(stages)
-		if len(titles) < n {
-			n = len(titles)
-		}
-		steps := make([]TestFlowStep, 0, n)
-		for i := 0; i < n; i++ {
-			steps = append(steps, TestFlowStep{
-				Stage: stages[i],
-				Title: titles[i],
-			})
-		}
-		return steps
-	}
-
-	steps := make([]TestFlowStep, 0, len(stages))
-	for i := range stages {
-		steps = append(steps, TestFlowStep{
-			Stage: stages[i],
-			Title: titles[i],
-		})
-	}
-	return steps
-}
-
-func parseAITestTyp(testTyp, businessTyp string) ai_api.TestTyp {
-	switch businessTyp {
-	case BusinessTypeBasic:
-		switch testTyp {
-		case StageRiasec:
-			return ai_api.TypRIASEC
-		case StageAsc:
-			return ai_api.TypASC
-		}
-	case BusinessTypePro:
-		switch testTyp {
-		case StageRiasec:
-			return ai_api.TypRIASEC
-		case StageAsc:
-			return ai_api.TypASC
-		}
-
-	case BusinessTypeAdv:
-		switch testTyp {
-		case StageRiasec:
-			return ai_api.TypRIASEC
-		case StageOcean:
-			return ai_api.TypOCEAN
-		case StageAsc:
-			return ai_api.TypASC
-		}
-
-	case BusinessTypeSchool:
-		switch testTyp {
-		case StageRiasec:
-			return ai_api.TypRIASEC
-		case StageOcean:
-			return ai_api.TypOCEAN
-		case StageAsc:
-			return ai_api.TypASC
-		}
-	}
-	return ai_api.TypUnknown
+	return flow[idx-1].Stage
 }
 
 // 通用转发：保留 method + query + headers + body

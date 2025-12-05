@@ -24,7 +24,7 @@ type UserProfile struct {
 	LastLoginAt time.Time `json:"last_login_at,omitempty"` // 最近登录时间
 }
 
-func (pdb *psDatabase) InsertOrUpdateUserProfileBasic(
+func (pdb *psDatabase) InsertOrUpdateWeChatInfo(
 	ctx context.Context,
 	uid string,
 	nickName string,
@@ -38,7 +38,7 @@ func (pdb *psDatabase) InsertOrUpdateUserProfileBasic(
 		Str("uid", uid).
 		Logger()
 
-	log.Debug().Msg("InsertOrUpdateUserProfileBasic: start")
+	log.Debug().Msg("InsertOrUpdateWeChatInfo: start")
 
 	const q = `
 		INSERT INTO app.user_profile (
@@ -59,11 +59,11 @@ func (pdb *psDatabase) InsertOrUpdateUserProfileBasic(
 		avatarUrl,
 	)
 	if err != nil {
-		log.Err(err).Msg("InsertOrUpdateUserProfileBasic: exec failed")
+		log.Err(err).Msg("InsertOrUpdateWeChatInfo: exec failed")
 		return err
 	}
 
-	log.Debug().Msg("InsertOrUpdateUserProfileBasic: done")
+	log.Debug().Msg("InsertOrUpdateWeChatInfo: done")
 	return nil
 }
 
@@ -154,7 +154,7 @@ func (pdb *psDatabase) UpdateUserProfileExtra(
 	return nil
 }
 
-func (pdb *psDatabase) FindUserProfileByUid(
+func (pdb *psDatabase) QueryUserProfileUid(
 	ctx context.Context,
 	uid string,
 ) (*UserProfile, error) {
@@ -166,7 +166,7 @@ func (pdb *psDatabase) FindUserProfileByUid(
 		Str("uid", uid).
 		Logger()
 
-	log.Debug().Msg("FindUserProfileByUid: start")
+	log.Debug().Msg("QueryUserProfileUid: start")
 
 	const q = `
     SELECT
@@ -209,16 +209,16 @@ func (pdb *psDatabase) FindUserProfileByUid(
 		&u.LastLoginAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			log.Warn().Msg("FindUserProfileByUid: no record")
+			log.Warn().Msg("QueryUserProfileUid: no record")
 			return nil, nil
 		}
-		log.Err(err).Msg("FindUserProfileByUid: query failed")
+		log.Err(err).Msg("QueryUserProfileUid: query failed")
 		return nil, err
 	}
 
 	u.Mobile = maskMobile(mobileRaw)
 
-	log.Debug().Msg("FindUserProfileByUid: done")
+	log.Debug().Msg("QueryUserProfileUid: done")
 	return &u, nil
 }
 

@@ -67,22 +67,28 @@ func (s *HttpSrv) handleProducts(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
-func (s *HttpSrv) handleCurrentProduct(w http.ResponseWriter, r *http.Request) {
+func (s *HttpSrv) preparePayForReport(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	var req WeChatNativeCreateReq
 
 	if err := req.parseObj(r); err != nil {
-		s.log.Err(err).Msgf("[handleCurrentProduct] invalid request")
+		s.log.Err(err).Msgf("[preparePayForReport] invalid request")
 		writeError(w, err)
 		return
 	}
 	sLog := s.log.With().Str("public_id", req.PublicId).Logger()
 
-	record, dbError := dbSrv.Instance().QueryRecordById(ctx, req.PublicId)
+	record, dbError := dbSrv.Instance().QueryRecordByPid(ctx, req.PublicId)
 	if dbError != nil {
 		sLog.Err(dbError).Msg("failed find test record")
 		writeError(w, ApiInternalErr("查询问卷状态失败", dbError))
+		return
+	}
+
+	if err := s.checkPreviousStageIfReady(ctx, req.PublicId, record.BusinessType, StageReport); err != nil {
+		sLog.Err(dbError).Msg("answers not ready for report")
+		writeError(w, ApiInvalidTestSequence(dbError))
 		return
 	}
 

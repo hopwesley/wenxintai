@@ -144,10 +144,21 @@ func (s *HttpSrv) apiWeChatCreateNativeOrder(w http.ResponseWriter, r *http.Requ
 	sLog := s.log.With().Str("public_id", req.PublicId).Logger()
 	uid := userIDFromContext(ctx)
 
-	record, dbErr := dbSrv.Instance().QueryUnfinishedTest(ctx, req.PublicId, uid)
+	record, dbErr := dbSrv.Instance().QueryRecordByPid(ctx, req.PublicId)
 	if dbErr != nil || record == nil {
 		sLog.Err(dbErr).Msg("failed find test record")
 		writeError(w, ApiInvalidNoTestRecord(dbErr))
+		return
+	}
+	if record.WeChatID.String != uid {
+		sLog.Err(dbErr).Msg("no right to operate test record")
+		writeError(w, NewApiError(http.StatusForbidden, ErrorCodeForbidden, "无权操作", nil))
+		return
+	}
+
+	if record.PayOrderId.Valid || record.PaidTime.Valid {
+		sLog.Err(dbErr).Msg("the test record already paid")
+		writeError(w, ApiInternalErr("重复的支付", nil))
 		return
 	}
 
@@ -239,7 +250,7 @@ func (s *HttpSrv) apiWeChatOrderStatus(w http.ResponseWriter, r *http.Request) {
 
 	sLog := s.log.With().Str("order_id", orderID).Logger()
 
-	order, err := dbSrv.Instance().FindWeChatOrderByID(ctx, orderID)
+	order, err := dbSrv.Instance().QueryWeChatOrderByID(ctx, orderID)
 	if err != nil || order == nil {
 		sLog.Err(err).Msg("getWeChatOrder failed")
 		writeError(w, ApiInternalErr("无效的订单编号"+orderID, err))

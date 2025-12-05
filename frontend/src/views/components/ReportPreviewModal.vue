@@ -179,7 +179,6 @@ const currentMainComponent = computed(() => {
 }
 </style>
 
-<!-- 这里是不加 scoped 的全局打印规则，只在这个组件里定义，但不改 pdf.css 文件 -->
 <style>
 @media print {
   /* 1. 默认先都隐藏 */

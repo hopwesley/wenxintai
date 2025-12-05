@@ -19,7 +19,6 @@ type TestRecord struct {
 	Hobby        sql.NullString
 	Status       int16
 	CreatedAt    time.Time
-	CompletedAt  sql.NullTime
 	PaidTime     sql.NullTime
 }
 
@@ -268,7 +267,6 @@ func (pdb *psDatabase) QueryRecordById(ctx context.Context, publicID string) (*T
 			hobby,
 			status,
 			created_at,
-			completed_at,
 			paid_time
 		FROM app.tests_record
 		WHERE public_id = $1
@@ -289,7 +287,6 @@ func (pdb *psDatabase) QueryRecordById(ctx context.Context, publicID string) (*T
 		&rec.Hobby,
 		&rec.Status,
 		&rec.CreatedAt,
-		&rec.CompletedAt,
 		&rec.PaidTime,
 	)
 	if err != nil {

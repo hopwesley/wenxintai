@@ -49,9 +49,6 @@ type testFlowResponse struct {
 
 func toRecordDTO(rec dbSrv.TestRecord) TestRecordDTO {
 	var completed *time.Time
-	if rec.CompletedAt.Valid {
-		completed = &rec.CompletedAt.Time
-	}
 	return TestRecordDTO{
 		PublicId:     rec.PublicId,
 		BusinessType: rec.BusinessType,
@@ -105,9 +102,11 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 		dto.PublicId = pid
 		dto.BusinessType = req.BusinessType
 		currentStage, currentIndex = StageBasic, RecordStatusInit
+		sLog.Info().Str("public_id", pid).Msg("create new test record")
 	} else {
 		currentStage, currentIndex = parseStatusToRoute(int(record.Status), stageFlow)
 		dto = toRecordDTO(*record)
+		sLog.Info().Str("public_id", dto.PublicId).Msg("find test record in database")
 	}
 
 	resp := testFlowResponse{
@@ -120,7 +119,7 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 	sLog.Debug().
 		Str("current_stage", currentStage).
 		Int("current_index", currentIndex).
-		Msg("test record found")
+		Msg("test record proceed success in test flow")
 
 	writeJSON(w, http.StatusOK, resp)
 }

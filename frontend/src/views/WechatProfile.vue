@@ -197,6 +197,10 @@
                 <p class="my-tests-card-sub">
                   创建时间：{{ formatDateTime(item.create_at) }}
                 </p>
+
+                <p class="my-tests-card-sub">
+                  试卷编号：{{ item.public_id }}
+                </p>
                 <span
                     class="my-tests-status"
                     :class="{

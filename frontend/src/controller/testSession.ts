@@ -19,7 +19,6 @@ export interface TestRecordDTO {
     hobby?: string
     status: number
     created_at: string
-    completed_at?: string | null
 }
 
 /** Session 结构 */

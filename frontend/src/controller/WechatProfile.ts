@@ -61,7 +61,6 @@ export function useWechatProfile() {
     const router = useRouter()
     const { showLoading, hideLoading } = useGlobalLoading()
     const { showAlert } = useAlert()
-    const loading = ref(false)
     const profile = ref<UserProfile | null>(null)
     const list = ref<MyTestItem[]>([])
     const editingExtra = ref(false)
@@ -131,7 +130,6 @@ export function useWechatProfile() {
     }
 
     async function fetchMyTests() {
-        loading.value = true
         showLoading('正在加载你的测评记录…')
         try {
             // 后端实现：GET /api/tests/my -> MyTestsResponse
@@ -156,7 +154,6 @@ export function useWechatProfile() {
             console.error('[MyTests] fetchMyTests failed', e)
             showAlert('加载测评记录失败，请稍后重试')
         } finally {
-            loading.value = false
             hideLoading()
         }
     }
@@ -261,7 +258,8 @@ export function useWechatProfile() {
     }
 
     function handleBackHome() {
-        router.push({ name: 'home' })
+        showLoading("返回首页......")
+        router.push({ name: 'home' }).finally(()=>hideLoading())
     }
 
     onMounted(() => {
@@ -269,7 +267,6 @@ export function useWechatProfile() {
     })
 
     return {
-        loading,
         profile,
         list,
         ongoingList,

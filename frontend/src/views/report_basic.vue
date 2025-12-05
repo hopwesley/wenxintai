@@ -505,11 +505,10 @@
 </template>
 
 <script setup lang="ts">
-import {useReportView} from '@/controller/report_manager'
+import {aiReportData,useReportView} from '@/controller/report_manager'
 import SubjectRadarChart from "@/views/components/SubjectRadarChart.vue";
 import SubjectAbilityBarChart from '@/views/components/SubjectAbilityBarChart.vue'
 import ComboScoreChart from '@/views/components/ComboScoreChart.vue'
-import {aiReportData} from '@/controller/AssessmentReport'
 
 const {
   overview,

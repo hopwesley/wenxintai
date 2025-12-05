@@ -1,6 +1,6 @@
 <template>
   <div v-if="visible" class="report-preview-modal">
-    <div class="report-preview-backdrop" @click="emit('close')"></div>
+    <div class="report-preview-backdrop"></div>
     <div class="report-preview-panel" :key="panelKey">
       <header class="report-preview-header">
         <div class="report-preview-header__titles">
@@ -8,22 +8,26 @@
           <h3 class="report-preview-title">{{ headerTitle }}</h3>
           <p class="report-preview-meta">报告编号：{{ publicId }}</p>
         </div>
+        <button type="button" class="btn btn-ghost" @click="handleExportPdf">
+        打印 pdf
+        </button>
         <button type="button" class="btn btn-ghost" @click="emit('close')">
           关闭
         </button>
       </header>
       <div class="report-preview-body">
-        <component :is="currentMainComponent" />
+        <component :is="currentMainComponent"/>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import {computed} from 'vue'
 import ReportBasic from '@/views/report_basic.vue'
 import ReportPro from '@/views/report_pro.vue'
-import { TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool } from '@/controller/common'
+import {TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool} from '@/controller/common'
+import {useReportController} from "@/controller/report_manager";
 
 interface ReportPreviewModalProps {
   visible: boolean
@@ -35,6 +39,10 @@ const props = defineProps<ReportPreviewModalProps>()
 const emit = defineEmits(['close'])
 
 const panelKey = computed(() => `${props.businessType}-${props.publicId}`)
+
+const {
+  handleExportPdf
+} = useReportController()
 
 const headerTitle = computed(() => {
   switch (props.businessType) {

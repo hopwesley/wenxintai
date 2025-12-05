@@ -256,7 +256,7 @@
               <button
                   type="button"
                   class="btn my-tests-card-btn"
-                  @click="handleOpenReport(item)"
+                  @click="openReportPreview(item)"
               >
                 查看报告
               </button>
@@ -272,25 +272,31 @@
         </template>
       </section>
     </main>
+
+    <ReportPreviewModal
+        :visible="reportPreviewVisible"
+        :business-type="reportPreviewTarget?.business_type || ''"
+        :public-id="reportPreviewTarget?.public_id || ''"
+        @close="closeReportPreview"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import {useWechatProfile} from '@/controller/WechatProfile'
+import ReportPreviewModal from '@/views/components/ReportPreviewModal.vue'
 
 const {
   profile,
-  list,
   ongoingList,
   completedList,
   renderTitle,
   renderStatusText,
   renderProfileTitle,
-  renderProfileSub,
+  openReportPreview,
   getAvatarInitial,
   formatDateTime,
   handleContinueTest,
-  handleOpenReport,
   handleBackHome,
   editingExtra,
   extraForm,
@@ -303,6 +309,10 @@ const {
   selectedProvince,
   selectedCity,
   currentCities,
+
+  reportPreviewVisible,
+  reportPreviewTarget,
+  closeReportPreview,
 } = useWechatProfile()
 
 </script>

@@ -1,5 +1,3 @@
-// src/controller/AssessmentReport.ts
-
 import { Ref, computed, onMounted, onUnmounted, reactive, ref, unref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useGlobalLoading } from '@/controller/useGlobalLoading'
@@ -708,7 +706,6 @@ export function useReportController(options?: ReportControllerOptions) {
         paymentDialogShow,
         currentPlan,
         generateReport,
-        queryCurPlan,
     }
 }
 

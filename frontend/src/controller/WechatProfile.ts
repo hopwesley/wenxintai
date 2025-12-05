@@ -10,7 +10,7 @@ export interface MyTestItem {
     public_id: string
     business_type: string
     mode: string
-    created_at: string
+    create_at: string
     report_status?: number | null
 }
 
@@ -124,15 +124,6 @@ export function useWechatProfile() {
         return profile.value.nick_name || '同学'
     }
 
-    function renderProfileSub(): string {
-        if (!profile.value) return ''
-        const parts: string[] = []
-        if (profile.value.school_name) parts.push(profile.value.school_name)
-        if (profile.value.city || profile.value.province) {
-            parts.push(profile.value.city || profile.value.province || '')
-        }
-        return parts.join(' ｜ ')
-    }
 
     function getAvatarInitial(): string {
         if (!profile.value?.nick_name) return '同'
@@ -239,10 +230,7 @@ export function useWechatProfile() {
         }
     }
 
-    function handleClickCompletedStat() {
-        if (completedList.value.length === 0) return
-        activeTab.value = 'completed'
-    }
+
     async function handleContinueTest(item: MyTestItem) {
         showLoading('正在为你恢复测试进度…')
         try {
@@ -272,22 +260,6 @@ export function useWechatProfile() {
         reportPreviewVisible.value = false
     }
 
-    function handleOpenReport(item: MyTestItem) {
-        router.push({
-            name: 'test-report',
-            params: {
-                typ: item.business_type,
-            },
-            query: {
-                public_id: item.public_id,
-            },
-        })
-    }
-
-    function handleClickCompletedNoReport(item: MyTestItem) {
-        showAlert('报告正在生成中，请稍后在此页面查看。')
-    }
-
     function handleBackHome() {
         router.push({ name: 'home' })
     }
@@ -308,13 +280,10 @@ export function useWechatProfile() {
         renderTitle,
         renderStatusText,
         renderProfileTitle,
-        renderProfileSub,
         getAvatarInitial,
         formatDateTime,
 
         handleContinueTest,
-        handleOpenReport,
-        handleClickCompletedNoReport,
         handleBackHome,
 
         reportPreviewVisible,
@@ -329,7 +298,6 @@ export function useWechatProfile() {
         saveExtra,
         activeTab,
         setActiveTab,
-        handleClickCompletedStat,
 
         provinces,
         selectedProvince,

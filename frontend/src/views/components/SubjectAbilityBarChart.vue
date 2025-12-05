@@ -40,7 +40,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ReportSubjectScore } from '@/controller/AssessmentReport'
+import type { ReportSubjectScore } from '@/controller/report_manager'
 
 const props = defineProps<{
   subjects: ReportSubjectScore[] | null

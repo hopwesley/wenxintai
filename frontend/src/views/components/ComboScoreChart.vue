@@ -14,7 +14,7 @@
 
 <script setup lang="ts">
 import {computed} from 'vue'
-import type {ComboChartItem} from '@/controller/AssessmentReport'
+import type {ComboChartItem} from '@/controller/report_manager'
 import {subjectLabelMap} from '@/controller/common'
 
 const props = defineProps<{

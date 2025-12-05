@@ -1,4 +1,3 @@
-import {API_PATHS, apiRequest} from "@/api";
 import {onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {TestRecordDTO, useTestSession} from '@/controller/testSession'
@@ -7,8 +6,6 @@ import {useAuthStore} from '@/controller/wx_auth'
 import {
     loadProducts,
     PlanKey,
-    pushStageRoute,
-    StageBasic,
     type TestFlowStep,
 } from "@/controller/common";
 import {useGlobalLoading} from "@/controller/useGlobalLoading";
@@ -33,7 +30,7 @@ export function useHomeView() {
     const {showAlert} = useAlert()
     const router = useRouter()
     const route = useRoute()
-    const {setTestFlow, setNextRouteItem, resetSession, setRecord} = useTestSession()
+    const {resetSession} = useTestSession()
     const authStore = useAuthStore()
     const {showLoading, hideLoading} = useGlobalLoading()
     const isUserMenuOpen = ref(false)
@@ -59,11 +56,6 @@ export function useHomeView() {
         })
         loadProducts().then()
     })
-
-    function handleFlowError(msg: string) {
-        console.error('[HomeView] flow error:', msg)
-        showAlert(msg)
-    }
 
     function openLogin() {
         authStore.startWeChatLogin().then()

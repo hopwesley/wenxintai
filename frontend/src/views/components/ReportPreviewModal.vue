@@ -177,14 +177,6 @@ const currentMainComponent = computed(() => {
   padding: 0 12px 16px;
   overflow-y: auto;
 }
-
-.report-preview-body :deep(.test-layout) {
-  padding-top: 12px;
-}
-
-.report-preview-body :deep(.report-page__actions) {
-  display: none;
-}
 </style>
 
 <!-- 这里是不加 scoped 的全局打印规则，只在这个组件里定义，但不改 pdf.css 文件 -->

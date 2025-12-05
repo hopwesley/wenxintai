@@ -1,10 +1,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import {API_PATHS, apiRequest} from '@/api'
+import { API_PATHS, apiRequest } from '@/api'
 import { useGlobalLoading } from '@/controller/useGlobalLoading'
 import { useAlert } from '@/controller/useAlert'
 
-export type MyTestStatus = 'RUNNING' | 'COMPLETED_NO_REPORT' | 'COMPLETED_WITH_REPORT'
+export type MyTestStatus =
+    | 'RUNNING_FORM'
+    | 'RUNNING_REPORT'
+    | 'COMPLETED_WITH_REPORT'
 
 export interface MyTestItem {
     public_id: string
@@ -12,6 +15,7 @@ export interface MyTestItem {
     mode: string
     created_at: string
     status: MyTestStatus
+    report_status?: number | null
     completed_at?: string | null
     report_generated_at: string | null
 }
@@ -77,16 +81,18 @@ export function useWechatProfile() {
     })
 
     const ongoingList = computed(() =>
-        list.value.filter((item) => item.status === 'RUNNING'),
+        list.value.filter(
+            (item) => item.status === 'RUNNING_FORM' || item.status === 'RUNNING_REPORT',
+        ),
     )
 
     const completedList = computed(() =>
-        list.value.filter((item) => item.status !== 'RUNNING'),
+        list.value.filter((item) => item.status === 'COMPLETED_WITH_REPORT'),
     )
 
-    const completedCount = computed(() =>
-        list.value.filter((item) => item.status === 'COMPLETED_WITH_REPORT').length,
-    )
+    const completedCount = computed(() => completedList.value.length)
+
+    const latestCompleted = computed(() => completedList.value[0] || null)
 
     function renderTitle(item: MyTestItem): string {
         const base = businessTypeLabelMap[item.business_type] || '我的测试'
@@ -96,10 +102,10 @@ export function useWechatProfile() {
 
     function renderStatusText(item: MyTestItem): string {
         switch (item.status) {
-            case 'RUNNING':
+            case 'RUNNING_FORM':
                 return '进行中'
-            case 'COMPLETED_NO_REPORT':
-                return '已完成（报告生成中）'
+            case 'RUNNING_REPORT':
+                return '已完成问卷，报告生成中'
             case 'COMPLETED_WITH_REPORT':
                 return '已完成'
             default:
@@ -210,14 +216,21 @@ export function useWechatProfile() {
     async function handleContinueTest(item: MyTestItem) {
         showLoading('正在为你恢复测试进度…')
         try {
-            // 建议后端提供：GET /api/tests/:public_id/next-route -> { path: string }
-            const resp = await apiRequest<{ path: string }>(
-                `/api/tests/${encodeURIComponent(item.public_id)}/next-route`,
-            )
-            if (resp?.path) {
-                router.push(resp.path)
+            if (item.status === 'RUNNING_REPORT') {
+                router.push({
+                    name: 'test-report',
+                    params: { typ: item.business_type },
+                    query: { public_id: item.public_id },
+                })
             } else {
-                showAlert('暂时无法恢复这次测试，请稍后重试')
+                const resp = await apiRequest<{ path: string }>(
+                    `/api/tests/${encodeURIComponent(item.public_id)}/next-route`,
+                )
+                if (resp?.path) {
+                    router.push(resp.path)
+                } else {
+                    showAlert('暂时无法恢复这次测试，请稍后重试')
+                }
             }
         } catch (e) {
             console.error('[MyTests] handleContinueTest failed', e)
@@ -225,6 +238,23 @@ export function useWechatProfile() {
         } finally {
             hideLoading()
         }
+    }
+
+    const reportPreviewVisible = ref(false)
+    const reportPreviewTarget = ref<MyTestItem | null>(null)
+
+    function openReportPreview(target?: MyTestItem) {
+        const chosen = target || latestCompleted.value
+        if (!chosen) {
+            showAlert('暂时没有可预览的报告')
+            return
+        }
+        reportPreviewTarget.value = chosen
+        reportPreviewVisible.value = true
+    }
+
+    function closeReportPreview() {
+        reportPreviewVisible.value = false
     }
 
     function handleOpenReport(item: MyTestItem) {
@@ -258,6 +288,7 @@ export function useWechatProfile() {
         ongoingList,
         completedList,
         completedCount,
+        latestCompleted,
 
         renderTitle,
         renderStatusText,
@@ -270,6 +301,11 @@ export function useWechatProfile() {
         handleOpenReport,
         handleClickCompletedNoReport,
         handleBackHome,
+
+        reportPreviewVisible,
+        reportPreviewTarget,
+        openReportPreview,
+        closeReportPreview,
 
         editingExtra,
         extraForm,

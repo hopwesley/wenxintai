@@ -197,6 +197,7 @@ type TestItem struct {
 	BusinessType      string `json:"business_type"`
 	Mode              string `json:"mode"`
 	Status            string `json:"status"`
+	ReportStatus      *int64 `json:"report_status,omitempty"`
 	CreateAt          string `json:"create_at"`
 	CompletedAt       string `json:"completed_at,omitempty"`
 	ReportGeneratedAt string `json:"report_generated_at,omitempty"`
@@ -211,13 +212,14 @@ SELECT
     r.business_type,
     COALESCE(r.mode, '') AS mode,
     CASE
-        WHEN r.completed_at IS NULL THEN 'RUNNING'
-        WHEN rep.id IS NULL OR rep.status = 0 THEN 'COMPLETED_NO_REPORT'
-        ELSE 'COMPLETED_WITH_REPORT'
+        WHEN r.completed_at IS NULL THEN 'RUNNING_FORM'
+        WHEN rep.status = 1 THEN 'COMPLETED_WITH_REPORT'
+        ELSE 'RUNNING_REPORT'
     END AS status,
     r.created_at,
     r.completed_at,
-    rep.generated_at
+    rep.generated_at,
+    rep.status
 FROM app.tests_record AS r
 LEFT JOIN app.test_reports AS rep
     ON rep.public_id = r.public_id
@@ -242,6 +244,7 @@ ORDER BY r.created_at DESC;
 			createdAt    time.Time
 			completedAt  sql.NullTime
 			reportAt     sql.NullTime
+			reportStatus sql.NullInt64
 		)
 
 		if err := rows.Scan(
@@ -252,6 +255,7 @@ ORDER BY r.created_at DESC;
 			&createdAt,
 			&completedAt,
 			&reportAt,
+			&reportStatus,
 		); err != nil {
 			return nil, err
 		}
@@ -269,6 +273,9 @@ ORDER BY r.created_at DESC;
 		}
 		if reportAt.Valid {
 			item.ReportGeneratedAt = reportAt.Time.Format(time.RFC3339)
+		}
+		if reportStatus.Valid {
+			item.ReportStatus = &reportStatus.Int64
 		}
 
 		items = append(items, item)

@@ -1,6 +1,6 @@
 // src/controller/AssessmentReport.ts
 
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { Ref, computed, onMounted, onUnmounted, reactive, ref, unref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useGlobalLoading } from '@/controller/useGlobalLoading'
 import { type TestRecordDTO, useTestSession } from '@/controller/testSession'
@@ -522,7 +522,12 @@ const finalReport = computed<FinalAIReport | null>(() => {
 
 /* ====================== composable A：控制逻辑（父组件用） ====================== */
 
-export function useReportController() {
+interface ReportControllerOptions {
+    publicId?: string | Ref<string>
+    businessType?: string | Ref<string>
+}
+
+export function useReportController(options?: ReportControllerOptions) {
     const { showLoading, hideLoading } = useGlobalLoading()
     const { state, resetSession } = useTestSession()
     const { showAlert } = useAlert()
@@ -530,8 +535,21 @@ export function useReportController() {
     const router = useRouter()
 
     const record = computed<TestRecordDTO | undefined>(() => state.record)
-    const businessType = computed(() => record.value?.business_type ?? TestTypeBasic)
-    const publicId = computed(() => record.value?.public_id ?? '')
+    const routeBusinessType = computed(() => String(route.params.typ ?? ''))
+    const routePublicId = computed(() => String(route.query.public_id ?? ''))
+    const businessType = computed(() => {
+        const manualBusinessType = options?.businessType ? unref(options.businessType) : ''
+        if (manualBusinessType) return manualBusinessType
+        if (record.value?.business_type) return record.value.business_type
+        if (routeBusinessType.value) return routeBusinessType.value
+        return TestTypeBasic
+    })
+    const publicId = computed(() => {
+        const manualPublicId = options?.publicId ? unref(options.publicId) : ''
+        if (manualPublicId) return manualPublicId
+        if (record.value?.public_id) return record.value.public_id
+        return routePublicId.value
+    })
 
     const { truncatedLatestMessage, handleSseMsg } = useSseLogs(8, 20)
 

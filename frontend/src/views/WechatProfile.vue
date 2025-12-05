@@ -252,6 +252,15 @@
                 <h3 class="my-tests-card-title">
                   {{ renderTitle(item) }}
                 </h3>
+
+
+                <span class="my-tests-status my-tests-status--done">
+                  创建时间：{{ formatDateTime(item.create_at) }}
+                 </span>
+
+                <span class="my-tests-status my-tests-status--done">
+                  试卷编号：{{ item.public_id }}
+               </span>
                 <span class="my-tests-status my-tests-status--done">
                   {{ renderStatusText(item) }}
                 </span>

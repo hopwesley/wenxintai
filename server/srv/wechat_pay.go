@@ -1,6 +1,7 @@
 package srv
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/hopwesley/wenxintai/server/dbSrv"
+	"github.com/rs/zerolog"
 	"github.com/wechatpay-apiv3/wechatpay-go/core"
 	"github.com/wechatpay-apiv3/wechatpay-go/services/payments"
 	"github.com/wechatpay-apiv3/wechatpay-go/services/payments/native"
@@ -222,6 +224,10 @@ type WeChatOrderStatusRes struct {
 	ErrMessage string `json:"err_message,omitempty"`
 }
 
+func (s *HttpSrv) generateOutTradeNo() string {
+	return fmt.Sprintf("WXT_%s%06d", time.Now().Format("20060102150405"), rand.Intn(1000000))
+}
+
 func (s *HttpSrv) apiWeChatOrderStatus(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -232,11 +238,16 @@ func (s *HttpSrv) apiWeChatOrderStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sLog := s.log.With().Str("order_id", orderID).Logger()
+
 	order, err := dbSrv.Instance().FindWeChatOrderByID(ctx, orderID)
 	if err != nil || order == nil {
 		sLog.Err(err).Msg("getWeChatOrder failed")
 		writeError(w, ApiInternalErr("无效的订单编号"+orderID, err))
 		return
+	}
+
+	if order.TradeState == int16(PaymentInit) && time.Since(order.UpdatedAt) > 50*time.Second && s.wxNativeService != nil {
+		s.queryStatusFromWeChatSrv(ctx, order, sLog)
 	}
 
 	writeJSON(w, http.StatusOK, &WeChatOrderStatusRes{
@@ -245,9 +256,66 @@ func (s *HttpSrv) apiWeChatOrderStatus(w http.ResponseWriter, r *http.Request) {
 		Status:  order.TradeState,
 	})
 
-	sLog.Debug().Int16("status", order.TradeState).Str("order_id", orderID).Msg("query payment order status success")
+	sLog.Debug().
+		Int16("status", order.TradeState).
+		Str("order_id", orderID).
+		Msg("query payment order status success")
 }
 
-func (s *HttpSrv) generateOutTradeNo() string {
-	return fmt.Sprintf("WXT_%s%06d", time.Now().Format("20060102150405"), rand.Intn(1000000))
+func (s *HttpSrv) queryStatusFromWeChatSrv(ctx context.Context, order *dbSrv.WeChatOrder, sLog zerolog.Logger) {
+
+	sLog.Info().Msg("too long time has no payment result, query from wechat server")
+	resp, _, qErr := s.wxNativeService.QueryOrderByOutTradeNo(ctx, native.QueryOrderByOutTradeNoRequest{
+		OutTradeNo: core.String(order.OrderID),
+		Mchid:      core.String(s.payment.MchID),
+	})
+
+	if qErr != nil || resp == nil {
+		sLog.Err(qErr).Msg("QueryOrderByOutTradeNo to wechat failed")
+		return
+	}
+
+	var tState = PaymentInit
+	if resp.TradeState != nil {
+		switch *resp.TradeState {
+		case "SUCCESS":
+			tState = PaymentSuccess
+		case "REFUND", "CLOSED", "PAYERROR":
+			tState = PaymentFailed
+		default:
+			tState = PaymentInit
+		}
+	}
+
+	transID := safeStr(resp.TransactionId)
+	openID := ""
+	if resp.Payer != nil {
+		openID = safeStr(resp.Payer.Openid)
+	}
+
+	var paidAt time.Time
+	if resp.SuccessTime != nil {
+		if t, perr := time.Parse(time.RFC3339, *resp.SuccessTime); perr == nil {
+			paidAt = t
+		}
+	}
+
+	rawBody, _ := json.Marshal(resp)
+
+	if err := dbSrv.Instance().UpdateWeChatOrderStatus(
+		ctx,
+		order.OrderID,
+		int16(tState),
+		transID,
+		openID,
+		paidAt,
+		rawBody,
+	); err != nil {
+		sLog.Err(err).Msg("UpdateWeChatOrderStatus from query failed")
+	} else {
+		order.TradeState = int16(tState)
+		sLog.Info().
+			Int16("status", order.TradeState).
+			Msg("order status refreshed from wechat server")
+	}
 }

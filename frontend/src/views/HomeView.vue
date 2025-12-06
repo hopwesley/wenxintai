@@ -623,6 +623,11 @@
       </div>
     </section>
     <NewUserInfoDialog v-model:open="newUserDialogOpen"/>
+    <TestDisclaimerDialog
+        :visible="showDisclaimer"
+        @confirm="handleDisclaimerConfirm"
+        @cancel="handleDisclaimerCancel"
+    />
   </div>
 </template>
 
@@ -634,6 +639,7 @@ import {useAuthStore} from '@/controller/wx_auth'
 import {useRouter} from "vue-router";
 import {TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool, currentProductsMap} from "@/controller/common";
 import NewUserInfoDialog from "@/views/components/NewUserInfoDialog.vue";
+import TestDisclaimerDialog from "@/views/components/TestDisclaimerDialog.vue";
 
 const {
   activePlan,
@@ -647,6 +653,9 @@ const {
   userMenuWrapperRef,
   handleGoMyTests,
   handleLogout,
+  showDisclaimer,
+  handleDisclaimerCancel,
+  handleDisclaimerConfirm,
 } = useHomeView()
 
 const authStore = useAuthStore()

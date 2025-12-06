@@ -36,6 +36,8 @@ export function useHomeView() {
     const activeTab = ref<TabKey>('start')
     const scrollY = ref(0)
     const {launchTest} = useTestLauncher()
+    const showDisclaimer = ref(false)
+    const pendingPlanKey = ref<PlanKey | null>(null)
 
     watch(
         () => route.fullPath,
@@ -64,6 +66,25 @@ export function useHomeView() {
             openLogin()
             return
         }
+        pendingPlanKey.value = typ
+        showDisclaimer.value = true
+    }
+
+    function handleDisclaimerCancel() {
+        showDisclaimer.value = false
+        pendingPlanKey.value = null
+    }
+
+    async function handleDisclaimerConfirm() {
+        if (!pendingPlanKey.value) {
+            showDisclaimer.value = false
+            return
+        }
+        const typ = pendingPlanKey.value
+
+        showDisclaimer.value = false
+        pendingPlanKey.value = null
+
         await launchTest({
             businessType: typ,
             loadingText: '进入测试环节',
@@ -133,7 +154,6 @@ export function useHomeView() {
         document.removeEventListener('click', handleGlobalClick)
     })
 
-
     return {
         // 状态
         activePlan,
@@ -149,5 +169,8 @@ export function useHomeView() {
         userMenuWrapperRef,
         handleGoMyTests,
         handleLogout,
+        showDisclaimer,
+        handleDisclaimerCancel,
+        handleDisclaimerConfirm,
     }
 }

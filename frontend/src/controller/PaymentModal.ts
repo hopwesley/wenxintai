@@ -1,5 +1,5 @@
 // src/controller/useNativePayment.ts
-import {computed, onUnmounted, ref} from 'vue'
+import {computed, ref} from 'vue'
 import {API_PATHS, apiRequest, isApiErr} from '@/api'
 import {router} from "@/controller/router_index";
 import {useAlert} from "@/controller/useAlert";

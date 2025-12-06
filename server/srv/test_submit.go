@@ -77,6 +77,7 @@ func (s *HttpSrv) checkPreviousStageIfReady(ctx context.Context, record *dbSrv.T
 
 	return nil
 }
+
 func (s *HttpSrv) handleTestSubmit(w http.ResponseWriter, r *http.Request) {
 	var req tesSubmitRequest
 	err := req.parseObj(r)

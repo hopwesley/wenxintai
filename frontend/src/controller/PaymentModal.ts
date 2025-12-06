@@ -55,9 +55,9 @@ export function useNativePayment(opts: UseNativePaymentOptions) {
                     API_PATHS.WECHAT_NATIVE_ORDER_STATUS + `?order_id=${encodeURIComponent(orderId)}`
                 )
                 if (status.status === PaymentSuccess) {
-                    paySucceeded.value = true
                     stopPayPolling()
                     opts.onSuccess()
+                    paySucceeded.value = true
                 } else if (status.status === PaymentFailed) {
                     paySucceeded.value = false
                     stopPayPolling()

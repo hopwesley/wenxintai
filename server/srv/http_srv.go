@@ -177,13 +177,13 @@ func (s *HttpSrv) initRouter() error {
 	routes := []route{
 		{apiLoadHobbies, http.MethodGet, s.handleHobbies, false},
 		{apiLoadProducts, http.MethodGet, s.handleProducts, false},
-		{apiLoadCurProduct, http.MethodPost, s.preparePayForReport, false},
 
 		{apiWeChatSignIn, http.MethodGet, s.wechatSignStatus, false},
 		{apiWeChatSignInCallBack, http.MethodGet, s.wechatSignInCallBack, false},
 		{apiWeChatPaymentCallBack, http.MethodPost, s.apiWeChatPayCallBack, false},
 		{apiWeChatLogOut, http.MethodPost, s.wechatLogout, false},
 
+		{apiLoadCurProduct, http.MethodPost, s.preparePayForReport, true},
 		{apiTestFlow, http.MethodPost, s.handleTestFlow, true},
 		{apiTestBasicInfo, http.MethodPost, s.updateBasicInfo, true},
 

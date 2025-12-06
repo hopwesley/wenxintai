@@ -88,7 +88,7 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 			writeError(w, ApiInvalidReq("问卷变化错误", nil))
 			return
 		}
-		record, dbErr = dbSrv.Instance().QueryRecordByPid(ctx, req.PublicId)
+		record, dbErr = dbSrv.Instance().QueryTestRecord(ctx, req.PublicId, uid)
 		if record == nil || dbErr != nil {
 			sLog.Err(dbErr).Msg("query data by public id failed")
 			writeError(w, ApiInvalidNoTestRecord(dbErr))
@@ -96,7 +96,7 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else {
-		record, dbErr = dbSrv.Instance().QueryRecordOfUser(ctx, uid, req.BusinessType)
+		record, dbErr = dbSrv.Instance().QueryUnfinishedTestOfUser(ctx, uid, req.BusinessType)
 		if dbErr != nil {
 			sLog.Err(dbErr).Msg("failed find test record by user and type")
 			writeError(w, ApiInternalErr("访问数据库失败", dbErr))
@@ -109,16 +109,9 @@ func (s *HttpSrv) handleTestFlow(w http.ResponseWriter, r *http.Request) {
 	var currentStage = StageBasic
 	var currentIndex int16 = 0
 	if record == nil {
-		pid, dbErr := dbSrv.Instance().NewTestRecord(ctx, req.BusinessType, uid)
-		if dbErr != nil {
-			sLog.Err(dbErr).Msg("failed create test record")
-			writeError(w, ApiInternalErr("没有问卷相关数据库记录", nil))
-			return
-		}
-		dto.PublicId = pid
 		dto.BusinessType = req.BusinessType
 		currentStage, currentIndex = StageBasic, RecordStatusInit
-		sLog.Info().Str("new_public_id", pid).Msg("create new test record")
+		sLog.Info().Msg("need new test record")
 	} else {
 		dto = toRecordDTO(*record)
 		currentIndex = dto.CurStage
@@ -149,26 +142,32 @@ func (s *HttpSrv) updateBasicInfo(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-
-	slog := s.log.With().Str("public_id", req.PublicId).Logger()
-	slog.Info().Msg("prepare to update basic info")
-
 	ctx := r.Context()
 	uid := userIDFromContext(ctx)
-	businessTyp, dbErr := dbSrv.Instance().UpdateRecordBasicInfo(
-		ctx,
-		uid,
-		(*ai_api.BasicInfo)(&req),
-		RecordStatusInTest,
-	)
 
-	if dbErr != nil || len(businessTyp) == 0 {
+	slog := s.log.With().Str("public_id", req.PublicId).Str("business_type", req.BusinessType).Str("uid", uid).Logger()
+	slog.Info().Msg("prepare to update basic info")
+	aiBasic := &ai_api.BasicInfo{
+		Grade: req.Grade,
+		Mode:  req.Mode,
+		Hobby: req.Hobby,
+	}
+
+	var newPublicId = ""
+	var dbErr error = nil
+	if len(req.PublicId) > 0 {
+		_, dbErr = dbSrv.Instance().UpdateRecordBasicInfo(ctx, req.PublicId, uid, aiBasic)
+	} else {
+		newPublicId, dbErr = dbSrv.Instance().NewTestRecord(ctx, req.BusinessType, uid, aiBasic)
+	}
+
+	if dbErr != nil {
 		slog.Err(dbErr).Msg("更新基本信息失败")
 		writeError(w, NewApiError(http.StatusInternalServerError, "db_update_failed", "更新基本信息失败", err))
 		return
 	}
 
-	nextStage, nextStageIdx, rErr := nextRoute(businessTyp, StageBasic)
+	nextStage, nextStageIdx, rErr := nextRoute(req.BusinessType, StageBasic)
 	if rErr != nil {
 		slog.Err(rErr).Msg("获取下一级路由失败")
 		writeError(w, ApiInvalidTestSequence(err))
@@ -176,10 +175,11 @@ func (s *HttpSrv) updateBasicInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, &CommonRes{
-		Ok:        true,
-		Msg:       "更新基本信息成功",
-		NextRoute: string(nextStage),
-		NextRid:   nextStageIdx,
+		Ok:          true,
+		NewPublicID: newPublicId,
+		Msg:         "更新基本信息成功",
+		NextRoute:   string(nextStage),
+		NextRid:     nextStageIdx,
 	})
 
 	slog.Info().Str("next-route", string(nextStage)).Int("next-route-index", nextStageIdx).Msg("update basic info success")

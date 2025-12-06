@@ -8,7 +8,7 @@
 
         <!-- 顶部：产品信息 -->
         <div class="plan-section">
-          <h3 class="title">确认测试方案</h3>
+          <h3 class="title">测试类型</h3>
           <p class="plan-name">{{ product?.name }}</p>
           <p class="plan-price">￥{{ displayPrice }}</p>
           <p v-if="product?.desc" class="plan-desc">

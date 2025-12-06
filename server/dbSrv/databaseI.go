@@ -20,10 +20,10 @@ type DbService interface {
 
 	GetInviteByCode(ctx context.Context, code string) (*Invite, error)
 
-	NewTestRecord(ctx context.Context, businessType string, weChatId string) (string, error)
-	QueryRecordByPid(ctx context.Context, publicId string) (*TestRecord, error)
-	QueryRecordOfUser(ctx context.Context, uid, bType string) (*TestRecord, error)
-	UpdateRecordBasicInfo(ctx context.Context, uid string, bi *ai_api.BasicInfo, status int16) (string, error)
+	NewTestRecord(ctx context.Context, bType, weChatId string, bi *ai_api.BasicInfo) (string, error)
+	QueryTestRecord(ctx context.Context, pid, uid string) (*TestRecord, error)
+	QueryUnfinishedTestOfUser(ctx context.Context, uid, bType string) (*TestRecord, error)
+	UpdateRecordBasicInfo(ctx context.Context, publicID, uid string, bi *ai_api.BasicInfo) (string, error)
 	QueryRecordBasicInfo(ctx context.Context, publicId string) (*ai_api.BasicInfo, error)
 
 	FindQASession(ctx context.Context, testType, publicId string) (*QASession, error)
@@ -40,7 +40,8 @@ type DbService interface {
 	UpdateUserProfileExtra(ctx context.Context, uid string, extra UsrProfileExtra) error
 	QueryTestInfos(ctx context.Context, uid string) ([]*TestItem, error)
 
-	QueryWeChatOrderByID(ctx context.Context, id string) (*WeChatOrder, error)
+	QueryWeChatOrderByOrderID(ctx context.Context, oid string) (*WeChatOrder, error)
+	QueryUnfinishedOrder(ctx context.Context, pid string, timeout time.Time) (*WeChatOrder, error)
 	UpdateWeChatOrderStatus(
 		ctx context.Context,
 		orderID string,

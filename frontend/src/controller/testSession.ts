@@ -10,7 +10,7 @@ const STORAGE_KEY = 'wenxintai:test-session'
 
 /** 后端返回的完整 TestRecordDTO */
 export interface TestRecordDTO {
-    public_id: string
+    public_id?: string
     business_type: PlanKey
     pay_order_id?: string
     wechat_id?: string

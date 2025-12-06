@@ -17,6 +17,7 @@ type Config struct {
 	WeChatRedirectDomain string `json:"we_chat_redirect_domain"`
 	PaymentForward       string `json:"payment_forward,omitempty"`
 	WeChatAPIV3Key       string `json:"we_chat_api_v3_key"`
+	WxPaymentTimeout     int    `json:"wx_payment_timeout"`
 }
 
 type WeChatPayConfig struct {
@@ -95,6 +96,9 @@ func (cfg *Config) Validate() error {
 
 	if cfg.ReadTimeout <= 0 {
 		cfg.ReadTimeout = 10
+	}
+	if cfg.WxPaymentTimeout <= 0 {
+		cfg.WxPaymentTimeout = 30
 	}
 
 	return nil

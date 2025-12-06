@@ -16,49 +16,6 @@ import (
 	"github.com/hopwesley/wenxintai/server/ai_api"
 )
 
-type CommonRes struct {
-	Ok        bool   `json:"ok"`
-	Msg       string `json:"msg,omitempty"`
-	NextRoute string `json:"next_route,omitempty"`
-	NextRid   int    `json:"next_route_index,omitempty"`
-}
-
-var publicIDRegex = regexp.MustCompile(`^[a-f0-9]{32}$`)
-
-func IsValidPublicID(publicID string) bool {
-	return publicIDRegex.MatchString(publicID)
-}
-
-type BasicInfoReq ai_api.BasicInfo
-
-func (bi *BasicInfoReq) parseObj(r *http.Request) *ApiErr {
-	if err := json.NewDecoder(r.Body).Decode(bi); err != nil {
-		return ApiInvalidReq("无效的请求体", err)
-	}
-	if !IsValidPublicID(bi.PublicId) {
-		return ApiInvalidReq("无效的问卷编号", nil)
-	}
-	if !bi.Grade.IsValid() {
-		return ApiInvalidReq("年级不合法，只能是：初二、初三、高一", nil)
-	}
-	if !bi.Mode.IsValid() {
-		return ApiInvalidReq("模式不合法，只能是：Mode33 或 Mode312", nil)
-	}
-	return nil
-}
-
-func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	if payload != nil {
-		_ = json.NewEncoder(w).Encode(payload)
-	}
-}
-
-func writeError(w http.ResponseWriter, err *ApiErr) {
-	writeJSON(w, err.status, err)
-}
-
 const (
 	RecordStatusInit   = 0
 	RecordStatusInTest = 1
@@ -88,6 +45,59 @@ const (
 	BusinessTypeAdv    = "adv"
 	BusinessTypeSchool = "school"
 )
+
+type CommonRes struct {
+	Ok          bool   `json:"ok"`
+	Msg         string `json:"msg,omitempty"`
+	NextRoute   string `json:"next_route,omitempty"`
+	NextRid     int    `json:"next_route_index,omitempty"`
+	NewPublicID string `json:"new_public_id,omitempty"`
+}
+
+var publicIDRegex = regexp.MustCompile(`^[a-f0-9]{32}$`)
+
+func IsValidPublicID(publicID string) bool {
+	return publicIDRegex.MatchString(publicID)
+}
+
+type BasicInfoReq struct {
+	BusinessType string       `json:"business_type"`
+	Grade        ai_api.Grade `json:"grade"`
+	Mode         ai_api.Mode  `json:"mode"`
+	Hobby        string       `json:"hobby,omitempty"`
+	PublicId     string       `json:"public_id,omitempty"`
+}
+
+func (bi *BasicInfoReq) parseObj(r *http.Request) *ApiErr {
+	if err := json.NewDecoder(r.Body).Decode(bi); err != nil {
+		return ApiInvalidReq("无效的请求体", err)
+	}
+	if len(bi.PublicId) > 0 && !IsValidPublicID(bi.PublicId) {
+		return ApiInvalidReq("无效的问卷编号", nil)
+	}
+	if !isValidBusinessType(bi.BusinessType) {
+		return ApiInvalidReq("无效的测试类型", nil)
+	}
+	if !bi.Grade.IsValid() {
+		return ApiInvalidReq("年级不合法，只能是：初二、初三、高一", nil)
+	}
+	if !bi.Mode.IsValid() {
+		return ApiInvalidReq("模式不合法，只能是：Mode33 或 Mode312", nil)
+	}
+	return nil
+}
+
+func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if payload != nil {
+		_ = json.NewEncoder(w).Encode(payload)
+	}
+}
+
+func writeError(w http.ResponseWriter, err *ApiErr) {
+	writeJSON(w, err.status, err)
+}
 
 func isValidBusinessType(businessTyp string) bool {
 	switch businessTyp {
@@ -339,6 +349,13 @@ func nullToString(ns sql.NullString) string {
 		return ns.String
 	}
 	return ""
+}
+
+func toNullString(s *string) sql.NullString {
+	if s == nil || *s == "" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: *s, Valid: true}
 }
 
 func safeStr(p *string) string {

@@ -103,7 +103,15 @@ func (s *HttpSrv) handleQuestionSSEEvent(w http.ResponseWriter, r *http.Request)
 
 	ctx := r.Context()
 
-	err = s.checkPreviousStageIfReady(ctx, publicId, businessTyp, testType)
+	uid := userIDFromContext(ctx)
+	record, rErr := dbSrv.Instance().QueryTestRecord(ctx, publicId, uid)
+	if rErr != nil {
+		s.log.Err(rErr).Msg("SSE channel query record failed")
+		http.Error(w, "未找到测试问卷数据:"+rErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = s.checkPreviousStageIfReady(ctx, record, testType)
 	if err != nil {
 		sLog.Err(err).Msg("SSE previous stage check failed")
 		http.Error(w, err.Error(), http.StatusInternalServerError)

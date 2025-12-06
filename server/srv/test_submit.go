@@ -58,19 +58,18 @@ func (req *tesSubmitRequest) parseObj(r *http.Request) *ApiErr {
 	return nil
 }
 
-func (s *HttpSrv) checkPreviousStageIfReady(ctx context.Context, publicId, bTyp string, stage ai_api.TestTyp) error {
-	preStage := previousRoute(bTyp, stage)
+func (s *HttpSrv) checkPreviousStageIfReady(ctx context.Context, record *dbSrv.TestRecord, stage ai_api.TestTyp) error {
+	preStage := previousRoute(record.BusinessType, stage)
 	switch preStage {
 	case StageBasic:
-		record, err := dbSrv.Instance().QueryRecordByPid(ctx, publicId)
-		if err != nil || !record.Mode.Valid {
+		if !record.Mode.Valid {
 			return fmt.Errorf("请先选择科目选择模式")
 		}
 		return nil
 	case StageReport:
 		return fmt.Errorf("没有找到前置流程")
 	default:
-		answers, err := dbSrv.Instance().FindQASession(ctx, string(preStage), publicId)
+		answers, err := dbSrv.Instance().FindQASession(ctx, string(preStage), record.PublicId)
 		if err != nil || answers == nil {
 			return fmt.Errorf("请先完成【%s】阶段的问题", preStage)
 		}
@@ -94,7 +93,15 @@ func (s *HttpSrv) handleTestSubmit(w http.ResponseWriter, r *http.Request) {
 
 	sLog.Info().Msg("prepare to parse answers")
 
-	cErr := s.checkPreviousStageIfReady(ctx, req.TestPublicID, req.BusinessType, ai_api.TestTyp(req.TestType))
+	uid := userIDFromContext(ctx)
+	record, rErr := dbSrv.Instance().QueryTestRecord(ctx, req.TestPublicID, uid)
+	if rErr != nil {
+		sLog.Err(rErr).Msg("failed to find test record ")
+		writeError(w, ApiInvalidTestSequence(rErr))
+		return
+	}
+
+	cErr := s.checkPreviousStageIfReady(ctx, record, ai_api.TestTyp(req.TestType))
 	if cErr != nil {
 		sLog.Err(cErr).Msg("previous stage check failed")
 		writeError(w, ApiInvalidTestSequence(cErr))
@@ -108,7 +115,6 @@ func (s *HttpSrv) handleTestSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uid := userIDFromContext(ctx)
 	answersJSON, _ := json.Marshal(req.Answers)
 	if err := dbSrv.Instance().SaveAnswer(ctx, req.TestType,
 		req.TestPublicID, uid, answersJSON, nextIdx); err != nil {

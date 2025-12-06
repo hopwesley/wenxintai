@@ -16,6 +16,39 @@ import (
 	"github.com/wechatpay-apiv3/wechatpay-go/services/payments/native"
 )
 
+type PaymentStatus int16
+
+const (
+	PaymentInit PaymentStatus = iota
+	PaymentSuccess
+	PaymentFailed
+	PayOrderTimeout = time.Minute * 90
+)
+
+type WeChatNativeCreateRes struct {
+	Ok          bool    `json:"ok"`
+	OrderID     string  `json:"order_id"`
+	CodeURL     string  `json:"code_url"`
+	Amount      float64 `json:"amount"`
+	Description string  `json:"description"`
+	ErrMessage  string  `json:"err_message,omitempty"`
+}
+
+type WeChatNativeCreateReq struct {
+	PublicId string `json:"public_id"`
+}
+
+func (req *WeChatNativeCreateReq) parseObj(r *http.Request) *ApiErr {
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return ApiInvalidReq("invalid request body", err)
+	}
+
+	if !IsValidPublicID(req.PublicId) {
+		return ApiInvalidReq("无效的问卷编号", nil)
+	}
+	return nil
+}
+
 // ========================= 回调入口 =========================
 
 func (s *HttpSrv) apiWeChatPayCallBack(w http.ResponseWriter, r *http.Request) {
@@ -26,14 +59,6 @@ func (s *HttpSrv) apiWeChatPayCallBack(w http.ResponseWriter, r *http.Request) {
 	}
 	s.processWeChatPayment(w, r)
 }
-
-type PaymentStatus int16
-
-const (
-	PaymentInit PaymentStatus = iota
-	PaymentSuccess
-	PaymentFailed
-)
 
 func (s *HttpSrv) processWeChatPayment(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -105,30 +130,6 @@ func (s *HttpSrv) processWeChatPayment(w http.ResponseWriter, r *http.Request) {
 
 // ========================= 创建 Native 订单 =========================
 
-type WeChatNativeCreateReq struct {
-	PublicId string `json:"public_id"`
-}
-
-func (req *WeChatNativeCreateReq) parseObj(r *http.Request) *ApiErr {
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		return ApiInvalidReq("invalid request body", err)
-	}
-
-	if !IsValidPublicID(req.PublicId) {
-		return ApiInvalidReq("无效的问卷编号", nil)
-	}
-	return nil
-}
-
-type WeChatNativeCreateRes struct {
-	Ok          bool    `json:"ok"`
-	OrderID     string  `json:"order_id"`
-	CodeURL     string  `json:"code_url"`
-	Amount      float64 `json:"amount"`
-	Description string  `json:"description"`
-	ErrMessage  string  `json:"err_message,omitempty"`
-}
-
 func (s *HttpSrv) apiWeChatCreateNativeOrder(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
@@ -144,28 +145,47 @@ func (s *HttpSrv) apiWeChatCreateNativeOrder(w http.ResponseWriter, r *http.Requ
 	sLog := s.log.With().Str("public_id", req.PublicId).Logger()
 	uid := userIDFromContext(ctx)
 
-	record, dbErr := dbSrv.Instance().QueryRecordByPid(ctx, req.PublicId)
-	if dbErr != nil || record == nil {
-		sLog.Err(dbErr).Msg("failed find test record")
+	testRecord, dbErr := dbSrv.Instance().QueryTestRecord(ctx, req.PublicId, uid)
+	if dbErr != nil || testRecord == nil {
+		sLog.Err(dbErr).Msg("failed find test testRecord")
 		writeError(w, ApiInvalidNoTestRecord(dbErr))
 		return
 	}
-	if record.WeChatID.String != uid {
-		sLog.Err(dbErr).Msg("no right to operate test record")
-		writeError(w, NewApiError(http.StatusForbidden, ErrorCodeForbidden, "无权操作", nil))
-		return
-	}
 
-	if record.PayOrderId.Valid || record.PaidTime.Valid {
-		sLog.Err(dbErr).Msg("the test record already paid")
+	if testRecord.PayOrderId.Valid || testRecord.PaidTime.Valid {
+		sLog.Error().Msg("the test testRecord already paid")
 		writeError(w, ApiInternalErr("重复的支付", nil))
 		return
 	}
 
-	plan, planErr := dbSrv.Instance().PlanByKey(ctx, record.BusinessType)
+	cutoff := time.Now().Add(-90 * time.Minute)
+	order, orderErr := dbSrv.Instance().QueryUnfinishedOrder(ctx, req.PublicId, cutoff)
+	if orderErr != nil {
+		sLog.Err(orderErr).Msg("the test testRecord already paid")
+		writeError(w, ApiInternalErr("确认订单状态时数据库错误", orderErr))
+		return
+	}
+
+	plan, planErr := dbSrv.Instance().PlanByKey(ctx, testRecord.BusinessType)
 	if planErr != nil {
 		sLog.Err(planErr).Msg("failed find product price info")
 		writeError(w, ApiInternalErr("查询产品价格信息失败", planErr))
+		return
+	}
+
+	amount := int64(plan.Price * 100)
+
+	if order != nil && amount == order.AmountTotal {
+		sLog.Info().Str("order_id", order.OrderID).Msg("order found")
+
+		writeJSON(w, http.StatusOK, &WeChatNativeCreateRes{
+			Ok:          true,
+			OrderID:     order.OrderID,
+			CodeURL:     order.CodeUrl.String,
+			Amount:      plan.Price,
+			Description: plan.Description,
+		})
+
 		return
 	}
 
@@ -177,7 +197,6 @@ func (s *HttpSrv) apiWeChatCreateNativeOrder(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	amount := int64(plan.Price * 100)
 	resp, _, payErr := s.wxNativeService.Prepay(ctx, native.PrepayRequest{
 		Appid:       core.String(s.payment.AppID),
 		Mchid:       core.String(s.payment.MchID),
@@ -209,6 +228,7 @@ func (s *HttpSrv) apiWeChatCreateNativeOrder(w http.ResponseWriter, r *http.Requ
 		AmountTotal: amount,
 		Currency:    "CNY",
 		Description: plan.Description,
+		CodeUrl:     toNullString(resp.CodeUrl),
 	}
 
 	if err := dbSrv.Instance().InsertWeChatOrder(ctx, po); err != nil {
@@ -250,14 +270,16 @@ func (s *HttpSrv) apiWeChatOrderStatus(w http.ResponseWriter, r *http.Request) {
 
 	sLog := s.log.With().Str("order_id", orderID).Logger()
 
-	order, err := dbSrv.Instance().QueryWeChatOrderByID(ctx, orderID)
+	order, err := dbSrv.Instance().QueryWeChatOrderByOrderID(ctx, orderID)
 	if err != nil || order == nil {
 		sLog.Err(err).Msg("getWeChatOrder failed")
 		writeError(w, ApiInternalErr("无效的订单编号"+orderID, err))
 		return
 	}
 
-	if order.TradeState == int16(PaymentInit) && time.Since(order.UpdatedAt) > 50*time.Second && s.wxNativeService != nil {
+	if order.TradeState == int16(PaymentInit) &&
+		time.Since(order.UpdatedAt) > time.Duration(s.cfg.WxPaymentTimeout)*time.Second &&
+		s.wxNativeService != nil {
 		s.queryStatusFromWeChatSrv(ctx, order, sLog)
 	}
 
@@ -288,13 +310,17 @@ func (s *HttpSrv) queryStatusFromWeChatSrv(ctx context.Context, order *dbSrv.WeC
 
 	var tState = PaymentInit
 	if resp.TradeState != nil {
+		sLog.Info().Str("trade_status", *resp.TradeState).Msg("query wechat payment status success")
 		switch *resp.TradeState {
 		case "SUCCESS":
 			tState = PaymentSuccess
+			break
 		case "REFUND", "CLOSED", "PAYERROR":
 			tState = PaymentFailed
+			break
 		default:
 			tState = PaymentInit
+			return
 		}
 	}
 
@@ -306,7 +332,7 @@ func (s *HttpSrv) queryStatusFromWeChatSrv(ctx context.Context, order *dbSrv.WeC
 
 	var paidAt time.Time
 	if resp.SuccessTime != nil {
-		if t, perr := time.Parse(time.RFC3339, *resp.SuccessTime); perr == nil {
+		if t, pErr := time.Parse(time.RFC3339, *resp.SuccessTime); pErr == nil {
 			paidAt = t
 		}
 	}

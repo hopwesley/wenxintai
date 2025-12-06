@@ -43,6 +43,7 @@ export const subjectLabelMap: Record<string, string> = {
 
 export interface CommonResponse {
     ok: boolean
+    new_public_id?: string
     msg: string | null
     next_route: string | null
     next_route_index: number

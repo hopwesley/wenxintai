@@ -14,14 +14,14 @@ import {useGlobalLoading} from "@/controller/useGlobalLoading";
 
 interface TestConfigForm {
     grade: string
-    mode: ModeOption|''
+    mode: ModeOption | ''
     hobby: string
 }
 
 export function useStartTestConfig() {
     const {showAlert} = useAlert()
     const router = useRouter()
-    const {state, setNextRouteItem} = useTestSession()
+    const {state, setNextRouteItem, setRecord} = useTestSession()
     const {showLoading, hideLoading} = useGlobalLoading()
     const record = computed<TestRecordDTO | undefined>(() => state.record)
     const form = reactive<TestConfigForm>({
@@ -31,7 +31,6 @@ export function useStartTestConfig() {
     })
     const hobbies = ref<string[]>([])
     const errorMessage = ref('')
-    const publicId = computed(() => record.value?.public_id ?? '')
     const selectedMode = computed<ModeOption | null>(() => {
         return form.mode === Mode33 || form.mode === Mode312 ? form.mode : null
     })
@@ -46,10 +45,6 @@ export function useStartTestConfig() {
     }
 
     onMounted(async () => {
-        if (!publicId) {
-            handleFlowError("没有找到测试记录，请登录重试")
-            return
-        }
         hobbies.value = Array.isArray(DEFAULT_HOBBIES) ? DEFAULT_HOBBIES.map(String) : []
     })
 
@@ -79,6 +74,7 @@ export function useStartTestConfig() {
                 method: 'POST',
                 body: {
                     public_id: record.value.public_id,
+                    business_type: record.value.business_type,
                     grade: form.grade.trim(),
                     mode: form.mode,
                     hobby: form.hobby,
@@ -88,6 +84,11 @@ export function useStartTestConfig() {
             if (!res.ok) {
                 showAlert('更新用户信息失败:' + res.msg)
                 return
+            }
+
+            if (res.new_public_id) {
+                record.value.public_id = res.new_public_id;
+                setRecord(record.value)
             }
 
             if (!res.next_route) {

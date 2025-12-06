@@ -136,7 +136,7 @@ func (s *HttpSrv) queryOrCreateReport(w http.ResponseWriter, r *http.Request) {
 	uid := userIDFromContext(ctx)
 	sLog.Debug().Msg("preparing report")
 
-	record, cErr := dbSrv.Instance().QueryRecordByPid(ctx, req.PublicID)
+	record, cErr := dbSrv.Instance().QueryTestRecord(ctx, req.PublicID, uid)
 	if cErr != nil {
 		sLog.Err(cErr).Msg("no record found ")
 		writeError(w, ApiInvalidNoTestRecord(cErr))

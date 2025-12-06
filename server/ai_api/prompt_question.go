@@ -7,7 +7,6 @@ import (
 
 func genUserPrompt(bi *BasicInfo) string {
 	return fmt.Sprintf("请以 json 对象数组返回，仅输出合法 json：\n"+
-		"request_id: %s\n"+
 		"学生基本信息：年级：%s。\n"+
 		"选科模式：%s。\n"+
 		"**学生兴趣因子：%s**。\n"+
@@ -22,7 +21,7 @@ func genUserPrompt(bi *BasicInfo) string {
 		"  合理示例：'我喜欢在体育课上积极参与团队合作活动'（场景为篮球引申的体育课，主体为团队合作行为）\n"+
 		"- 出现频率：兴趣因子衍生的场景题目最多4题，最少 1 题，且不得在同一维度/学科中连续出现\n"+
 		"- 如果未提供兴趣因子，则全部使用通用校园场景。\n",
-		bi.PublicId, bi.Grade, bi.Mode, bi.Hobby)
+		bi.Grade, bi.Mode, bi.Hobby)
 }
 
 func getTemperature(module TestTyp) float64 {

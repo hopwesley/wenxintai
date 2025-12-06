@@ -66,7 +66,6 @@ export function useTestLauncher() {
             setRecord(resp.record)
             setTestFlow(steps)
             setNextRouteItem(currentStage, currentIndex)
-
             // 跳转到对应阶段
             await pushStageRoute(router, businessType, currentStage)
         } catch (e) {

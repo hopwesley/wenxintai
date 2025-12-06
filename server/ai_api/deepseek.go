@@ -62,7 +62,6 @@ func (dai *DeepSeekApi) Init(cfg *Cfg) error {
 func (dai *DeepSeekApi) GenerateQuestion(ctx context.Context, bi *BasicInfo, tt TestTyp, callback TokenHandler) (string, error) {
 	sLog := dai.log.With().
 		Str("ai-test-type", string(tt)).
-		Str("public-id", bi.PublicId).
 		Logger()
 
 	systemPrompt, err := composeSystemPrompt(tt)

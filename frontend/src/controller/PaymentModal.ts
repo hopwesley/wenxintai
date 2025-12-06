@@ -152,8 +152,7 @@ export function useNativePayment(opts: UseNativePaymentOptions) {
     function handleCancel() {
         showAlert('您确定放弃本次测试报告吗？', () => {
             showLoading('结束报告')
-            router
-                .replace('/')
+            router.replace('/home')
                 .then(() => {
                     opts.onClose()
                 })

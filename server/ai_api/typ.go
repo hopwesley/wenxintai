@@ -43,10 +43,9 @@ const (
 )
 
 type BasicInfo struct {
-	PublicId string `json:"public_id"`
-	Grade    Grade  `json:"grade"`
-	Mode     Mode   `json:"mode"`
-	Hobby    string `json:"hobby,omitempty"`
+	Grade Grade  `json:"grade"`
+	Mode  Mode   `json:"mode"`
+	Hobby string `json:"hobby,omitempty"`
 }
 
 type ASCAnswer struct {

@@ -79,14 +79,16 @@ func (s *HttpSrv) preparePayForReport(w http.ResponseWriter, r *http.Request) {
 	}
 	sLog := s.log.With().Str("public_id", req.PublicId).Logger()
 
-	record, dbError := dbSrv.Instance().QueryRecordByPid(ctx, req.PublicId)
+	uid := userIDFromContext(ctx)
+
+	record, dbError := dbSrv.Instance().QueryTestRecord(ctx, req.PublicId, uid)
 	if dbError != nil {
 		sLog.Err(dbError).Msg("failed find test record")
 		writeError(w, ApiInternalErr("查询问卷状态失败", dbError))
 		return
 	}
 
-	if err := s.checkPreviousStageIfReady(ctx, req.PublicId, record.BusinessType, StageReport); err != nil {
+	if err := s.checkPreviousStageIfReady(ctx, record, StageReport); err != nil {
 		sLog.Err(dbError).Msg("answers not ready for report")
 		writeError(w, ApiInvalidTestSequence(dbError))
 		return

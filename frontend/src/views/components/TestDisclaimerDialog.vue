@@ -120,13 +120,9 @@ function handleCancel() {
   background: #ffffff;
   border-radius: 20px;
   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
-  padding: 22px 26px 20px;
+  padding: 36px;
   display: flex;
   flex-direction: column;
-}
-
-.td-header {
-  margin-bottom: 10px;
 }
 
 .td-title {
@@ -146,9 +142,13 @@ function handleCancel() {
   margin-top: 8px;
   margin-bottom: 20px;
   font-size: 14px;
-  line-height: 1.7;
+  line-height: 22px;
   color: #475569;
   overflow-y: auto;
+  padding: 16px;
+  border-radius: 4px;
+  border: 1px solid #ebebeb;
+  background-color: var(--bg-card);
 }
 
 /* 分段样式 */
@@ -214,8 +214,10 @@ function handleCancel() {
 .td-footer {
   margin-top: auto;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
+  align-items: center;
   gap: 12px;
+
 }
 
 .td-btn {

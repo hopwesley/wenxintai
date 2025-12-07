@@ -110,6 +110,14 @@
 
           </div>
           <div>
+            <button
+                type="button"
+                class=""
+                @click="handleLogout"
+            >
+              退出登录
+            </button>
+
             <template v-if="!editingExtra">
               <button
                   type="button"
@@ -326,6 +334,7 @@ const {
   reportPreviewVisible,
   reportPreviewTarget,
   closeReportPreview,
+  handleLogout,
 } = useWechatProfile()
 
 </script>

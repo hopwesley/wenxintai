@@ -27,30 +27,16 @@ export function useHomeView() {
     const activePlan = ref<PlanKey>('basic')
     type TabKey = (typeof tabDefs)[number]['key']
     const router = useRouter()
-    const route = useRoute()
-    const {resetSession} = useTestSession()
     const authStore = useAuthStore()
     const {showLoading, hideLoading} = useGlobalLoading()
-    const isUserMenuOpen = ref(false)
-    const userMenuWrapperRef = ref<HTMLElement | null>(null)
     const activeTab = ref<TabKey>('start')
     const scrollY = ref(0)
     const {launchTest} = useTestLauncher()
     const showDisclaimer = ref(false)
     const pendingPlanKey = ref<PlanKey | null>(null)
 
-    watch(
-        () => route.fullPath,
-        () => {
-            if (isUserMenuOpen.value) {
-                isUserMenuOpen.value = false
-            }
-        }
-    )
-
     onMounted(() => {
         window.addEventListener('scroll', handleScroll)
-        document.addEventListener('click', handleGlobalClick)
         authStore.fetchSignInStatus().then().catch(err => {
             console.error('[HomeView] fetchSignInStatus failed', err)
         })
@@ -102,56 +88,17 @@ export function useHomeView() {
 
     function handleScroll() {
         scrollY.value = window.scrollY || window.pageYOffset || 0
-
-        if (isUserMenuOpen.value) {
-            isUserMenuOpen.value = false
-        }
     }
 
-    function handleUserClick(event?: MouseEvent) {
-        // 防止点击头像时触发 document 的点击监听，导致立刻关闭
-        if (event) {
-            event.stopPropagation()
-        }
-        isUserMenuOpen.value = !isUserMenuOpen.value
-    }
-
-    // “我的测试”
     async function handleGoMyTests() {
         showLoading()
-        isUserMenuOpen.value = false
         router.push({name: 'my-tests'}).finally(() => {
             hideLoading()
         })
     }
 
-    // “退出登录”
-    function handleLogout() {
-        isUserMenuOpen.value = false
-        authStore.logout().then(() => {
-            resetSession();
-        })
-        console.log('[HomeView] logout clicked')
-    }
-
-    function handleGlobalClick(e: MouseEvent) {
-        if (!isUserMenuOpen.value) return
-
-        const rootEl = userMenuWrapperRef.value
-        if (!rootEl) return
-
-        const target = e.target as Node | null
-        if (target && rootEl.contains(target)) {
-            // 点击在头像/菜单区域内，不关闭
-            return
-        }
-        // 点击在外面，关闭菜单
-        isUserMenuOpen.value = false
-    }
-
     onBeforeUnmount(() => {
         window.removeEventListener('scroll', handleScroll)
-        document.removeEventListener('click', handleGlobalClick)
     })
 
     return {
@@ -164,11 +111,7 @@ export function useHomeView() {
         openLogin,
         startTest,
         handleTabClick,
-        handleUserClick,
-        isUserMenuOpen,
-        userMenuWrapperRef,
         handleGoMyTests,
-        handleLogout,
         showDisclaimer,
         handleDisclaimerCancel,
         handleDisclaimerConfirm,

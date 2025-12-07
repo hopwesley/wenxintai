@@ -6,6 +6,8 @@ import {useAlert} from '@/controller/useAlert'
 import {chinaProvinces} from "@/controller/chinaRegions";
 import {isValidChinaMobile, PlanKey} from "@/controller/common";
 import {useTestLauncher} from "@/controller/useTestLauncher";
+import {useTestSession} from "@/controller/testSession";
+import {useAuthStore} from "@/controller/wx_auth";
 
 export interface MyTestItem {
     public_id: string
@@ -88,7 +90,8 @@ export function useWechatProfile() {
     const provinces = chinaProvinces
     const selectedProvince = ref<string>('')
     const selectedCity = ref<string>('')
-
+    const {resetSession} = useTestSession()
+    const authStore = useAuthStore()
     const currentCities = computed(() => {
         const prov = provinces.find(p => p.name === selectedProvince.value)
         return prov ? prov.cities : []
@@ -133,7 +136,6 @@ export function useWechatProfile() {
     async function fetchMyTests() {
         showLoading('正在加载你的测评记录…')
         try {
-            // 后端实现：GET /api/tests/my -> MyTestsResponse
             const resp = await apiRequest<MyTestsResponse>(API_PATHS.WECHAT_MY_PROFILE)
             if (resp) {
                 profile.value = resp.profile
@@ -153,7 +155,9 @@ export function useWechatProfile() {
             }
         } catch (e) {
             console.error('[MyTests] fetchMyTests failed', e)
-            showAlert('加载测评记录失败，请稍后重试')
+            showAlert('加载测评记录失败，请稍后重试',()=>{
+                router.push('/home')
+            })
         } finally {
             hideLoading()
         }
@@ -259,6 +263,16 @@ export function useWechatProfile() {
         router.push({name: 'home'}).finally(() => hideLoading())
     }
 
+    function handleLogout() {
+        showLoading("退出登录......")
+        authStore.logout().then(() => {
+            resetSession();
+        }).finally(()=>{
+            router.push({name: 'home'}).finally(() => hideLoading())
+        })
+        console.log('[HomeView] logout clicked')
+    }
+
     onMounted(() => {
         fetchMyTests().then()
     })
@@ -297,5 +311,6 @@ export function useWechatProfile() {
         selectedProvince,
         selectedCity,
         currentCities,
+        handleLogout,
     }
 }

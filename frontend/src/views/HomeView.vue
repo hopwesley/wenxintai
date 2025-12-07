@@ -8,7 +8,8 @@
           <div style="display: flex; justify-content: center; flex-direction: column;">
             <h2 style="font-weight: 600;font-size: 20px;color: var(--brand)">智择未来</h2>
             <p style="font-weight: 400;font-size: 14px;color: var(--text-third)">新高考AI选科智能决策系统</p>
-          </div>cd frontend/
+          </div>
+          cd frontend/
           <nav class="main-nav-tabs">
             <button
                 v-for="tab in tabDefs"
@@ -39,7 +40,7 @@
               <button
                   type="button"
                   class="home-user"
-                  @click="handleUserClick"
+                  @click="handleGoMyTests"
               >
                 <img
                     v-if="signInStatus.avatar_url"
@@ -49,31 +50,14 @@
                 />
                 <span
                     v-if="signInStatus.nick_name"
-                    class="home-user__name"
+                    class="home-user__name" style="display: none"
                 >
                 {{ signInStatus.nick_name }}
               </span>
+                <span class="home-user__name">
+                我的测试
+              </span>
               </button>
-              <!-- 下拉菜单 -->
-              <div
-                  v-if="isUserMenuOpen"
-                  class="home-user-menu"
-              >
-                <button
-                    type="button"
-                    class="home-user-menu__item"
-                    @click="handleGoMyTests"
-                >
-                  我的测试
-                </button>
-                <button
-                    type="button"
-                    class="home-user-menu__item home-user-menu__item--danger"
-                    @click="handleLogout"
-                >
-                  退出登录
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -647,14 +631,10 @@ const {
   openLogin,
   startTest,
   handleTabClick,
-  handleUserClick,
-  isUserMenuOpen,
-  userMenuWrapperRef,
-  handleGoMyTests,
-  handleLogout,
   showDisclaimer,
   handleDisclaimerCancel,
   handleDisclaimerConfirm,
+  handleGoMyTests
 } = useHomeView()
 
 const authStore = useAuthStore()

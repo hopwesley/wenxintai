@@ -14,11 +14,12 @@ export default defineConfig({
         port: 5173,
         host: '0.0.0.0',  // ✅ 让外网（包括 ngrok）可以访问
         allowedHosts: [
-            'sharp-happy-grouse.ngrok-free.app',  // ✅ 你的 ngrok 域名
+            'sharp-happy-grouse.ngrok-free.app',
+            'primary-exciting-thrush.ngrok-free.app',
         ],
         proxy: {
             '/api': {
-                target: 'https://www.wenxintai.cn/',
+                target: 'http://localhost:8080/',
                 changeOrigin: true,
             },
         },

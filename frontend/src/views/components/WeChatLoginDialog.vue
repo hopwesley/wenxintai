@@ -108,51 +108,9 @@ function close() {
   color: #767678;
 }
 
-.qrcode-box {
-  width: 240px;
-  height: 240px;
-  margin: 16px auto;
-  border-radius: 12px;
-  border: 1px solid #EAEAEA;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  padding: 16px;
-}
-
 /* 新增：给 WxLogin 渲染的 iframe 提供容器 */
-.wx-qrcode-container {
-  width: 100%;
-  height: 100%;
-}
 
 /* 原来的 qrcode-box img 可以删除 */
-
-.status {
-  margin: 8px 0 0;
-  font-size: 13px;
-  color: #BAB2B2;
-}
-
-.status-error {
-  color: #EF4444;
-}
-
-.refresh-btn {
-  margin-top: 12px;
-  padding: 6px 16px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  background: #16a34a;
-  color: #fff;
-  font-size: 14px;
-}
-
-.refresh-btn:hover {
-  background: #15803d;
-}
 
 .close-btn {
   position: absolute;

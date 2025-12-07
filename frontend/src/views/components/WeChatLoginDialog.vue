@@ -12,47 +12,13 @@
         <div class="wechat-login-dialog">
           <button class="close-btn" @click="close">×</button>
           <div class="wechat-login-content">
-            <h3>微信扫码登录</h3>
-
-            <div class="qrcode-box">
-              <!-- 这里不再用 img，而是交给 WxLogin.js 渲染 iframe -->
-              <div id="wx-login-qrcode" class="wx-qrcode-container"></div>
-            </div>
-
-            <p class="desc">
+            <div id="wx-login-qrcode"></div>
+            <div class="desc">
               注册/登录即代表你同意
               <a href="/agreements/user" target="_blank">《用户服务协议》</a>、
               <a href="/agreements/privacy" target="_blank">《隐私政策》</a>、
               <a href="/agreements/license" target="_blank">《授权许可协议》</a>
-            </p>
-
-            <p
-                v-if="authStore.loginStatus === 'pending'"
-                class="status"
-            >
-              请使用微信扫一扫完成登录…
-            </p>
-            <p
-                v-else-if="authStore.loginStatus === 'expired'"
-                class="status status-error"
-            >
-              二维码已过期，请点击下方按钮重新获取。
-            </p>
-            <p
-                v-else-if="authStore.loginStatus === 'error'"
-                class="status status-error"
-            >
-              登录出现异常，请稍后重试。
-            </p>
-
-            <button
-                v-if="authStore.loginStatus === 'expired'"
-                type="button"
-                class="refresh-btn"
-                @click="authStore.startWeChatLogin()"
-            >
-              重新获取二维码
-            </button>
+            </div>
           </div>
         </div>
       </div>

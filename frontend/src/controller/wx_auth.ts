@@ -126,7 +126,6 @@ export const useAuthStore = defineStore('auth', () => {
 
         const redirectUri = encodeURIComponent(rawRedirect)
 
-        // 注意：这个容器在 HomeView.vue 里
         new wxLoginCtor({
             id: 'wx-login-qrcode',
             appid: appid,

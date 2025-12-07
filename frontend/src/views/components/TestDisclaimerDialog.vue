@@ -13,51 +13,31 @@
       </header>
 
       <section class="td-body">
-        <!-- 第一部分：作答方式与态度 -->
         <section class="td-section">
-          <h3 class="td-section-title">一、请你全然为自己作答</h3>
           <p>
-            请你全然为自己作答。用你的热爱、好奇、直觉与真诚，去选择每一个答案。
+            本套测试尊重学生主体地位，由学生全程自主答题。
           </p>
           <p>
-            你现在的每一次选择，都是在为自己擘画真正属于你的未来方向，而不是迎合任何外在标准。
-          </p>
-        </section>
-
-        <!-- 第二部分：隐私与数据安全 -->
-        <section class="td-section">
-          <h3 class="td-section-title">二、关于你的隐私与数据安全</h3>
-          <p>
-            你的信息将受到我们最严密的守护。我们会谨慎处理与你有关的所有数据。
+            请你全然为自己作答。用你的热爱、好奇、直觉、真诚，擘画出真正属于你的未来方向。
           </p>
           <p>
-            你的隐私与安全，是「智择未来」不可动摇的承诺。
-          </p>
-        </section>
-
-        <!-- 第三部分：测评定位与适用范围 -->
-        <section class="td-section">
-          <h3 class="td-section-title">三、本次测评的定位与边界</h3>
-          <p>
-            请你信任这场探索。「智择未来」将经典心理学智慧与前沿 AI 算法相结合，为你呈现独属于你的个性化选科策略。
+            你的信息将受到我们最严密的守护。你的隐私与安全，是我们不可动摇的承诺。
           </p>
           <p>
-            然而，本测评工具仅作为学习规划与自我探索的
-            <span class="td-strong">辅助手段</span>，
-            不构成升学、志愿填报或职业选择的唯一依据。
+            请你信任这场探索。“智择未来”将经典心理学智慧与前沿AI算法相结合，呈现独属于你的个性化选科策略。
           </p>
           <p>
-            测评结果基于你当前提供的信息与答题情况生成，平台不对因错误或不完整信息导致的结果偏差承担责任。
+            此外，本测评工具作为辅助手段，不构成升学、志愿填报或职业选择的唯一依据。测评结果基于你当前提供的信息与答题情况生成，平台不对因错误或不完整信息导致的结果偏差负责。
           </p>
         </section>
 
         <!-- 结尾强调 -->
         <section class="td-section td-section-highlight">
           <p class="td-highlight-main">
-            继续开始测试，即表示你已阅读并同意本声明。
+            继续开始测试，即表示你和已阅读并同意本声明。
           </p>
           <p class="td-highlight-sub">
-            「智择未来」团队愿与你勤谨同行。
+            “智择未来”团队愿与你和你的家庭勤谨同行。
           </p>
         </section>
       </section>
@@ -175,11 +155,6 @@ function handleCancel() {
   margin-bottom: 0;
 }
 
-.td-strong {
-  font-weight: 600;
-  color: #b91c1c;
-}
-
 /* 结尾强调区域 */
 .td-section-highlight {
   margin-top: 18px;
@@ -217,7 +192,6 @@ function handleCancel() {
   justify-content: center;
   align-items: center;
   gap: 12px;
-
 }
 
 .td-btn {

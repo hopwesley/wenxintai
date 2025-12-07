@@ -1,22 +1,13 @@
-import {onBeforeUnmount, onMounted, ref, watch} from 'vue'
-import {useRoute, useRouter} from 'vue-router'
-import {TestRecordDTO, useTestSession} from '@/controller/testSession'
+import {onBeforeUnmount, onMounted, ref} from 'vue'
+import {useRouter} from 'vue-router'
 import {useAuthStore} from '@/controller/wx_auth'
 import {
     loadProducts,
     PlanKey,
-    type TestFlowStep,
+
 } from "@/controller/common";
 import {useGlobalLoading} from "@/controller/useGlobalLoading";
 import {useTestLauncher} from "@/controller/useTestLauncher";
-
-export interface FetchTestFlowResponse {
-    record: TestRecordDTO
-    steps: TestFlowStep[]
-    current_stage: string
-    current_index: number
-}
-
 export function useHomeView() {
     const tabDefs = [
         {key: 'start', label: '开始测试', targetId: 'section-start-test'},

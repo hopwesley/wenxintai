@@ -140,13 +140,6 @@ function handleCancel() {
   margin-bottom: 0;
 }
 
-.td-section-title {
-  margin: 0 0 6px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #111827;
-}
-
 .td-section p {
   margin: 0 0 6px;
 }

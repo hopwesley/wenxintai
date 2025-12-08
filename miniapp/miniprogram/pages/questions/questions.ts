@@ -25,27 +25,38 @@ Page({
     logs: [] as string[],
     submitting: false,
   },
+
   socketTask: null as ManagedSocket | null,
   questionBuffer: '',
+
   onLoad(options: Record<string, string>) {
-    const publicId = options?.public_id || ''
-    const businessType = options?.business_type || ''
-    const testType = options?.test_type || ''
+    const publicId =
+      options && options.public_id ? options.public_id : ''
+    const businessType =
+      options && options.business_type ? options.business_type : ''
+    const testType =
+      options && options.test_type ? options.test_type : ''
+
     this.setData({ publicId, businessType, testType })
     this.restoreCache(publicId)
     this.openQuestionStream(publicId, businessType, testType)
   },
+
   onUnload() {
     if (this.socketTask) {
       this.socketTask.close()
     }
   },
+
   restoreCache(publicId: string) {
     const cache = getCachedAnswers(publicId)
     if (cache) {
-      this.setData({ answers: cache.answers })
+      this.setData({
+        answers: cache.answers,
+      })
     }
   },
+
   openQuestionStream(publicId: string, businessType?: string, testType?: string) {
     if (!publicId) return
     const url = buildQuestionWsUrl(publicId, businessType, testType)
@@ -58,6 +69,7 @@ Page({
     socket.sendPing()
     this.socketTask = socket
   },
+
   onQuestionChunk(payload: any) {
     if (typeof payload === 'string') {
       this.questionBuffer += payload
@@ -65,8 +77,10 @@ Page({
     }
     this.pushLog('收到题目分片')
   },
+
   onQuestionsReady(payload: any) {
-    let dataSource = payload
+    let dataSource: any = payload
+
     if (typeof payload === 'string') {
       try {
         dataSource = JSON.parse(this.questionBuffer + payload)
@@ -75,46 +89,77 @@ Page({
         return
       }
     }
+
     if (Array.isArray(dataSource)) {
       this.setData({ questions: dataSource })
-    } else if (dataSource?.questions) {
+    } else if (dataSource && dataSource.questions) { // 替换 dataSource?.questions
       this.setData({ questions: dataSource.questions })
     }
+
     this.pushLog('题目加载完成')
   },
+
   pushLog(message: string) {
-    const logs = this.data.logs.concat(`${new Date().toLocaleTimeString()} ${message}`)
+    const logs = this.data.logs.concat(
+      `${new Date().toLocaleTimeString()} ${message}`,
+    )
     this.setData({ logs })
   },
+
   onSingleChange(event: WechatMiniprogram.RadioGroupChange) {
     const questionId = event.currentTarget.dataset.qid as string
-    this.setData({ [`answers.${questionId}`]: event.detail.value })
+    this.setData({
+      [`answers.${questionId}`]: event.detail.value,
+    })
     this.persistAnswers()
   },
+
   onMultiChange(event: WechatMiniprogram.CheckboxGroupChange) {
     const questionId = event.currentTarget.dataset.qid as string
-    this.setData({ [`answers.${questionId}`]: event.detail.value as string[] })
+    this.setData({
+      [`answers.${questionId}`]: event.detail.value as string[],
+    })
     this.persistAnswers()
   },
+
   persistAnswers() {
     cacheAnswers(this.data.publicId, this.data.answers)
   },
+
   async submitPage() {
     if (!this.data.publicId) return
     this.setData({ submitting: true })
+
     try {
-      const res = await post<{ next_route?: string; public_id?: string }>(API_TEST_SUBMIT, {
-        public_id: this.data.publicId,
-        business_type: this.data.businessType,
-        test_type: this.data.testType,
-        answers: this.data.answers,
+      const res = await post<{ next_route?: string; public_id?: string }>(
+        API_TEST_SUBMIT,
+        {
+          public_id: this.data.publicId,
+          business_type: this.data.businessType,
+          test_type: this.data.testType,
+          answers: this.data.answers,
+        },
+      )
+
+      setCurrentTest({
+        publicId: res.public_id || this.data.publicId,
+        nextRoute: res.next_route,
       })
-      setCurrentTest({ publicId: res.public_id || this.data.publicId, nextRoute: res.next_route })
+
       if (res.next_route === 'report') {
-        wx.navigateTo({ url: `/pages/report/report?public_id=${res.public_id || this.data.publicId}` })
+        wx.navigateTo({
+          url: `/pages/report/report?public_id=${
+            res.public_id || this.data.publicId
+          }`,
+        })
       }
     } catch (err: any) {
-      wx.showToast({ title: err?.message || '提交失败', icon: 'none' })
+      const msg =
+        err && err.message ? String(err.message) : '提交失败'
+      wx.showToast({
+        title: msg,
+        icon: 'none',
+      })
     } finally {
       this.setData({ submitting: false })
     }

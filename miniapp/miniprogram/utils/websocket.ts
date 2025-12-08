@@ -21,7 +21,9 @@ export const connectWebSocket = (
   let pingTimer: number | null = null
 
   const log = (message: string) => {
-    if (callbacks.onLog) callbacks.onLog(message)
+    if (callbacks.onLog) {
+      callbacks.onLog(message)
+    }
   }
 
   socketTask.onOpen(() => {
@@ -30,7 +32,9 @@ export const connectWebSocket = (
 
   socketTask.onError((error) => {
     log(`WebSocket error: ${JSON.stringify(error)}`)
-    if (callbacks.onError) callbacks.onError(error.errMsg)
+    if (callbacks.onError) {
+      callbacks.onError(error.errMsg)
+    }
   })
 
   socketTask.onClose(() => {
@@ -50,15 +54,24 @@ export const connectWebSocket = (
         payload: any
       }
 
-      if (type === 'data' && callbacks.onData) callbacks.onData(payload)
-      if (type === 'done' && callbacks.onDone) callbacks.onDone(payload)
+      if (type === 'data' && callbacks.onData) {
+        callbacks.onData(payload)
+      }
+      if (type === 'done' && callbacks.onDone) {
+        callbacks.onDone(payload)
+      }
       if (type === 'error' && callbacks.onError) {
         callbacks.onError(payload || 'Server error')
       }
     } catch (err: any) {
-      const message = err?.message || 'Invalid WebSocket message'
+      const message =
+        err && err.message
+          ? String(err.message)
+          : 'Invalid WebSocket message'
       log(message)
-      if (callbacks.onError) callbacks.onError(message)
+      if (callbacks.onError) {
+        callbacks.onError(message)
+      }
     }
   })
 
@@ -77,7 +90,7 @@ export const connectWebSocket = (
       clearInterval(pingTimer)
       pingTimer = null
     }
-    socketTask.close({}) // ✅ 必须传一个参数，哪怕是空对象
+    socketTask.close({})
   }
 
   return { sendPing, close }

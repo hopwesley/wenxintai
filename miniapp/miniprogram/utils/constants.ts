@@ -1,4 +1,5 @@
-export const API_BASE = 'https://wenxintai.cn'
+// export const API_BASE = 'https://wenxintai.cn'
+export const API_BASE = 'https://nonseparable-overneglectful-marlin.ngrok-free.dev'
 
 // REST 接口
 export const API_PRODUCTS        = `${API_BASE}/api/products`

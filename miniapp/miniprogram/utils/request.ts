@@ -26,6 +26,7 @@ const mergeHeaders = (headers?: Record<string, string>) => {
   if (session.cookie) {
     authHeaders['Cookie'] = session.cookie
   }
+  authHeaders['ngrok-skip-browser-warning'] = '1'
   return { ...DEFAULT_HEADERS, ...headers, ...authHeaders }
 }
 

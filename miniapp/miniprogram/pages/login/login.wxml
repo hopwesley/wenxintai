@@ -1,6 +1,0 @@
-<view class="page">
-  <view class="headline">使用微信登录 Codex</view>
-  <view class="desc">登录后将同步你的测评与支付信息。</view>
-  <button type="primary" loading="{{loading}}" bindtap="handleLogin">微信快捷登录</button>
-  <view wx:if="{{status}}" class="status">{{status}}</view>
-</view>

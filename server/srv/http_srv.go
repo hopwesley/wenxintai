@@ -274,7 +274,7 @@ func (s *HttpSrv) initWS() error {
 		return fmt.Errorf("router not initialized before websocket setup")
 	}
 
-	s.wsUpgrader = newWSUpgrader(s.cfg.Websocket.AllowedOrigins, time.Duration(s.cfg.Websocket.HandshakeTimeout)*time.Second)
+	s.wsUpgrader = newWSUpgrader(s.miniCfg.AllowedOrigins, time.Duration(s.miniCfg.HandshakeTimeout)*time.Second)
 
 	routes := []route{
 		{apiWSQuestionSub, http.MethodGet, s.handleQuestionWSEvent, true},

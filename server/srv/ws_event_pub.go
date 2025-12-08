@@ -120,7 +120,7 @@ func (s *HttpSrv) streamWS(
 	conn *wsConn,
 	log zerolog.Logger,
 ) {
-	heartbeat := time.NewTicker(time.Duration(s.cfg.Websocket.HeartbeatInterval) * time.Second)
+	heartbeat := time.NewTicker(time.Duration(s.miniCfg.HeartbeatInterval) * time.Second)
 	defer heartbeat.Stop()
 
 	for {

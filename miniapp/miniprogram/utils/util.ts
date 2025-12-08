@@ -17,3 +17,11 @@ const formatNumber = (n: number) => {
   const s = n.toString()
   return s[1] ? s : '0' + s
 }
+
+export function getErrorMessage(err: any, fallback: string) {
+  if (!err) return fallback
+  if (typeof err === 'string') return err
+  if (err.errMsg) return String(err.errMsg)     // 微信 API 风格
+  if (err.message) return String(err.message)   // Error 实例
+  return fallback
+}

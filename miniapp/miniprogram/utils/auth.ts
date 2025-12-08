@@ -32,3 +32,28 @@ export async function ensureLoginWithProfile(needProfile: boolean): Promise<void
   const resp = await post<{ token: string }>(API_LOGIN, body)
   wx.setStorageSync('auth_token', resp.token)
 }
+
+
+// auth.ts 里只负责“登录 + 写库”，不再自己调 getUserProfile
+export async function ensureLogin(corePayload: {
+  needProfile: boolean
+  avatarUrl?: string
+  nickName?: string
+}) {
+  const token = wx.getStorageSync('auth_token')
+  if (token) return
+
+  const loginRes = await wx.login()
+  if (!loginRes.code) {
+    throw new Error('微信登录失败')
+  }
+
+  const body: any = { code: loginRes.code }
+  if (corePayload.needProfile) {
+    body.avatar_url = corePayload.avatarUrl
+    body.nick_name = corePayload.nickName
+  }
+
+  const resp = await post<{ token: string }>(API_LOGIN, body)
+  wx.setStorageSync('auth_token', resp.token)
+}

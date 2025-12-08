@@ -13,7 +13,12 @@
     "read_timeout":10,
     "we_chat_app_id":"wx51cf75df014d41e8",
     "we_chat_app_sec":"",
-    "we_chat_app_callback":"sharp-happy-grouse.ngrok-free.app"
+    "we_chat_app_callback":"sharp-happy-grouse.ngrok-free.app",
+    "websocket": {
+      "allowed_origins": [],
+      "handshake_timeout": 10,
+      "heartbeat_interval": 30
+    }
   },
   "database": {
     "host": "127.0.0.1",

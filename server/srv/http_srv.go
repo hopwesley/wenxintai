@@ -33,6 +33,8 @@ const (
 
 	apiSSEQuestionSub = "/api/sub/question/"
 	apiSSEReportSub   = "/api/sub/report/"
+	apiWSQuestionSub  = "/api/ws/question/"
+	apiWSReportSub    = "/api/ws/report/"
 	apiSubmitTest     = "/api/test_submit"
 	apiGenerateReport = "/api/generate_report"
 	apiFinishReport   = "/api/finish_report"
@@ -67,6 +69,9 @@ type HttpSrv struct {
 	payment    *WeChatPayConfig
 	srv        *http.Server
 	httpClient *http.Client
+	router     *http.ServeMux
+
+	wsUpgrader *wsUpgrader
 
 	wxClient        *core.Client
 	wxNativeService *native.NativeApiService
@@ -169,6 +174,7 @@ func (s *HttpSrv) initWeChatPay() error {
 
 func (s *HttpSrv) initRouter() error {
 	mux := http.NewServeMux()
+	s.router = mux
 
 	mux.HandleFunc(apiHealthy, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
@@ -261,6 +267,24 @@ func (s *HttpSrv) loggingMiddleware(next http.Handler) http.Handler {
 }
 
 func (s *HttpSrv) initWS() error {
+	if s.router == nil {
+		return fmt.Errorf("router not initialized before websocket setup")
+	}
+
+	s.wsUpgrader = newWSUpgrader(s.cfg.Websocket.AllowedOrigins, time.Duration(s.cfg.Websocket.HandshakeTimeout)*time.Second)
+
+	routes := []route{
+		{apiWSQuestionSub, http.MethodGet, s.handleQuestionWSEvent, true},
+		{apiWSReportSub, http.MethodGet, s.handleReportWSEvent, true},
+	}
+
+	for _, rt := range routes {
+		r := rt
+		s.router.HandleFunc(r.pattern, func(w http.ResponseWriter, req *http.Request) {
+			s.wrapApi(r, w, req)
+		})
+	}
+
 	return nil
 }
 

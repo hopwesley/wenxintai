@@ -11,13 +11,22 @@ type Config struct {
 	Port                 string `json:"port"`
 	StaticDir            string `json:"static_dir"`
 	studentHobbies       []string
-	ReadTimeout          int64  `json:"read_timeout,omitempty"`
-	WeChatAppID          string `json:"we_chat_app_id"`
-	WeChatAppSecret      string `json:"we_chat_app_sec"`
-	WeChatRedirectDomain string `json:"we_chat_redirect_domain"`
-	PaymentForward       string `json:"payment_forward,omitempty"`
-	WeChatAPIV3Key       string `json:"we_chat_api_v3_key"`
-	WxPaymentTimeout     int    `json:"wx_payment_timeout"`
+	ReadTimeout          int64           `json:"read_timeout,omitempty"`
+	WeChatAppID          string          `json:"we_chat_app_id"`
+	WeChatAppSecret      string          `json:"we_chat_app_sec"`
+	WeChatRedirectDomain string          `json:"we_chat_redirect_domain"`
+	PaymentForward       string          `json:"payment_forward,omitempty"`
+	WeChatAPIV3Key       string          `json:"we_chat_api_v3_key"`
+	WxPaymentTimeout     int             `json:"wx_payment_timeout"`
+	Websocket            WebsocketConfig `json:"websocket,omitempty"`
+}
+
+type WebsocketConfig struct {
+	AllowedOrigins    []string `json:"allowed_origins,omitempty"`
+	ReadBufferSize    int      `json:"read_buffer_size,omitempty"`
+	WriteBufferSize   int      `json:"write_buffer_size,omitempty"`
+	HandshakeTimeout  int      `json:"handshake_timeout,omitempty"`
+	HeartbeatInterval int      `json:"heartbeat_interval,omitempty"`
 }
 
 type WeChatPayConfig struct {
@@ -99,6 +108,13 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.WxPaymentTimeout <= 0 {
 		cfg.WxPaymentTimeout = 30
+	}
+
+	if cfg.Websocket.HandshakeTimeout <= 0 {
+		cfg.Websocket.HandshakeTimeout = 10
+	}
+	if cfg.Websocket.HeartbeatInterval <= 0 {
+		cfg.Websocket.HeartbeatInterval = 30
 	}
 
 	return nil

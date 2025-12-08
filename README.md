@@ -252,3 +252,13 @@
 这些脱敏后的群体数据将仅用于教育研究、模型优化、公益报告等，为教育部门和学校提供决策参考。
 
 我们严格遵守《中华人民共和国个人信息保护法》及相关法律法规，建立完善的数据安全保护体系。
+
+## 小程序端接口与调试说明
+- **HTTP 封装**：小程序端使用 `miniapp/miniprogram/utils/request.ts` 统一请求接口，自动透传本地存储的 Cookie/Token，默认 `Content-Type: application/json`，网络错误会返回带 `message` 的异常对象。
+- **接口路径**：核心接口常量定义于 `miniapp/miniprogram/utils/constants.ts`，包括 `/api/products`、`/api/hobbies`、`/api/tests/basic_info`、`/api/test_submit`、`/api/generate_report` 等。
+- **WebSocket 消息格式**：`type` 字段支持 `data`、`done`、`error` 三类，`payload` 包含具体数据或错误信息；心跳通过客户端周期性发送 `ping` 完成，见 `miniapp/miniprogram/utils/websocket.ts`。
+- **题目流与报告流**：题目订阅使用 `/api/ws/question/{public_id}?business_type=...&test_type=...`，报告生成监听 `/api/ws/report/{public_id}`，二者均通过 `connectWebSocket` 封装，日志输出在题目页、报告页底部滚动视图中展示。
+- **登录与会话**：微信登录流程在 `pages/login` 页面完成，登录后服务端返回的 Token/Cookie 会被写入本地存储，随后所有接口自动携带；全局会话状态保存在 `miniapp/miniprogram/utils/store.ts`。
+- **支付与邀请码**：支付下单接口 `/api/pay/wechat/order_create`、状态 `/api/pay/wechat/order_status`，邀请码校验 `/api/pay/use_invite`；报告页可直接触发支付或填写邀请码，支付成功后通过 `/api/finish_report` 完成报告生成。
+
+调试可在微信开发者工具中按“登录 → 基础信息 → 答题 → 生成报告 → 支付/邀请码”完整走通流程，网络异常、未登录及重连逻辑均有提示。

@@ -1,7 +1,6 @@
 package srv
 
 import (
-	"bufio"
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/binary"

@@ -1,11 +1,56 @@
+
+body {
+    background-color: #F8F8FA;
+}
 .my-tests-page {
     min-height: 100vh;
-    background: #f7f8fb;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    max-width: 960px;   /* 上限 */
+    min-width: 640px;   /* 下限 */
+    margin: 0 auto;
+    box-sizing: border-box;
+    padding-inline: clamp(
+            24px,   /* 屏幕很窄时，左右至少 24px 缓冲 */
+            27%,    /* 正常情况下，左右约 27%，中间可视区≈46% */
+            160px   /* 很宽时，两侧最多 160px 空白，保证中间不太窄 */
+    );
+    padding-block: 24px; /* 上下留一点空间，避免顶到边缘 */
 }
 
-/* 顶部：档案卡片 */
-.my-tests-header {
-    padding: 32px 20px 8px;
+.btn-back-home {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;           /* 图标和文字的间距 */
+    color: var(--text-third);
+    background-color: white;
+    padding: 8px 16px;
+}
+
+/* SVG 图标尺寸 & 颜色继承文字色 */
+.btn-back-home__icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    fill: currentColor; /* 和按钮文字同色 */
+}
+
+.btn-back-home:hover {
+    background-color: rgba(90, 60, 255, 0.1);
+}
+.my-tests-header-actions {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 12px;
+}
+
+/* 新增：页面内容外壳，控制宽度 */
+.my-tests-shell {
+    background-color: white;
+    padding: 32px;
+    border-radius: var(--bg-radius);
 }
 
 .my-tests-profile-card {
@@ -13,10 +58,9 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 20px;
-    background: #fff;
+    background: rgba(90, 96, 234, 0.1);
     padding: 20px 24px;
     border-radius: 18px;
-    box-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
 }
 
 .my-tests-profile-left {
@@ -124,7 +168,6 @@
 
 .my-tests-stat--link:hover {
     border-color: var(--brand);
-    box-shadow: 0 4px 14px rgba(90, 96, 234, 0.14);
 }
 
 .my-tests-header-actions {
@@ -161,7 +204,6 @@
     padding: 16px 18px;
     border-radius: 16px;
     background: #ffffff;
-    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
 }
 
 .my-tests-card--ongoing {
@@ -291,7 +333,6 @@
 .my-tests-profile-extra-form__card {
     background: #fff;
     border-radius: 16px;
-    box-shadow: 0 8px 26px rgba(15, 23, 42, 0.07);
     padding: 18px 20px;
 }
 
@@ -337,7 +378,6 @@
 
 .my-tests-form-input:focus {
     border-color: var(--brand);
-    box-shadow: 0 0 0 1px rgba(90, 96, 234, 0.15);
 }
 
 .my-tests-profile-extra-form-actions {
@@ -415,7 +455,6 @@
 .my-tests-tab--active {
     background: #ffffff;
     color: var(--brand);
-    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.12);
 }
 
 .my-tests-tab--active .my-tests-tab__badge {
@@ -453,7 +492,6 @@
 
 .my-tests-stat--link:hover {
     border-color: var(--brand);
-    box-shadow: 0 4px 14px rgba(90, 96, 234, 0.14);
     background: rgba(90, 96, 234, 0.04);
 }
 

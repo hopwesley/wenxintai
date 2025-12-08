@@ -5,15 +5,43 @@
 body {
   margin: 0;
   font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
-  background: #f3f4f6;
+  background: #F8F8FA;
   color: #111827;
 }
 
+h2, h3, p {
+    margin: 0;
+}
+
 button {
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    outline: none;
+    border: none;
+    background: none;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 999px;
 }
 
 button:hover:not([disabled]) {
   transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
+}
+
+.home {
+    /* 原来在 :root 上的变量，挪到 .home 上，只影响这个页面 */
+    --bg-hero: #0e1a2b;
+    --bg-card: #ffffff;
+    --bg-muted: #f7f8fb;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-third: #929292;
+    --brand: #5A60EA;
+    --brand-dark: #484DBB;
+    --ring: rgba(91, 124, 255, .25);
+    --shadow: 0 6px 28px rgba(15, 23, 42, .08);
+    --radius: 18px;
+    --bg-radius: 32px;
+    /* 原来 body 上的文字样式，也改挂到 .home 上 */
+    color: var(--text-primary);
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
 }

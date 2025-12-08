@@ -1,7 +1,8 @@
 <template>
   <div class="my-tests-page home">
-    <!-- 顶部：个人档案卡片 -->
-    <header class="my-tests-header container">
+    <div class="my-tests-shell">
+      <!-- 顶部：个人档案卡片 -->
+      <header class="my-tests-header container">
       <div class="my-tests-profile-card">
         <!-- 左侧：头像 + 基本信息 -->
         <div class="my-tests-profile-left">
@@ -148,21 +149,12 @@
         </div>
 
         <!-- 右侧：按钮区 -->
-        <div class="my-tests-header-actions">
 
-          <button
-              type="button"
-              class="btn btn-ghost"
-              @click="handleBackHome"
-          >
-            返回首页
-          </button>
-        </div>
       </div>
     </header>
 
     <!-- 主体：两个 Tab -->
-    <main class="my-tests-main container">
+      <main class="my-tests-main container">
       <div class="my-tests-tabs">
         <button
             type="button"
@@ -294,12 +286,13 @@
       </section>
     </main>
 
-    <ReportPreviewModal
+      <ReportPreviewModal
         v-if="reportPreviewVisible"
         :business-type="reportPreviewTarget?.business_type || ''"
         :public-id="reportPreviewTarget?.public_id || ''"
         @close="closeReportPreview"
     />
+    </div>
   </div>
 </template>
 

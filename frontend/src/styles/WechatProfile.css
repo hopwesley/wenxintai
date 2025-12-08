@@ -55,18 +55,33 @@ body {
 
 .my-tests-profile-card {
     display: flex;
+    flex-direction: column;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 20px;
+    gap: 16px;
     background: rgba(90, 96, 234, 0.1);
     padding: 20px 24px;
     border-radius: 18px;
 }
 
+.my-tests-profile-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.my-tests-profile-row--top {
+    padding-bottom: 16px;
+    border-bottom:1px solid rgba(90, 60, 255, 0.1);
+}
+.my-tests-profile-row.my-tests-profile-row--bottom {
+    align-items: flex-start;
+    line-height: 13px;
+}
 .my-tests-profile-left {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 6px;
 }
 
 .my-tests-profile-avatar {
@@ -97,13 +112,25 @@ body {
 .my-tests-profile-title-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
 }
 
 .my-tests-profile-title-row h1 {
     margin: 0;
     font-size: 20px;
     color: var(--text-primary);
+}
+
+.my-tests-profile-action--logout {
+    font-weight: 400;
+    color: var(--text-third);
+    background-color: rgba(15, 23, 42, 0.1);
+    padding: 6px 16px;
+}
+
+.my-tests-profile-action--logout:hover {
+    background-color: rgba(90, 60, 255, 0.1);
+    color: var(--brand);
 }
 
 .my-tests-profile-tag {
@@ -387,6 +414,33 @@ body {
     margin-top: 0;
 }
 
+/* 默认状态：透明背景，图标颜色 var(--text-third) */
+.btn-edit-extra {
+    padding: 12px;
+    margin-top: -12px;
+    border-radius: 999px;
+    border: none;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-third);      /* 控制 SVG 颜色 */
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-edit-extra__icon {
+    display: block;
+    width: 16px;
+    height: 16px;
+}
+
+/* 悬停：背景 #5A60EA，SVG 颜色 #5A60EA */
+.btn-edit-extra:hover {
+    background-color: rgba(90, 96, 234, 0.1);
+    color: #5A60EA;               /* SVG 颜色 = #5A60EA */
+}
+
 /* 响应式适配 */
 @media (max-width: 640px) {
     .my-tests-profile-card {
@@ -518,9 +572,18 @@ body {
 .my-tests-profile-extra-readonly {
     margin-top: 8px;
     display: flex;
-    gap: 24px;
     font-size: 13px;
     color: var(--text-secondary);
+}
+/* 所有子项统一一点左右内边距 */
+.my-tests-profile-extra-readonly > div {
+    padding-right: 8px;
+}
+
+/* 从第二个开始左侧画竖线 */
+.my-tests-profile-extra-readonly > div + div {
+    border-left: 2px solid var(--text-third);  /* 竖线颜色可按需要调 */
+    padding-left: 8px;              /* 竖线和文字之间留点空 */
 }
 
 .my-tests-profile-extra-edit {

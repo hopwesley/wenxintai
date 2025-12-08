@@ -1,27 +1,63 @@
 <template>
   <div class="my-tests-page home">
+    <div class="my-tests-header-actions">
+      <button type="button" class="btn btn-ghost btn-back-home">
+        <svg
+            class="btn-back-home__icon"
+            viewBox="0 0 1024 1024"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+            focusable="false"
+        >
+          <path d="M29.184 464.128m48.384 0l868.608 0q48.384 0 48.384 48.384l0-0.256q0 48.384-48.384 48.384l-868.608 0q-48.384 0-48.384-48.384l0 0.256q0-48.384 48.384-48.384Z"></path>
+          <path d="M1.967498 504.159242m37.242805-30.886647l387.009893-320.959644q37.242805-30.886646 68.129452 6.356159l-0.163422-0.197052q30.886646 37.242805-6.356159 68.129452l-387.009893 320.959644q-37.242805 30.886646-68.129452-6.356159l0.163422 0.197052q-30.886646-37.242805 6.356159-68.129452Z"></path>
+          <path d="M2.052739 533.200328m30.886646-37.242806l-0.163421 0.197052q30.886646-37.242805 68.129451-6.356159l387.009893 320.959644q37.242805 30.886646 6.356159 68.129452l0.163422-0.197052q-30.886646 37.242805-68.129452 6.356159l-387.009893-320.959644q-37.242805-30.886646-6.356159-68.129452Z"></path>
+        </svg>
+        <span>返回首页</span>
+      </button>
+    </div>
+
     <div class="my-tests-shell">
       <!-- 顶部：个人档案卡片 -->
       <header class="my-tests-header container">
       <div class="my-tests-profile-card">
-        <!-- 左侧：头像 + 基本信息 -->
-        <div class="my-tests-profile-left">
-          <div class="my-tests-profile-avatar">
-            <img
-                v-if="profile?.avatar_url"
-                :src="profile.avatar_url"
-                alt="avatar"
-            />
-            <span v-else>{{ getAvatarInitial() }}</span>
-          </div>
-
-          <div class="my-tests-profile-info">
-            <!-- 昵称 + tag -->
-            <div class="my-tests-profile-title-row">
-              <h1>{{ renderProfileTitle() }}</h1>
-              <span class="my-tests-profile-tag">我的测试</span>
+        <!-- 第一行：头像 + 昵称 + tag + 退出登录 -->
+        <div class="my-tests-profile-row my-tests-profile-row--top">
+          <!-- 左侧：头像 + 基本信息（只保留昵称 + tag） -->
+          <div class="my-tests-profile-left">
+            <div class="my-tests-profile-avatar">
+              <img
+                  v-if="profile?.avatar_url"
+                  :src="profile.avatar_url"
+                  alt="avatar"
+              />
+              <span v-else>{{ getAvatarInitial() }}</span>
             </div>
 
+            <div class="my-tests-profile-info">
+              <!-- 昵称 + tag -->
+              <div class="my-tests-profile-title-row">
+                <h1>{{ renderProfileTitle() }}</h1>
+                <span class="my-tests-profile-tag">我的测试</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右侧：退出登录 -->
+          <div class="my-tests-profile-actions-top">
+            <button
+                type="button"
+                class="my-tests-profile-action my-tests-profile-action--logout"
+                @click="handleLogout"
+            >
+              退出登录
+            </button>
+          </div>
+        </div>
+        <!-- 第二行：信息类内容 + 修改/保存按钮 -->
+        <div class="my-tests-profile-row my-tests-profile-row--bottom">
+          <!-- 左侧：信息内容（只读或编辑表单） -->
+          <div class="my-tests-profile-bottom-info">
             <!-- 只读：学校 / 地区 -->
             <p
                 class="my-tests-profile-sub"
@@ -30,14 +66,20 @@
               {{ profile?.school_name || '-' }} ｜ {{ profile?.city || profile?.province || '-' }}
             </p>
 
-            <!-- 只读资料字段（不会重复） -->
-            <div v-if="!editingExtra" class="my-tests-profile-extra-readonly">
+            <!-- 只读资料字段 -->
+            <div
+                v-if="!editingExtra"
+                class="my-tests-profile-extra-readonly"
+            >
               <div>手机号：{{ profile?.mobile || '未填写' }}</div>
               <div>学号：{{ profile?.study_id || '未填写' }}</div>
             </div>
 
-            <!-- 编辑模式：有标题 + 下拉 -->
-            <div v-else class="my-tests-profile-extra-edit">
+            <!-- 编辑模式：表单 -->
+            <div
+                v-else
+                class="my-tests-profile-extra-edit"
+            >
               <!-- 家长手机号 -->
               <div class="my-tests-form-field">
                 <label class="my-tests-form-label">家长手机号（非必填，建议填写）</label>
@@ -108,24 +150,34 @@
                 </select>
               </div>
             </div>
-
           </div>
-          <div>
-            <button
-                type="button"
-                class=""
-                @click="handleLogout"
-            >
-              退出登录
-            </button>
 
+          <!-- 右侧：修改 / 取消 / 保存 按钮 -->
+          <div class="my-tests-profile-actions-bottom">
             <template v-if="!editingExtra">
               <button
                   type="button"
-                  class="btn btn-secondary"
+                  class="btn btn-secondary btn-edit-extra "
                   @click="startEditExtra"
+                  aria-label="修改基本信息"
               >
-                修改基本信息
+                <svg
+                    class="btn-edit-extra__icon"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                  <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" stroke-linecap="round">
+                    <g transform="translate(-1093, -376)" stroke="currentColor">
+                      <g transform="translate(1094, 376.9224)">
+                        <polyline points="14 4.12441249 14 14.0775784 0 14.0775784 0 0.0775784122 10 0.0775784122"></polyline>
+                        <line x1="8.24063621" y1="-1.54594155" x2="8.08572034" y2="12.5909334"
+                              transform="translate(8.3871, 5.5) rotate(-136.3461) translate(-8.3871, -5.5)"></line>
+                      </g>
+                    </g>
+                  </g>
+                </svg>
               </button>
             </template>
             <template v-else>
@@ -144,12 +196,8 @@
                 保存
               </button>
             </template>
-
           </div>
         </div>
-
-        <!-- 右侧：按钮区 -->
-
       </div>
     </header>
 

@@ -1,11 +1,16 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/login/login",
+    "pages/basicinfo/basicinfo",
+    "pages/questions/questions",
+    "pages/report/report",
+    "pages/payment/payment",
     "pages/logs/logs"
   ],
   "window": {
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "Weixin",
+    "navigationBarTitleText": "Codex",
     "navigationBarBackgroundColor": "#ffffff"
   },
   "style": "v2",

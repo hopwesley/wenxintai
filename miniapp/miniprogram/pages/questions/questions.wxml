@@ -1,0 +1,37 @@
+<view class="page">
+  <view class="title">测评题目</view>
+  <view wx:if="{{!questions.length}}" class="status">等待题目加载中...</view>
+
+  <block wx:for="{{questions}}" wx:key="id">
+    <view class="question-card">
+      <view class="q-title">{{index + 1}}. {{item.title}}</view>
+      <view wx:if="{{item.type === 'single'}}">
+        <radio-group data-qid="{{item.id}}" bindchange="onSingleChange">
+          <label wx:for="{{item.options}}" wx:key="id" class="option">
+            <radio value="{{option.id}}" checked="{{answers[item.id] === option.id}}" />
+            <text>{{option.text}}</text>
+          </label>
+        </radio-group>
+      </view>
+      <view wx:elif="{{item.type === 'multiple'}}">
+        <checkbox-group data-qid="{{item.id}}" bindchange="onMultiChange">
+          <label wx:for="{{item.options}}" wx:key="id" class="option">
+            <checkbox value="{{option.id}}" checked="{{(answers[item.id] || []).includes(option.id)}}" />
+            <text>{{option.text}}</text>
+          </label>
+        </checkbox-group>
+      </view>
+    </view>
+  </block>
+
+  <button type="primary" loading="{{submitting}}" bindtap="submitPage">提交当前页</button>
+
+  <view class="log-panel">
+    <view class="log-title">实时日志</view>
+    <scroll-view scroll-y="true" class="log-body">
+      <block wx:for="{{logs}}" wx:key="index">
+        <view class="log-line">{{item}}</view>
+      </block>
+    </scroll-view>
+  </view>
+</view>

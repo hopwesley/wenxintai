@@ -1,54 +1,98 @@
-// index.ts
-// 获取应用实例
-const app = getApp<IAppOption>()
-const defaultAvatarUrl = 'https://mmbiz.qpic.cn/mmbiz/icTdbqWNOwNRna42FI242Lcia07jQodd2FJGIYQfG0LAJGFxM4FbnQP6yfMxBgJ0F3YRqJCJ1aPAK2dQagdusBZg/0'
+import { API_AUTH_STATUS, API_HOBBIES, API_PRODUCTS } from '../../utils/constants'
+import { get, request } from '../../utils/request'
+import { cacheBasicInfo, initSession, setAuthInfo, setCurrentTest } from '../../utils/store'
 
-Component({
+interface Product {
+  id: string
+  name: string
+  description?: string
+  business_type?: string
+  test_type?: string
+}
+
+interface Hobby {
+  id: string
+  name: string
+}
+
+Page({
   data: {
-    motto: 'Hello World',
-    userInfo: {
-      avatarUrl: defaultAvatarUrl,
-      nickName: '',
-    },
-    hasUserInfo: false,
-    canIUseGetUserProfile: wx.canIUse('getUserProfile'),
-    canIUseNicknameComp: wx.canIUse('input.type.nickname'),
+    products: [] as Product[],
+    hobbies: [] as Hobby[],
+    selectedProductId: '',
+    selectedHobbies: [] as string[],
+    loading: false,
+    statusMessage: '',
+    hasSession: false,
   },
-  methods: {
-    // 事件处理函数
-    bindViewTap() {
-      wx.navigateTo({
-        url: '../logs/logs',
+  async onLoad() {
+    initSession()
+    await this.checkSession()
+    this.loadCatalogs()
+  },
+  async checkSession() {
+    try {
+      const status = await request<{ token?: string; current_test?: IAppSession['currentTest'] }>({
+        url: API_AUTH_STATUS,
+        method: 'GET',
       })
-    },
-    onChooseAvatar(e: any) {
-      const { avatarUrl } = e.detail
-      const { nickName } = this.data.userInfo
-      this.setData({
-        "userInfo.avatarUrl": avatarUrl,
-        hasUserInfo: nickName && avatarUrl && avatarUrl !== defaultAvatarUrl,
-      })
-    },
-    onInputChange(e: any) {
-      const nickName = e.detail.value
-      const { avatarUrl } = this.data.userInfo
-      this.setData({
-        "userInfo.nickName": nickName,
-        hasUserInfo: nickName && avatarUrl && avatarUrl !== defaultAvatarUrl,
-      })
-    },
-    getUserProfile() {
-      // 推荐使用wx.getUserProfile获取用户信息，开发者每次通过该接口获取用户个人信息均需用户确认，开发者妥善保管用户快速填写的头像昵称，避免重复弹窗
-      wx.getUserProfile({
-        desc: '展示用户信息', // 声明获取用户个人信息后的用途，后续会展示在弹窗中，请谨慎填写
-        success: (res) => {
-          console.log(res)
-          this.setData({
-            userInfo: res.userInfo,
-            hasUserInfo: true
-          })
-        }
-      })
-    },
+      if (status.token) {
+        setAuthInfo({ token: status.token, loggedIn: true })
+        setCurrentTest(status.current_test)
+      }
+      this.setData({ hasSession: Boolean(status.token) })
+    } catch (err) {
+      this.setData({ statusMessage: '尚未登录或读取状态失败，请先登录' })
+    }
+  },
+  async loadCatalogs() {
+    this.setData({ loading: true })
+    try {
+      const [products, hobbies] = await Promise.all([
+        get<Product[]>(API_PRODUCTS),
+        get<Hobby[]>(API_HOBBIES),
+      ])
+      this.setData({ products, hobbies, statusMessage: '' })
+    } catch (err: any) {
+      this.setData({ statusMessage: err?.message || '加载数据失败' })
+    } finally {
+      this.setData({ loading: false })
+    }
+  },
+  onProductChange(event: WechatMiniprogram.RadioGroupChange) {
+    const selectedProductId = event.detail.value as string
+    this.setData({ selectedProductId })
+  },
+  onHobbyChange(event: WechatMiniprogram.CheckboxGroupChange) {
+    this.setData({ selectedHobbies: event.detail.value as string[] })
+  },
+  goToLogin() {
+    wx.navigateTo({ url: '/pages/login/login' })
+  },
+  goToBasicInfo() {
+    if (!this.data.selectedProductId) {
+      wx.showToast({ title: '请选择要测评的产品', icon: 'none' })
+      return
+    }
+    cacheBasicInfo(this.data.selectedProductId, { hobbies: this.data.selectedHobbies })
+    const selectedProduct = this.data.products.find((p) => p.id === this.data.selectedProductId)
+    setCurrentTest({
+      publicId: undefined,
+      businessType: selectedProduct?.business_type,
+      testType: selectedProduct?.test_type,
+    })
+    wx.navigateTo({
+      url: `/pages/basicinfo/basicinfo?product_id=${this.data.selectedProductId}`,
+    })
+  },
+  continueTest() {
+    const current = initSession().currentTest
+    if (current?.nextRoute === 'report') {
+      wx.navigateTo({ url: `/pages/report/report?public_id=${current.publicId || ''}` })
+      return
+    }
+    wx.navigateTo({
+      url: '/pages/questions/questions',
+    })
   },
 })

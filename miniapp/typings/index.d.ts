@@ -1,8 +1,22 @@
 /// <reference path="./types/index.d.ts" />
 
+interface IAppSession {
+  token?: string
+  cookie?: string
+  loggedIn: boolean
+  userInfo?: WechatMiniprogram.UserInfo
+  currentTest?: {
+    publicId?: string
+    businessType?: string
+    testType?: string
+    nextRoute?: string
+  }
+}
+
 interface IAppOption {
   globalData: {
-    userInfo?: WechatMiniprogram.UserInfo,
+    session: IAppSession
+    sessionReady?: boolean
   }
-  userInfoReadyCallback?: WechatMiniprogram.GetUserInfoSuccessCallback,
+  userInfoReadyCallback?: WechatMiniprogram.GetUserInfoSuccessCallback
 }

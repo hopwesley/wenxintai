@@ -63,7 +63,7 @@
                 class="my-tests-profile-sub"
                 v-if="!editingExtra"
             >
-              {{ profile?.school_name || '-' }} ｜ {{ profile?.city || profile?.province || '-' }}
+              <div>{{ profile?.school_name || '-' }}</div> ｜ <div>{{ profile?.city || profile?.province || '-' }}</div>
             </p>
 
             <!-- 只读资料字段 -->

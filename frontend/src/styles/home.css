@@ -89,7 +89,7 @@ a {
     grid-template-columns: 1.2fr 1fr;
     gap: 28px;
     align-items: center;
-    margin-top: 118px;
+    margin-top: 206px;
 }
 
 .hero-copy h1 {
@@ -1047,17 +1047,16 @@ a {
     gap: 8px;
     padding: 4px 10px;
     border-radius: 999px;
-    border: 1px solid rgba(148, 163, 184, 0.6);
-    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    background: var(--brand);
     cursor: pointer;
     font-size: 14px;
-    color: var(--text-secondary);
+    color: #fff;
     outline: none;
 }
 
 .home-user:hover {
-    border-color: var(--brand);
-    box-shadow: 0 0 0 1px rgba(90, 96, 234, 0.08);
+    background-color: var(--brand-dark);
 }
 
 .home-user__avatar {

@@ -17,7 +17,8 @@ export const connectWebSocket = (
   callbacks: WebSocketCallbacks,
 ): ManagedSocket => {
   const socketTask = wx.connectSocket({ url })
-  let pingTimer: WechatMiniprogram.Timer | undefined
+
+  let pingTimer: number | null = null
 
   const log = (message: string) => {
     if (callbacks.onLog) callbacks.onLog(message)
@@ -33,19 +34,27 @@ export const connectWebSocket = (
   })
 
   socketTask.onClose(() => {
-    if (pingTimer) {
+    if (pingTimer !== null) {
       clearInterval(pingTimer)
+      pingTimer = null
     }
     log('WebSocket closed')
   })
 
   socketTask.onMessage((res) => {
     try {
-      const parsed = JSON.parse(res.data as string)
-      const { type, payload } = parsed as { type: WebSocketMessageType; payload: any }
+      const raw = res.data as string
+      const parsed = JSON.parse(raw)
+      const { type, payload } = parsed as {
+        type: WebSocketMessageType
+        payload: any
+      }
+
       if (type === 'data' && callbacks.onData) callbacks.onData(payload)
       if (type === 'done' && callbacks.onDone) callbacks.onDone(payload)
-      if (type === 'error' && callbacks.onError) callbacks.onError(payload || 'Server error')
+      if (type === 'error' && callbacks.onError) {
+        callbacks.onError(payload || 'Server error')
+      }
     } catch (err: any) {
       const message = err?.message || 'Invalid WebSocket message'
       log(message)
@@ -54,17 +63,21 @@ export const connectWebSocket = (
   })
 
   const sendPing = (intervalMs = 15000) => {
-    if (pingTimer) {
+    if (pingTimer !== null) {
       clearInterval(pingTimer)
+      pingTimer = null
     }
     pingTimer = setInterval(() => {
       socketTask.send({ data: 'ping' })
-    }, intervalMs)
+    }, intervalMs) as unknown as number
   }
 
   const close = () => {
-    if (pingTimer) clearInterval(pingTimer)
-    socketTask.close({})
+    if (pingTimer !== null) {
+      clearInterval(pingTimer)
+      pingTimer = null
+    }
+    socketTask.close({}) // ✅ 必须传一个参数，哪怕是空对象
   }
 
   return { sendPing, close }

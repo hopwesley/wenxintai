@@ -29,16 +29,23 @@ const mergeHeaders = (headers?: Record<string, string>) => {
   return { ...DEFAULT_HEADERS, ...headers, ...authHeaders }
 }
 
-export const request = <T = any, U = any>(options: RequestOptions<U>) =>
+export const request = <T = any, U = any>(
+  options: RequestOptions<U>,
+): Promise<T> =>
   new Promise<T>((resolve, reject) => {
     const headers = mergeHeaders(options.header)
-    wx.request<T, U>({
-      ...options,
-      header: headers,
+
+    wx.request<T>({
+      url: options.url,
+      data: options.data,
       method: options.method || 'GET',
+      header: headers,
       success: (res) => {
         const { statusCode, data, header } = res
-        const cookie = (header && (header['Set-Cookie'] as string)) || undefined
+
+        // 这里 header 类型一般是 Record<string, string> | undefined
+        const cookie =
+          (header && (header['Set-Cookie'] as string)) || undefined
         if (cookie) {
           setAuthInfo({ cookie })
         }

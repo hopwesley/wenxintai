@@ -1,98 +1,95 @@
-import { API_AUTH_STATUS, API_HOBBIES, API_PRODUCTS } from '../../utils/constants'
-import { get, request } from '../../utils/request'
-import { cacheBasicInfo, initSession, setAuthInfo, setCurrentTest } from '../../utils/store'
+import { ensureLoginWithProfile } from "../../utils/auth"
+import { API_PRODUCTS } from "../../utils/constants"
 
-interface Product {
-  id: string
+interface PlanInfoDTO {
+  key: string
   name: string
-  description?: string
-  business_type?: string
-  test_type?: string
-}
-
-interface Hobby {
-  id: string
-  name: string
+  price: number
+  desc: string
+  tag?: string
+  has_paid: boolean
 }
 
 Page({
   data: {
-    products: [] as Product[],
-    hobbies: [] as Hobby[],
-    selectedProductId: '',
-    selectedHobbies: [] as string[],
-    loading: false,
-    statusMessage: '',
-    hasSession: false,
+    plans: [] as PlanInfoDTO[],
+    showProfileDialog: false,
   },
-  async onLoad() {
-    initSession()
-    await this.checkSession()
-    this.loadCatalogs()
-  },
-  async checkSession() {
-    try {
-      const status = await request<{ token?: string; current_test?: IAppSession['currentTest'] }>({
-        url: API_AUTH_STATUS,
-        method: 'GET',
-      })
-      if (status.token) {
-        setAuthInfo({ token: status.token, loggedIn: true })
-        setCurrentTest(status.current_test)
-      }
-      this.setData({ hasSession: Boolean(status.token) })
-    } catch (err) {
-      this.setData({ statusMessage: '尚未登录或读取状态失败，请先登录' })
+
+  onLoad() {
+    const authorized = wx.getStorageSync('profile_authorized')
+    if (!authorized) {
+      this.setData({ showProfileDialog: true })
     }
+
+    this.loadProducts()
   },
-  async loadCatalogs() {
-    this.setData({ loading: true })
+
+
+  // 拉产品列表
+  loadProducts() {
+    wx.request<PlanInfoDTO[]>({
+      url: API_PRODUCTS,
+      method: 'GET',
+      success: (res) => {
+        const data = res.data || []
+        this.setData({ plans: data })
+      },
+      fail: (err) => {
+        console.error('loadProducts error', err)
+        wx.showToast({
+          title: '获取产品列表失败，请稍后重试',
+          icon: 'none',
+        })
+      },
+    })
+  },
+
+  // 点击「暂不授权」
+  async onProfileDialogCancel() {
     try {
-      const [products, hobbies] = await Promise.all([
-        get<Product[]>(API_PRODUCTS),
-        get<Hobby[]>(API_HOBBIES),
-      ])
-      this.setData({ products, hobbies, statusMessage: '' })
+      // 只登录，不要头像昵称
+      await ensureLoginWithProfile(false)
+      wx.setStorageSync('miniapp_login_done', true)
     } catch (err: any) {
-      this.setData({ statusMessage: err?.message || '加载数据失败' })
-    } finally {
-      this.setData({ loading: false })
+      wx.showToast({
+        title: err?.message || '登录失败，请稍后重试',
+        icon: 'none',
+      })
+    }
+    this.setData({ showProfileDialog: false })
+  },
+
+  async onAuthorizeAndLogin() {
+    try {
+      await ensureLoginWithProfile(true)
+      wx.setStorageSync('miniapp_login_done', true)
+      this.setData({ showProfileDialog: false })
+  
+      wx.showToast({
+        title: '已授权头像昵称',
+        icon: 'success',
+      })
+    } catch (err: any) {
+      wx.showToast({
+        title: err?.message || '授权失败，请稍后重试',
+        icon: 'none',
+      })
     }
   },
-  onProductChange(event: WechatMiniprogram.RadioGroupChange) {
-    const selectedProductId = event.detail.value as string
-    this.setData({ selectedProductId })
-  },
-  onHobbyChange(event: WechatMiniprogram.CheckboxGroupChange) {
-    this.setData({ selectedHobbies: event.detail.value as string[] })
-  },
-  goToLogin() {
-    wx.navigateTo({ url: '/pages/login/login' })
-  },
-  goToBasicInfo() {
-    if (!this.data.selectedProductId) {
-      wx.showToast({ title: '请选择要测评的产品', icon: 'none' })
-      return
+  
+  async onPlanTap(e: WechatMiniprogram.TouchEvent) {
+    const id = e.currentTarget.dataset.id as string
+    try {
+      await ensureLoginWithProfile(false)
+      wx.navigateTo({
+        url: `/pages/basicinfo/basicinfo?plan_id=${id}`,
+      })
+    } catch (err: any) {
+      wx.showToast({
+        title: err?.message || '登录失败，请稍后重试',
+        icon: 'none',
+      })
     }
-    cacheBasicInfo(this.data.selectedProductId, { hobbies: this.data.selectedHobbies })
-    const selectedProduct = this.data.products.find((p) => p.id === this.data.selectedProductId)
-    setCurrentTest({
-      publicId: undefined,
-      businessType: selectedProduct?.business_type,
-      testType: selectedProduct?.test_type,
-    })
-    wx.navigateTo({
-      url: `/pages/basicinfo/basicinfo?product_id=${this.data.selectedProductId}`,
-    })
-  },
-  continueTest() {
-    const current = initSession().currentTest
-    if (current?.nextRoute === 'report') {
-      wx.navigateTo({ url: `/pages/report/report?public_id=${current.publicId || ''}` })
-      return
-    }
-    wx.navigateTo({
-      url: '/pages/questions/questions',
-    })
   },
 })

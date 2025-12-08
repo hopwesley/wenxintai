@@ -16,7 +16,7 @@
       <view wx:elif="{{item.type === 'multiple'}}">
         <checkbox-group data-qid="{{item.id}}" bindchange="onMultiChange">
           <label wx:for="{{item.options}}" wx:key="id" class="option">
-            <checkbox value="{{option.id}}" checked="{{(answers[item.id] || []).includes(option.id)}}" />
+            <checkbox value="{{option.id}}" />
             <text>{{option.text}}</text>
           </label>
         </checkbox-group>

@@ -19,6 +19,7 @@ Page({
     loading: false,
     inviteCode: '',
     awaitingPay: false,
+    dimensionText: '',
   },
   socket: null as ManagedSocket | null,
   onLoad(options: Record<string, string>) {
@@ -34,7 +35,7 @@ Page({
     try {
       const res = await get<{ report?: any; need_pay?: boolean }>(API_GENERATE_REPORT)
       if (res.report) {
-        this.setData({ report: res.report })
+        this.handleReportReady(res.report)
       } else {
         this.startReportStream(publicId)
       }
@@ -64,7 +65,23 @@ Page({
         return
       }
     }
-    this.setData({ report: reportData })
+  
+    // 这里安全地计算维度字符串
+    let dimensionText = ''
+    const dims = (reportData && reportData.dimensions) as any
+    if (Array.isArray(dims)) {
+      // 确保每个元素都是字符串，避免奇怪类型
+      dimensionText = dims.map((d) => String(d)).join('、')
+    } else if (typeof dims === 'string') {
+      // 后端如果直接给了字符串，也兜一下
+      dimensionText = dims
+    }
+  
+    this.setData({
+      report: reportData,
+      dimensionText,
+    })
+  
     setCurrentTest({ publicId: this.data.publicId, nextRoute: 'report' })
   },
   pushLog(message: string) {

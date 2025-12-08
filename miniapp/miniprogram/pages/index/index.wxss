@@ -1,91 +1,197 @@
-.page {
+.home {
   padding: 24rpx;
-  background: #f7f7f7;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background-color: #f5f7fb;
   min-height: 100vh;
   box-sizing: border-box;
 }
 
+/* 顶部 Hero */
 .hero {
-  margin-bottom: 24rpx;
+  text-align: center;
+  padding: 40rpx 20rpx 24rpx;
 }
 
-.title {
-  font-size: 36rpx;
-  font-weight: 600;
-  display: block;
+.logo {
+  width: 160rpx;
+  height: 160rpx;
+  margin: 0 auto;
 }
 
-.subtitle {
-  color: #666;
-  display: block;
-  margin-top: 8rpx;
-}
-
-.card {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-bottom: 20rpx;
-  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.03);
-}
-
-.section-title {
-  font-size: 28rpx;
-  margin-bottom: 16rpx;
-  color: #333;
-}
-
-.list-item {
-  display: flex;
-  align-items: center;
-  padding: 16rpx 0;
-  border-bottom: 1rpx solid #f0f0f0;
-}
-
-.list-item:last-child {
-  border-bottom: none;
-}
-
-.list-content {
-  margin-left: 12rpx;
-  display: flex;
-  flex-direction: column;
-}
-
-.item-name {
-  font-size: 28rpx;
-  color: #111;
-}
-
-.item-desc {
-  font-size: 24rpx;
-  color: #666;
-  margin-top: 6rpx;
-}
-
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16rpx;
-}
-
-.tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 10rpx 14rpx;
-  border-radius: 12rpx;
-  background: #f2f5ff;
-  color: #2f54eb;
-}
-
-.actions {
-  display: flex;
-  flex-direction: column;
-  gap: 16rpx;
-  margin-top: 24rpx;
-}
-
-.status {
+.slogan-main {
   margin-top: 16rpx;
-  color: #d4380d;
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #5a60ea;
+}
+
+.slogan-sub {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #64748b;
+}
+
+/* 产品卡片区域 */
+.plans {
+  margin-top: 24rpx;
+  display: flex;
+  flex-direction: column;
+  row-gap: 20rpx;
+}
+
+.plan-card {
+  background-color: #ffffff;
+  border-radius: 24rpx;
+  padding: 24rpx 24rpx 20rpx;
+  box-shadow: 0 12rpx 40rpx rgba(15, 23, 42, 0.08);
+}
+
+.plan-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.plan-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.plan-tag {
+  font-size: 20rpx;
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.plan-desc {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.plan-meta {
+  margin-top: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.plan-price {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #5a60ea;
+}
+
+.plan-btn {
+  background: #5a60ea;
+  color: #ffffff;
+  border-radius: 999rpx;
+  padding: 0 24rpx;
+  font-size: 24rpx;
+}
+
+/* 底部介绍 & 免责声明 */
+.footer {
+  margin-top: 40rpx;
+  padding-bottom: 40rpx;
+  color: #6b7280;
+  font-size: 22rpx;
+}
+
+.footer-block + .footer-block {
+  margin-top: 20rpx;
+}
+
+.footer-title {
+  font-size: 24rpx;
+  font-weight: 600;
+  margin-bottom: 8rpx;
+  color: #4b5563;
+}
+
+.footer-text {
+  line-height: 1.6;
+}
+
+.footer-brand {
+  margin-top: 24rpx;
+  text-align: center;
+  font-size: 20rpx;
+  color: #9ca3af;
+}
+
+/* 授权弹窗遮罩 */
+.dialog-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+/* 弹窗主体 */
+.dialog {
+  width: 640rpx;
+  max-width: 80%;
+  background-color: #ffffff;
+  border-radius: 24rpx;
+  padding: 32rpx 28rpx 24rpx;
+  box-shadow: 0 16rpx 40rpx rgba(15, 23, 42, 0.15);
+  box-sizing: border-box;
+}
+
+.dialog-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #0f172a;
+  text-align: center;
+}
+
+.dialog-content {
+  margin-top: 20rpx;
+  font-size: 24rpx;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.dialog-tip {
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  color: #9ca3af;
+}
+
+.dialog-actions {
+  margin-top: 28rpx;
+  display: flex;
+  justify-content: flex-end;
+  column-gap: 16rpx;
+}
+
+.dialog-btn {
+  min-width: 180rpx;
+  padding: 12rpx 24rpx;
+  font-size: 24rpx;
+  border-radius: 999rpx;
+}
+
+/* 次要按钮 */
+.dialog-btn--secondary {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+/* 主按钮 */
+.dialog-btn--primary {
+  background-color: #5a60ea;
+  color: #ffffff;
 }

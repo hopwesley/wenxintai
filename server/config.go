@@ -16,6 +16,7 @@ type appConfig struct {
 	DebugLevel string               `json:"debug_level,omitempty"`
 	Server     *srv.Config          `json:"server"`
 	PaymentCfg *srv.WeChatPayConfig `json:"payment_cfg"`
+	MiniAppCfg *srv.MiniAppCfg      `json:"mini_app_cfg"`
 	Database   *dbSrv.PSDBConfig    `json:"database"`
 	AIApi      *ai_api.Cfg          `json:"ai_api"`
 
@@ -86,6 +87,9 @@ func loadAppConfig(env string) (*appConfig, error) {
 	}
 
 	if err := cfg.PaymentCfg.Validate(configDir, cfg.WechatPayPubKeyFile, cfg.MchPrivateKeyFile); err != nil {
+		return nil, err
+	}
+	if err := cfg.MiniAppCfg.Validate(); err != nil {
 		return nil, err
 	}
 

@@ -4,7 +4,7 @@
   <view wx:if="{{report}}" class="report-card">
     <view class="report-title">{{report.title || '测评报告'}}</view>
     <view class="report-body">
-      <text>维度：{{(report.dimensions || []).join('、')}}</text>
+      <text wx:if="{{dimensionText}}">维度：{{dimensionText}}</text>
       <text wx:if="{{report.recommendation}}">推荐：{{report.recommendation}}</text>
     </view>
   </view>

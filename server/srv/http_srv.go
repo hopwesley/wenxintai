@@ -42,6 +42,7 @@ const (
 	apiWeChatSignIn         = "/api/auth/wx/status"
 	apiWeChatSignInCallBack = "/api/wechat_signin"
 	apiWeChatLogOut         = "/api/auth/logout"
+	apiMiniAppSignIn        = "/api/auth/miniapp_login"
 	apiWeChatUpdateProfile  = "/api/user/update_profile"
 	apiWeChatMyProfile      = "/api/auth/profile"
 
@@ -67,6 +68,7 @@ type HttpSrv struct {
 	log        zerolog.Logger
 	cfg        *Config
 	payment    *WeChatPayConfig
+	miniCfg    *MiniAppCfg
 	srv        *http.Server
 	httpClient *http.Client
 	router     *http.ServeMux
@@ -93,10 +95,10 @@ func newBusinessService() *HttpSrv {
 	}
 }
 
-func (s *HttpSrv) Init(cfg *Config, payment *WeChatPayConfig) error {
+func (s *HttpSrv) Init(cfg *Config, payment *WeChatPayConfig, miniCfg *MiniAppCfg) error {
 	s.cfg = cfg
 	s.payment = payment
-
+	s.miniCfg = miniCfg
 	if err := s.initWeChatPay(); err != nil {
 		s.log.Err(err).Msg("init wechat pay failed")
 		return err
@@ -187,6 +189,7 @@ func (s *HttpSrv) initRouter() error {
 		{apiWeChatSignIn, http.MethodGet, s.wechatSignStatus, false},
 		{apiWeChatSignInCallBack, http.MethodGet, s.wechatSignInCallBack, false},
 		{apiWeChatPaymentCallBack, http.MethodPost, s.apiWeChatPayCallBack, false},
+		{apiMiniAppSignIn, http.MethodPost, s.apiMiniAppSignIn, false},
 		{apiWeChatLogOut, http.MethodPost, s.wechatLogout, false},
 
 		{apiLoadCurProduct, http.MethodPost, s.preparePayForReport, true},

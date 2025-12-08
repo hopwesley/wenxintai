@@ -1,41 +1,94 @@
-<view class="page">
-  <view class="hero">
-    <text class="title">选择要体验的测评产品</text>
-    <text class="subtitle">登录后将为你同步网页端测评进度</text>
+<view class="home">
+
+<!-- 顶部 Hero 区域 -->
+<view class="hero">
+  <!-- logo 文件路径可以根据你自己的实际情况调整 -->
+  <image class="logo" src="/images/logo.png" mode="aspectFit" />
+  <view class="slogan-main">智择未来 · AI 智能选科</view>
+  <view class="slogan-sub">
+    用你的热爱、能力与潜力，找到更适合你的方向
+  </view>
+</view>
+
+<!-- 四大产品列表 -->
+<view class="plans">
+  <block wx:for="{{plans}}" wx:key="id">
+    <view class="plan-card">
+      <view class="plan-header">
+        <view class="plan-title">{{item.title}}</view>
+        <view class="plan-tag" wx:if="{{item.tag}}">{{item.tag}}</view>
+      </view>
+
+      <view class="plan-desc">{{item.desc}}</view>
+
+      <view class="plan-meta">
+        <view class="plan-price" wx:if="{{item.price >= 0}}">
+          ¥{{item.price}}
+        </view>
+        <view class="plan-price" wx:else>
+          免费
+        </view>
+        <button
+          class="plan-btn"
+          size="mini"
+          bindtap="onPlanTap"
+          data-id="{{item.id}}"
+        >
+          立即开始
+        </button>
+      </view>
+    </view>
+  </block>
+</view>
+
+<!-- 底部介绍 & 免责声明 -->
+<view class="footer">
+  <view class="footer-block">
+    <view class="footer-title">产品简介</view>
+    <view class="footer-text">
+      「智择未来」结合经典心理学理论与前沿 AI 算法，
+      为你提供更加科学、个性化的选科与规划参考。
+    </view>
   </view>
 
-  <view class="card">
-    <view class="section-title">产品</view>
-    <radio-group class="list" bindchange="onProductChange">
-      <block wx:for="{{products}}" wx:key="id">
-        <label class="list-item">
-          <radio value="{{item.id}}" checked="{{selectedProductId === item.id}}" />
-          <view class="list-content">
-            <text class="item-name">{{item.name}}</text>
-            <text class="item-desc">{{item.description || '适配 Codex 测评流程'}}</text>
-          </view>
-        </label>
-      </block>
-    </radio-group>
+  <view class="footer-block">
+    <view class="footer-title">使用说明与免责声明</view>
+    <view class="footer-text">
+      测评结果仅作为辅助手段，不构成升学或职业选择的唯一依据。
+      结果基于你当前填写的信息生成，请谨慎理解与使用。
+    </view>
   </view>
 
-  <view class="card">
-    <view class="section-title">兴趣偏好</view>
-    <checkbox-group class="tags" bindchange="onHobbyChange">
-      <block wx:for="{{hobbies}}" wx:key="id">
-        <label class="tag">
-          <checkbox value="{{item.id}}" checked="{{selectedHobbies.includes(item.id)}}" />
-          <text>{{item.name}}</text>
-        </label>
-      </block>
-    </checkbox-group>
+  <view class="footer-brand">
+    © 智择未来 | 愿与你一同探索未来方向
   </view>
+</view>
 
-  <view class="actions">
-    <button type="primary" loading="{{loading}}" bindtap="goToBasicInfo">开始测评</button>
-    <button type="default" bindtap="goToLogin">微信登录</button>
-    <button wx:if="{{hasSession}}" bindtap="continueTest">继续未完成测评</button>
+<!-- 授权头像昵称弹窗 -->
+<view wx:if="{{showProfileDialog}}" class="dialog-mask">
+  <view class="dialog">
+    <view class="dialog-title">授权头像和昵称</view>
+    <view class="dialog-content">
+      <view>为了为你提供更个性化的测评体验，我们希望获取你的微信头像和昵称。</view>
+      <view class="dialog-tip">
+        信息仅用于展示和账号识别，不会用于未经许可的其他用途，你可以随时在微信中取消授权。
+      </view>
+    </view>
+    <view class="dialog-actions">
+      <button
+        class="dialog-btn dialog-btn--secondary"
+        bindtap="onProfileDialogCancel"
+      >
+        暂不授权
+      </button>
+      <button
+        class="dialog-btn dialog-btn--primary"
+        bindtap="onAuthorizeAndLogin"
+      >
+        授权并继续
+      </button>
+    </view>
   </view>
+</view>
 
-  <view wx:if="{{statusMessage}}" class="status">{{statusMessage}}</view>
 </view>

@@ -6,14 +6,17 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/hopwesley/wenxintai/server/dbSrv"
 )
 
 const (
+	cookieKey         = "wx_user"
 	redirectUrlBase   = "https://%s/api/wechat_signin"
 	wxApiUserInfo     = "https://api.weixin.qq.com/sns/userinfo?"
 	wxApiExchangeCode = "https://api.weixin.qq.com/sns/oauth2/access_token?"
+	wxApiMiniAppToken = "https://api.weixin.qq.com/sns/jscode2session?"
 )
 
 type wechatTokenResp struct {
@@ -124,7 +127,7 @@ func (s *HttpSrv) wechatSignInCallBack(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "wx_user",
+		Name:     cookieKey,
 		Value:    token.UnionID,
 		Path:     "/",
 		HttpOnly: true,
@@ -254,7 +257,7 @@ func (s *HttpSrv) fetchWeChatUserInfo(ctx context.Context, accessToken, openID s
 }
 
 func (s *HttpSrv) currentUserFromCookie(r *http.Request) (string, error) {
-	c, err := r.Cookie("wx_user")
+	c, err := r.Cookie(cookieKey)
 	if err != nil || c.Value == "" {
 		return "", nil
 	}
@@ -264,7 +267,7 @@ func (s *HttpSrv) currentUserFromCookie(r *http.Request) (string, error) {
 
 func (s *HttpSrv) wechatLogout(w http.ResponseWriter, _ *http.Request) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "wx_user",
+		Name:     cookieKey,
 		Value:    "",
 		Path:     "/",
 		MaxAge:   -1,
@@ -333,4 +336,165 @@ func (s *HttpSrv) apiWeChatMyProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, resp)
 	s.log.Info().Str("wechat_id", uid).Msg("apiWeChatMyProfile: query user profile success")
+}
+
+// 小程序登录：根据 wx.login 的 code 换取 unionid，并可同时更新头像昵称
+func (s *HttpSrv) apiMiniAppSignIn(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// 1. 解析请求体 { "code": "xxx", "nick_name": "...", "avatar_url": "..." }
+	var req struct {
+		Code      string `json:"code"`
+		NickName  string `json:"nick_name"`
+		AvatarURL string `json:"avatar_url"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	req.Code = strings.TrimSpace(req.Code)
+	if req.Code == "" {
+		http.Error(w, "code is required", http.StatusBadRequest)
+		return
+	}
+
+	// 2. 用 code 向微信小程序服务端换取 openid / unionid / session_key
+	openid, unionid, sessionKey, err := s.miniAppCode2Session(ctx, req.Code)
+	if err != nil {
+		s.log.Err(err).Msg("miniAppSignIn: jscode2session failed")
+		http.Error(w, "wechat miniapp signin failed", http.StatusBadGateway)
+		return
+	}
+
+	// TODO: 如果以后要做手机号解密或其它加密数据解密，可以在这里把 sessionKey 存到 session 表里
+	_ = sessionKey
+
+	if unionid == "" {
+		s.log.Error().
+			Str("openid", openid).
+			Msg("miniapp signin: empty unionid in wechat resp")
+		http.Error(w, "wechat miniapp signin failed: empty unionid", http.StatusBadGateway)
+		return
+	}
+
+	// 3. 根据 unionid 查/建用户，并可同时更新头像昵称
+	existing, err := dbSrv.Instance().QueryUserProfileUid(ctx, unionid)
+	if err != nil {
+		s.log.Error().Err(err).Msg("miniapp signin: QueryUserProfileUid failed")
+		http.Error(w, "wechat miniapp signin failed", http.StatusBadGateway)
+		return
+	}
+	isNew := existing == nil
+
+	// 清理一下字符串
+	req.NickName = strings.TrimSpace(req.NickName)
+	req.AvatarURL = strings.TrimSpace(req.AvatarURL)
+
+	// 如果前端传了头像昵称，就同步更新到你现在的 wechat info 表里
+	if req.NickName != "" || req.AvatarURL != "" {
+		if err := dbSrv.Instance().InsertOrUpdateWeChatInfo(
+			ctx,
+			unionid,
+			req.NickName,
+			req.AvatarURL,
+		); err != nil {
+			s.log.Error().Err(err).Msg("miniapp signin: InsertOrUpdateWeChatInfo failed")
+			http.Error(w, "wechat miniapp signin failed", http.StatusBadGateway)
+			return
+		}
+	} else if isNew {
+		// 可选：如果是新用户但没传头像昵称，可以先插一条空记录，和网站逻辑对齐
+		if err := dbSrv.Instance().InsertOrUpdateWeChatInfo(
+			ctx,
+			unionid,
+			"",
+			"",
+		); err != nil {
+			s.log.Error().Err(err).Msg("miniapp signin: InsertOrUpdateWeChatInfo (empty) failed")
+			http.Error(w, "wechat miniapp signin failed", http.StatusBadGateway)
+			return
+		}
+	}
+
+	// 4. 写 cookie，和网站保持一致
+	http.SetCookie(w, &http.Cookie{
+		Name:     cookieKey, // "wx_user"
+		Value:    unionid,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	// 可选：写 wx_is_new
+	isNewVal := "0"
+	if isNew {
+		isNewVal = "1"
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "wx_is_new",
+		Value:    isNewVal,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   12 * 3600,
+	})
+
+	// 5. 返回 token（现在就是 unionid）
+	resp := map[string]string{
+		"token": unionid,
+	}
+
+	writeJSON(w, http.StatusOK, resp)
+
+	s.log.Info().
+		Str("openid", openid).
+		Str("unionid", unionid).
+		Msg("miniapp signin success")
+}
+
+type miniAppCode2SessionResp struct {
+	OpenID     string `json:"openid"`
+	UnionID    string `json:"unionid"`
+	SessionKey string `json:"session_key"`
+
+	ErrCode int    `json:"errcode"`
+	ErrMsg  string `json:"errmsg"`
+}
+
+func (s *HttpSrv) miniAppCode2Session(ctx context.Context, code string) (openid, unionid, sessionKey string, err error) {
+	v := url.Values{}
+	v.Set("appid", s.miniCfg.MiniAppAppID)
+	v.Set("secret", s.miniCfg.MiniAppAppSecret)
+	v.Set("js_code", code)
+	v.Set("grant_type", "authorization_code")
+
+	u := wxApiMiniAppToken + v.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	if err != nil {
+		return "", "", "", fmt.Errorf("new request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", "", "", fmt.Errorf("http do: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var body miniAppCode2SessionResp
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return "", "", "", fmt.Errorf("decode jscode2session resp: %w", err)
+	}
+
+	if body.ErrCode != 0 {
+		return "", "", "", fmt.Errorf("jscode2session err: %d %s", body.ErrCode, body.ErrMsg)
+	}
+
+	if body.OpenID == "" {
+		return "", "", "", fmt.Errorf("empty openid in jscode2session resp")
+	}
+
+	return body.OpenID, body.UnionID, body.SessionKey, nil
 }

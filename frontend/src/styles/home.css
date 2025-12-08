@@ -1044,8 +1044,8 @@ a {
 .home-user {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 4px 10px;
+    gap: 4px;
+    padding: 4px 12px 4px 4px;
     border-radius: 999px;
     border: none;
     background: var(--brand);

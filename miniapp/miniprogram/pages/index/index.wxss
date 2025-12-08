@@ -1,62 +1,91 @@
-/**index.wxss**/
-page {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-.scrollarea {
-  flex: 1;
-  overflow-y: hidden;
-}
-
-.userinfo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: #aaa;
-  width: 80%;
-}
-
-.userinfo-avatar {
-  overflow: hidden;
-  width: 128rpx;
-  height: 128rpx;
-  margin: 20rpx;
-  border-radius: 50%;
-}
-
-.usermotto {
-  margin-top: 200px;
-}
-
-.avatar-wrapper {
-  padding: 0;
-  width: 56px !important;
-  border-radius: 8px;
-  margin-top: 40px;
-  margin-bottom: 40px;
-}
-
-.avatar {
-  display: block;
-  width: 56px;
-  height: 56px;
-}
-
-.nickname-wrapper {
-  display: flex;
-  width: 100%;
-  padding: 16px;
+.page {
+  padding: 24rpx;
+  background: #f7f7f7;
+  min-height: 100vh;
   box-sizing: border-box;
-  border-top: .5px solid rgba(0, 0, 0, 0.1);
-  border-bottom: .5px solid rgba(0, 0, 0, 0.1);
-  color: black;
 }
 
-.nickname-label {
-  width: 105px;
+.hero {
+  margin-bottom: 24rpx;
 }
 
-.nickname-input {
-  flex: 1;
+.title {
+  font-size: 36rpx;
+  font-weight: 600;
+  display: block;
+}
+
+.subtitle {
+  color: #666;
+  display: block;
+  margin-top: 8rpx;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.03);
+}
+
+.section-title {
+  font-size: 28rpx;
+  margin-bottom: 16rpx;
+  color: #333;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.list-item:last-child {
+  border-bottom: none;
+}
+
+.list-content {
+  margin-left: 12rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.item-name {
+  font-size: 28rpx;
+  color: #111;
+}
+
+.item-desc {
+  font-size: 24rpx;
+  color: #666;
+  margin-top: 6rpx;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 10rpx 14rpx;
+  border-radius: 12rpx;
+  background: #f2f5ff;
+  color: #2f54eb;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-top: 24rpx;
+}
+
+.status {
+  margin-top: 16rpx;
+  color: #d4380d;
 }

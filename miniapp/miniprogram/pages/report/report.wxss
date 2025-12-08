@@ -1,0 +1,67 @@
+.page {
+  padding: 20rpx;
+}
+
+.title {
+  font-size: 34rpx;
+  font-weight: 600;
+}
+
+.status {
+  margin: 12rpx 0;
+}
+
+.report-card {
+  background: #fff;
+  border-radius: 12rpx;
+  padding: 18rpx;
+  margin: 12rpx 0;
+}
+
+.report-title {
+  font-size: 30rpx;
+  margin-bottom: 10rpx;
+}
+
+.report-body text {
+  display: block;
+  margin-bottom: 6rpx;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12rpx;
+  padding: 16rpx;
+  margin: 12rpx 0;
+}
+
+.section-title {
+  font-weight: 600;
+  margin-bottom: 8rpx;
+}
+
+.field {
+  display: flex;
+  gap: 12rpx;
+  align-items: center;
+  margin-bottom: 10rpx;
+}
+
+.log-panel {
+  margin-top: 12rpx;
+  background: #fafafa;
+  padding: 12rpx;
+  border-radius: 10rpx;
+}
+
+.log-title {
+  margin-bottom: 8rpx;
+}
+
+.log-body {
+  height: 200rpx;
+}
+
+.log-line {
+  color: #666;
+}

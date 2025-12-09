@@ -1,7 +1,7 @@
 <template>
   <div class="my-tests-page home">
     <div class="my-tests-header-actions">
-      <button type="button" class="btn btn-ghost btn-back-home">
+      <button type="button" class="btn btn-ghost btn-back-home"  @click="handleBackHome">
         <svg
             class="btn-back-home__icon"
             viewBox="0 0 1024 1024"

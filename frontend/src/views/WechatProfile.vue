@@ -63,7 +63,8 @@
                 class="my-tests-profile-sub"
                 v-if="!editingExtra"
             >
-              <div>{{ profile?.school_name || '-' }}</div> ｜ <div>{{ profile?.city || profile?.province || '-' }}</div>
+              <div>{{ profile?.school_name || '-' }}</div>
+              <div>{{ profile?.city || profile?.province || '-' }}</div>
             </p>
 
             <!-- 只读资料字段 -->
@@ -71,8 +72,8 @@
                 v-if="!editingExtra"
                 class="my-tests-profile-extra-readonly"
             >
-              <div>手机号：{{ profile?.mobile || '未填写' }}</div>
-              <div>学号：{{ profile?.study_id || '未填写' }}</div>
+              <div>{{ profile?.mobile || '未填写' }}</div>
+              <div>{{ profile?.study_id || '未填写' }}</div>
             </div>
 
             <!-- 编辑模式：表单 -->

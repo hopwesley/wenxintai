@@ -132,15 +132,15 @@ function handleStepClick(index: number) {
   }
 
   .step-indicator__circle {
-    width: 36px;
-    height: 36px;
+    width: 46px;
+    height: 22px;
     border-radius: 18px;
-    border: 2px solid rgba(99, 102, 241, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #fff;
+    background-color: rgba(255, 255, 255, 0.3);
     transition: all 0.2s ease;
+    color: #7D72F6;
   }
 
   .step-indicator__title {
@@ -172,8 +172,7 @@ function handleStepClick(index: number) {
   }
 
   .step-indicator li.is-current .step-indicator__circle {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+    background-color: #fff;
   }
 
   .step-indicator li.is-upcoming .step-indicator__circle {

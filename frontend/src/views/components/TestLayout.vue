@@ -18,8 +18,8 @@
 
 <style scoped>
 .test-layout {
-  min-height: 100vh;
-  background: linear-gradient(180deg, #f1f5ff 0%, #f9f4ff 50%, #fff0f7 100%);
+  height: 383px;
+  background: linear-gradient(90deg, #D0DAF8 0%, #5A60EA 100%);
   padding: 24px 16px 32px;
   box-sizing: border-box;
   display: flex;
@@ -28,7 +28,8 @@
 }
 
 .test-layout__inner {
-  width: min(960px, 100%);
+  /* 关键：宽度控制在 640–960 之间，理想值为 46vw */
+  width: clamp(640px, 46vw, 960px);
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -40,8 +41,7 @@
 
 .test-layout__content {
   background-color: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 12px 36px rgba(44, 62, 80, 0.08);
+  border-radius: 32px;
   padding: 32px;
   box-sizing: border-box;
   flex: 1;
@@ -53,14 +53,4 @@
   text-align: center;
 }
 
-@media (max-width: 768px) {
-  .test-layout {
-    padding: 16px 12px 24px;
-  }
-
-  .test-layout__content {
-    padding: 24px 16px;
-    border-radius: 12px;
-  }
-}
 </style>

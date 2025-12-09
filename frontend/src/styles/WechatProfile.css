@@ -2,22 +2,20 @@
 body {
     background-color: #F8F8FA;
 }
+
 .my-tests-page {
     min-height: 100vh;
+    background: #f7f8fb;
+    /* 垂直居中整块内容 */
     display: flex;
     flex-direction: column;
     justify-content: center;
-    width: 100%;
-    max-width: 960px;   /* 上限 */
-    min-width: 640px;   /* 下限 */
-    margin: 0 auto;
+    /* 关键：宽度控制在 640–960 之间，理想值为 46vw */
+    width: clamp(640px, 46vw, 960px);
+    margin: 0 auto;          /* 水平居中 */
+
     box-sizing: border-box;
-    padding-inline: clamp(
-            24px,   /* 屏幕很窄时，左右至少 24px 缓冲 */
-            27%,    /* 正常情况下，左右约 27%，中间可视区≈46% */
-            160px   /* 很宽时，两侧最多 160px 空白，保证中间不太窄 */
-    );
-    padding-block: 24px; /* 上下留一点空间，避免顶到边缘 */
+    padding: 24px 0;         /* 上下留一点空，左右不再用百分比 padding 控宽度 */
 }
 
 .btn-back-home {
@@ -40,6 +38,7 @@ body {
 .btn-back-home:hover {
     background-color: rgba(90, 60, 255, 0.1);
 }
+
 .my-tests-header-actions {
     display: flex;
     justify-content: flex-start;
@@ -70,10 +69,12 @@ body {
     align-items: center;
     justify-content: space-between;
 }
+
 .my-tests-profile-row--top {
     padding-bottom: 16px;
     border-bottom:1px solid rgba(90, 60, 255, 0.1);
 }
+
 .my-tests-profile-row.my-tests-profile-row--bottom {
     align-items: flex-start;
     line-height: 13px;
@@ -124,7 +125,7 @@ body {
 .my-tests-profile-action--logout {
     font-weight: 400;
     color: var(--text-third);
-    background-color: rgba(15, 23, 42, 0.1);
+    background-color: rgba(15, 23, 42, 0.05);
     padding: 6px 16px;
 }
 
@@ -278,6 +279,8 @@ body {
 
 .my-tests-card-btn {
     white-space: nowrap;
+    background-color: var(--brand);
+    color: white;
 }
 
 .my-tests-card-btn--disabled {
@@ -321,7 +324,6 @@ body {
         width: 100%;
     }
 }
-
 
 .my-tests-profile-extra {
     margin-top: 10px;
@@ -416,8 +418,8 @@ body {
 
 /* 默认状态：透明背景，图标颜色 var(--text-third) */
 .btn-edit-extra {
-    padding: 12px;
-    margin-top: -12px;
+    padding: 8px;
+    margin-top: -8px;
     border-radius: 999px;
     border: none;
     background: transparent;
@@ -568,21 +570,37 @@ body {
         justify-content: center;
     }
 }
+.my-tests-profile-bottom-info {
+    display: flex;
+    align-items: center;
+}
 
-.my-tests-profile-extra-readonly {
+.my-tests-profile-bottom-info > p + div {
+    border-left: 1px solid var(--text-third);  /* 竖线颜色可按需要调 */
+    padding-left: 8px;              /* 竖线和文字之间留点空 */
+}
+.my-tests-profile-extra-readonly,
+.my-tests-profile-sub {
     margin-top: 8px;
     display: flex;
     font-size: 13px;
     color: var(--text-secondary);
 }
+
+.my-tests-profile-extra-readonly{
+    margin-top: 8px;
+}
+
 /* 所有子项统一一点左右内边距 */
-.my-tests-profile-extra-readonly > div {
+.my-tests-profile-extra-readonly > div,
+.my-tests-profile-sub > div {
     padding-right: 8px;
 }
 
 /* 从第二个开始左侧画竖线 */
-.my-tests-profile-extra-readonly > div + div {
-    border-left: 2px solid var(--text-third);  /* 竖线颜色可按需要调 */
+.my-tests-profile-extra-readonly > div + div ,
+.my-tests-profile-sub > div + div {
+    border-left: 1px solid var(--text-third);  /* 竖线颜色可按需要调 */
     padding-left: 8px;              /* 竖线和文字之间留点空 */
 }
 

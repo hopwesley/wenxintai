@@ -24,4 +24,30 @@ export default defineConfig({
             },
         },
     },
+
+    build: {
+        // 把警告阈值从默认 500KB 提高到 1500KB（1.5MB），看自己需求可以再调
+        chunkSizeWarningLimit: 1500,
+
+        // 简单的手动拆包策略
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    // 所有来自 node_modules 的包单独拆
+                    if (id.includes('node_modules')) {
+                        if (id.includes('vue')) {
+                            // vue / vue-router 相关放一个包里
+                            return 'vue-vendor'
+                        }
+                        if (id.includes('echarts')) {
+                            // 如果你用了 echarts，就单独拆一个包
+                            return 'echarts'
+                        }
+                        // 其他三方依赖统一打进 vendor
+                        return 'vendor'
+                    }
+                },
+            },
+        },
+    },
 })

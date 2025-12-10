@@ -7,10 +7,14 @@
           :class="stepClass(index)"
           @click="handleStepClick(index)"
       >
-        <div class="step-indicator__circle" aria-hidden="true">
-          <span>{{ index + 1 }}</span>
+        <div class="step-number-title">
+          <div class="step-indicator__circle" aria-hidden="true">
+            <span>{{ index + 1 }}</span>
+
+          </div>
+          <div class="step-indicator__title step-indicator__title-opacity">{{ step }}</div>
+
         </div>
-        <div class="step-indicator__title">{{ step }}</div>
         <div v-if="index < steps.length - 1" class="step-indicator__connector" aria-hidden="true"></div>
       </li>
     </ol>
@@ -112,8 +116,16 @@ function handleStepClick(index: number) {
     justify-content: center;
   }
 
-  .step-indicator ol {
+  .step-number-title {
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .step-indicator ol {
+    display: grid;
+    grid-template-columns: 3fr 3fr 3fr 1fr;
     list-style: none;
     padding: 0;
     margin: 0;
@@ -146,12 +158,18 @@ function handleStepClick(index: number) {
   .step-indicator__title {
     font-size: 14px;
     line-height: 1.4;
+    color: #ffffff;
+    opacity: 0.2;
+  }
+
+  .step-indicator__title-opacity {
+    opacity: 0.3;
   }
 
   .step-indicator__connector {
     position: absolute;
-    right: -8px;
-    top: 50%;
+    right: -13px;
+    top: 11px;
     transform: translateY(-50%);
     width: calc(100% - 44px);
     height: 2px;
@@ -166,18 +184,15 @@ function handleStepClick(index: number) {
   }
 
   .step-indicator li.is-complete .step-indicator__circle {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    background: #ffffff;
     border-color: transparent;
-    color: white;
+    color: var(--brand);
   }
 
   .step-indicator li.is-current .step-indicator__circle {
     background-color: #fff;
   }
 
-  .step-indicator li.is-upcoming .step-indicator__circle {
-    border-color: rgba(148, 163, 184, 0.6);
-  }
 
   @media (max-width: 768px) {
     .step-indicator ol {

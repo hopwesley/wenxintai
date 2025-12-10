@@ -15,7 +15,7 @@
     width: 360px;
     background: #fff;
     border-radius: 18px;
-    padding: 28px 26px 32px;
+    padding: 32px;
     box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
     text-align: center;
     --brand: #5A60EA;
@@ -23,7 +23,7 @@
 }
 
 .title {
-    margin: 0 0 6px;
+    margin: 0 0 12px;
     font-size: 20px;
     line-height: 20px;
     font-weight: 600;
@@ -55,7 +55,7 @@
 }
 
 .code-input:focus {
-    border-color: #5b7cff;
+    border-color: var(--brand);
     box-shadow: 0 0 0 3px rgba(91, 124, 255, 0.2);
 }
 
@@ -85,18 +85,19 @@
 
 .plan-section {
     margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .plan-name {
-    margin: 4px 0 2px;
     font-size: 16px;
     font-weight: 600;
     color: #0f172a;
 }
 
 .plan-price {
-    margin: 0 0 4px;
-    font-size: 18px;
+    font-size: 32px;
     font-weight: 700;
     color: var(--brand);
 }
@@ -113,7 +114,7 @@
 }
 
 .pay-btn {
-    width: 100%;
+    width: 80%;
 }
 
 .pay-hint {

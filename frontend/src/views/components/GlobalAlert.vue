@@ -38,6 +38,7 @@
 
 
 <script setup lang="ts">
+import '@/styles/base.css'
 import { useAlert } from '@/controller/useAlert'
 const { visible, title, message, handleConfirm, closeAlert } = useAlert()
 </script>
@@ -52,6 +53,8 @@ const { visible, title, message, handleConfirm, closeAlert } = useAlert()
   justify-content: center;
   background: rgba(15, 23, 42, 0.45); /* 半透明深色遮罩 */
   backdrop-filter: blur(4px);
+  --brand: #5A60EA;
+  --brand-dark: #484DBB;
 }
 
 /* 弹窗本体 */
@@ -88,6 +91,7 @@ const { visible, title, message, handleConfirm, closeAlert } = useAlert()
   font-size: 18px;
   font-weight: 600;
   color: #0f172a;
+  text-align: center;
 }
 
 .alert-message {
@@ -95,17 +99,19 @@ const { visible, title, message, handleConfirm, closeAlert } = useAlert()
   line-height: 1.6;
   color: #475569;
   margin-bottom: 16px;
+  text-align: center;
 }
 
 /* 底部按钮区域 */
 .alert-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 /* 如果你项目里已经有 .btn / .btn-primary，可以不需要这些 fallback 样式 */
 .alert-confirm {
   min-width: 88px;
+  background-color: var(--brand);
 }
 
 </style>

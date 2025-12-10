@@ -33,6 +33,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  margin-top: 32px;
 }
 
 .test-layout__header {

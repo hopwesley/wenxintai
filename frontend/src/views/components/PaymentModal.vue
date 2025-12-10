@@ -64,7 +64,7 @@
             />
             <button
                 type="submit"
-                class="btn btn-secondary invite-btn"
+                class="btn btn-primary invite-btn"
                 :disabled="inviteLoading || trimmedCode.length === 0"
             >
               <span v-if="inviteLoading">验证中…</span>

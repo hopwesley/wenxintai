@@ -41,20 +41,19 @@
     border: 1px solid #e5e7eb;
     display: flex;
     flex-direction: column;
+    gap: 18px;
     margin-bottom: 16px;
     transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
 
 /* 未作答高亮态：红色描边 + 柔和阴影 */
 .question--highlight {
-    border-color: #f97373;
-    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
-    background-color: #fff7f7;
+    border-color: #ea5a5a;
 }
 
 .question__text {
     margin: 0;
-    font-weight: 600;
+    font-weight: 500;
     color: #111827;
     line-height: 1.6;
 }
@@ -80,10 +79,10 @@
 /* 自定义单选圆点外观 */
 .question__option input[type="radio"] {
     appearance: none;
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    border: 2px solid #d1d5db;
+    border: 3px solid #d1d5db;
     background-color: #ffffff;
     cursor: pointer;
     flex-shrink: 0;
@@ -92,7 +91,7 @@
 }
 
 .question__option input[type="radio"]:hover {
-    border-color: #5A60EA;
+    border-color: var(--brand);
 }
 
 /* 伪元素画对号，默认隐藏 */
@@ -103,7 +102,7 @@
     top: 50%;
     width: 6px;
     height: 12px;
-    border: 2px solid transparent;   /* 先透明，选中时再改颜色 */
+    border: 3px solid transparent;   /* 先透明，选中时再改颜色 */
     border-top: 0;
     border-left: 0;
     transform: translate(-50%, -55%) rotate(45deg);
@@ -114,19 +113,19 @@
 
 /* 选中状态：边框变主题色，内部是白底 + 对号 */
 .question__option input[type="radio"]:checked {
-    border-color: #5A60EA;
+    border-color: var(--brand);
     background-color: #ffffff;
 }
 
 /* 显示对号并上色 */
 .question__option input[type="radio"]:checked::after {
-    border-color: #5A60EA;
+    border-color: var(--brand);
     opacity: 1;
 }
 
 /* 选中时文字高亮（你原来的逻辑） */
 .question__option input[type="radio"]:checked + .question__option-label {
-    color: #5A60EA;
+    color: var(--brand);
     font-weight: 500;
 }
 
@@ -138,7 +137,7 @@
 
 /* hover 时稍微突出一点 */
 .question__option:hover {
-    color: #5A60EA;
+    color: var(--brand);
 }
 
 /* 底部按钮区域 */
@@ -152,7 +151,10 @@
 /* 底部按钮本身：宽度、圆角等可以继承全局 .btn，只做一点点微调 */
 .questions__nav {
     padding: 12px 24px;
-    background-color: #5a60ea;
+    background-color: var(--brand);
+}
+.questions__nav:hover{
+    background-color: var( --brand-dark);
 }
 
 /* 响应式：缩小外边距和内边距，按钮堆叠 */
@@ -201,7 +203,7 @@
 
 /* 反向题：整体题干略微偏红，提示“慎重理解”而不是“错误” */
 .question__text--reverse {
-    color: #b91c1c;          /* 深一点的红，强调但不刺眼 */
+    color: #111827;          /* 深一点的红，强调但不刺眼 */
 }
 
 /* 反向题的小红标签 */
@@ -210,8 +212,8 @@
     margin-right: 6px;
     padding: 2px 6px;
     border-radius: 999px;
-    background-color: #fee2e2; /* 浅红背景 */
-    color: #b91c1c;
+    background-color: rgba(90, 96, 234, 0.1); /* 浅红背景 */
+    color: var(--brand);
     font-size: 12px;
     font-weight: 600;
 }

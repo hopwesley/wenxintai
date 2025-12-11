@@ -1,24 +1,51 @@
 /* 整个报告页面：居中、上下留白 */
-
+h2 {
+    font-size: 15px;
+    font-weight: 500;
+}
+span {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 22px;
+    color: var(--text-secondary);
+}
 .report-page {
     max-width: 960px;
-    margin: 40px auto 64px;
-    padding: 0 16px 64px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 16px;
+    --bg-hero: #0e1a2b;
+    --bg-card: #ffffff;
+    --bg-muted: #f7f8fb;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-third: #929292;
+    --brand: #5A60EA;
+    --brand-dark: #484DBB;
+    --ring: rgba(91, 124, 255, .25);
+    --shadow: 0 6px 28px rgba(15, 23, 42, .08);
+    --radius: 18px;
+    --bg-radius: 32px;
+    /* 原来 body 上的文字样式，也改挂到 .home 上 */
+    color: var(--text-primary);
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
 }
 
 /* 通用卡片 */
 
 .report-card {
-    background: #ffffff;
     border-radius: 24px;
-    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
-    padding: 28px 32px 32px;
     display: flex;
     flex-direction: column;
     gap: 24px;
+}
+
+.card-base-bg {
+    background-color: white;
+    border-radius: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
 }
 
 .report-card--overview {
@@ -31,20 +58,24 @@
 
 .report-card__header {
     display: flex;
+    flex-direction: column;
     justify-content: space-between;
-    align-items: center;
+    align-items: stretch;
 }
 
 .report-card__title-row {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 4px;
+    padding: 32px 32px 16px 32px;
+    border-bottom: 1px solid rgba(151, 151, 151, 0.3);
 }
 
 .report-card__title {
     font-size: 20px;
     font-weight: 600;
     color: #111827;
+    margin: 0;
 }
 
 .report-card__mode-pill {
@@ -58,7 +89,8 @@
 
 .report-card__divider {
     height: 1px;
-    background: #e5e7eb;
+    background: rgba(151, 151, 151, 0.3);
+    margin: 0 32px;
 }
 
 /* 统一的分区标题 */
@@ -67,6 +99,7 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    padding: 16px 32px;
 }
 
 .report-section__title {
@@ -74,12 +107,15 @@
     font-weight: 600;
     color: #111827;
 }
+.report-section--basic-analysis  .analysis-interpretation {
+    background-color: #F8F8FA;
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 14px;
+    line-height: 22px;
 
-/* 个人资料布局 */
-
-.report-section--profile {
-    gap: 16px;
 }
+/* 个人资料布局 */
 
 .report-profile {
     display: flex;
@@ -102,22 +138,24 @@
 
 .report-field {
     display: flex;
-    align-items: baseline;
+    flex-direction: column;
+    align-items: flex-start;
     gap: 6px;
-    font-size: 14px;
 }
 
 .report-field__label {
-    color: #6b7280;
+    color: var(--text-third);
+    font-size: 13px;
+    font-weight: 400;
 }
 
 .report-field__value {
-    color: #111827;
+    color: var(--text-primary);
+    font-size: 16px;
     font-weight: 500;
 }
 
 /* 基础分析：左右两块图表 */
-
 .basic-analysis-layout {
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
@@ -126,7 +164,7 @@
 
 .basic-analysis-layout__chart {
     background: #f9fafb;
-    border-radius: 16px;
+    border-radius: 8px;
     padding: 16px 18px;
     display: flex;
     align-items: center;
@@ -160,12 +198,10 @@
 }
 
 .analysis-interpretation {
-    background: #f9fafb;
-    border-radius: 16px;
-    padding: 12px 14px;
+
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
 }
 
 .analysis-interpretation__header {
@@ -205,16 +241,9 @@
     gap: 6px;
 }
 
-.ai-text-block__line {
-    font-size: 13px;
-    color: #4b5563;
-    line-height: 1.6;
-}
-
 .ai-text-block__label {
     font-weight: 600;
-    color: #4f46e5;
-    margin-right: 4px;
+    color: var(--text-primary);
 }
 
 .ai-text-block__content {

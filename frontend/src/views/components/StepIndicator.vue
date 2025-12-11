@@ -175,8 +175,8 @@ function handleStepClick(index: number) {
     height: 2px;
     background: repeating-linear-gradient(
         to right,
-        rgba(99, 102, 241, 0.3) 0,
-        rgba(99, 102, 241, 0.3) 8px,
+        rgba(255, 255, 255, 0.3) 0,
+        rgba(255, 255, 255, 0.3) 8px,
         transparent 8px,
         transparent 16px
     );

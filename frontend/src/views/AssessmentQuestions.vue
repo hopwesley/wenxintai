@@ -71,7 +71,7 @@
             <button
                 v-if="totalPages > 1"
                 type="button"
-                class="btn btn-secondary questions__nav"
+                class="btn btn-secondary questions__nav questions-back-nav"
                 @click="handlePrev"
                 :disabled="isFirstPage || isSubmitting"
             >
@@ -80,7 +80,7 @@
 
             <button
                 type="submit"
-                class="btn btn-primary questions__nav"
+                class="btn btn-primary questions__nav questions-next-nav"
                 :disabled="isSubmitting"
             >
               {{ isLastPage ? '提交本阶段' : '下一页' }}

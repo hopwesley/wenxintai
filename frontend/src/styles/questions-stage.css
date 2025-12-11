@@ -4,6 +4,10 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
+    padding: 32px;
+    background-color: white;
+    --brand: #5A60EA;
+    --brand-dark: #484DBB;
 }
 
 /* 顶部标题 + 进度 */
@@ -149,12 +153,18 @@
 }
 
 /* 底部按钮本身：宽度、圆角等可以继承全局 .btn，只做一点点微调 */
-.questions__nav {
+.questions-back-nav {
     padding: 12px 24px;
-    background-color: var(--brand);
+    background: #e2e8f0;
+    color: #1e293b;
 }
+
 .questions__nav:hover{
-    background-color: var( --brand-dark);
+    background-color: var( --brand);
+    color: #fff;
+}
+.btn-primary :hover {
+    background-color: var(--brand-dark);
 }
 
 /* 响应式：缩小外边距和内边距，按钮堆叠 */

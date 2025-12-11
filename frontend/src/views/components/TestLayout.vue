@@ -18,7 +18,7 @@
 
 <style scoped>
 .test-layout {
-  height: 383px;
+  height: 278px;
   background: linear-gradient(90deg, #D0DAF8 0%, #5A60EA 100%);
   padding: 24px 16px 32px;
   box-sizing: border-box;
@@ -41,9 +41,7 @@
 }
 
 .test-layout__content {
-  background-color: #ffffff;
   border-radius: 32px;
-  padding: 32px;
   box-sizing: border-box;
   flex: 1;
 }

@@ -16,6 +16,7 @@ export default defineConfig({
         allowedHosts: [
             'sharp-happy-grouse.ngrok-free.app',
             'primary-exciting-thrush.ngrok-free.app',
+            'nonseparable-overneglectful-marlin.ngrok-free.dev',
         ],
         proxy: {
             '/api': {

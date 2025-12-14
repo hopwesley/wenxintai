@@ -9,7 +9,7 @@ body {
   color: #111827;
 }
 
-h2, h3, p {
+h2, h3, h4,p {
     margin: 0;
 }
 
@@ -48,7 +48,7 @@ button:hover:not([disabled]) {
 }
 
 .btn-primary {
-    background-color: var(--brand);
+    background-color: #5a60ea;
     color: #fff;
     font-size: 14px;
     font-weight: 600;

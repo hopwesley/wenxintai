@@ -3,6 +3,7 @@ h2 {
     font-size: 15px;
     font-weight: 500;
 }
+
 span {
     font-size: 14px;
     font-weight: 400;
@@ -126,9 +127,9 @@ span {
 /* 右侧 4 列 × 2 行网格 */
 .report-profile-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr)); /* 4 个等宽列 */
+    grid-template-columns: repeat(3, minmax(0, 1fr)); /* 4 个等宽列 */
     column-gap: 40px;
-    row-gap: 8px;
+    row-gap: 6px;
 }
 
 /* 下方最后一个空格子：不显示内容，只占位 */
@@ -151,7 +152,7 @@ span {
 
 .report-field__value {
     color: var(--text-primary);
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 500;
 }
 
@@ -304,8 +305,8 @@ span {
 
 .recommend-main-strip {
     margin-top: 8px;
-    background: #4f46e5;
-    border-radius: 999px;
+    background: #F8F8FA;
+    border-radius: 12px;
     padding: 8px 16px;
     display: flex;
     align-items: center;
@@ -340,26 +341,28 @@ span {
 /* 上面的彩色条：第二名：xxx   得分：82 */
 
 .combo-rank-strip {
-    border-radius: 999px;
-    padding: 10px 18px;
+    border-radius: 8px;
+    padding: 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 13px;
-    font-weight: 600;
-    color: #ffffff;
+}
+
+.combo-rank-strip span{
+    color: #ffffff !important;
+    font: bold 14px "Roboto", sans-serif;
 }
 
 .combo-rank-strip--blue {
-    background: #3b82f6;
+    background: #56B4EB;
 }
 
 .combo-rank-strip--primary {
-    background: #4f46e5; /* 和上面推荐概述用的主紫色保持一致 */
+    background: #7D72F6; /* 和上面推荐概述用的主紫色保持一致 */
 }
 
 .combo-rank-strip--yellow {
-    background: #fbbf24;
+    background: #F6D572;
 }
 
 .combo-rank-strip__label {
@@ -373,13 +376,11 @@ span {
 /* 下面的白色内容卡片 */
 
 .combo-panel {
-    border-radius: 20px;
-    background: #f9fbff;
-    border: 1px solid #e5e7f0;
-    padding: 16px 18px 18px;
+    border-radius: 12px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    align-items: stretch;
+    gap: 6px;
 }
 
 .combo-panel__header {

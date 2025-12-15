@@ -81,75 +81,98 @@
                 v-else
                 class="my-tests-profile-extra-edit"
             >
-              <!-- 家长手机号 -->
-              <div class="my-tests-form-field">
-                <label class="my-tests-form-label">家长手机号（非必填，建议填写）</label>
-                <input
-                    type="tel"
-                    class="my-tests-form-input"
-                    v-model="extraForm.mobile"
-                    placeholder="填写家长常用手机号"
-                />
-              </div>
+              <div class="my-tests-profile-extra-labels">
+                <!-- 家长手机号 -->
+                <div class="my-tests-form-field">
+                  <label class="my-tests-form-label">家长手机号（非必填，建议填写）</label>
+                  <input
+                      type="tel"
+                      class="my-tests-form-input"
+                      v-model="extraForm.mobile"
+                      placeholder="填写家长常用手机号"
+                  />
+                </div>
 
-              <!-- 学号 -->
-              <div class="my-tests-form-field">
-                <label class="my-tests-form-label">学号（非必填，建议填写）</label>
-                <input
-                    type="text"
-                    class="my-tests-form-input"
-                    v-model="extraForm.study_id"
-                    placeholder="填写学生学号"
-                />
-              </div>
+                <!-- 学号 -->
+                <div class="my-tests-form-field">
+                  <label class="my-tests-form-label">学号（非必填，建议填写）</label>
+                  <input
+                      type="text"
+                      class="my-tests-form-input"
+                      v-model="extraForm.study_id"
+                      placeholder="填写学生学号"
+                  />
+                </div>
 
-              <!-- 学校名称 -->
-              <div class="my-tests-form-field">
-                <label class="my-tests-form-label">学校名称（非必填，建议填写）</label>
-                <input
-                    type="text"
-                    class="my-tests-form-input"
-                    v-model="extraForm.school_name"
-                    placeholder="填写所在学校名称"
-                />
-              </div>
+                <!-- 学校名称 -->
+                <div class="my-tests-form-field">
+                  <label class="my-tests-form-label">学校名称（非必填，建议填写）</label>
+                  <input
+                      type="text"
+                      class="my-tests-form-input"
+                      v-model="extraForm.school_name"
+                      placeholder="填写所在学校名称"
+                  />
+                </div>
 
-              <!-- 省份下拉 -->
-              <div class="my-tests-form-field">
-                <label class="my-tests-form-label">所在省份</label>
-                <select
-                    class="my-tests-form-input"
-                    v-model="selectedProvince"
-                >
-                  <option value="">请选择省份</option>
-                  <option
-                      v-for="prov in provinces"
-                      :key="prov.name"
-                      :value="prov.name"
+                <!-- 省份下拉 -->
+                <div class="my-tests-form-field">
+                  <label class="my-tests-form-label">所在省份</label>
+                  <select
+                      class="my-tests-form-input"
+                      v-model="selectedProvince"
                   >
-                    {{ prov.name }}
-                  </option>
-                </select>
+                    <option value="">请选择省份</option>
+                    <option
+                        v-for="prov in provinces"
+                        :key="prov.name"
+                        :value="prov.name"
+                    >
+                      {{ prov.name }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- 市级下拉 -->
+                <div class="my-tests-form-field">
+                  <label class="my-tests-form-label">所在市级</label>
+                  <select
+                      class="my-tests-form-input"
+                      v-model="selectedCity"
+                      :disabled="!selectedProvince"
+                  >
+                    <option value="">请选择市级</option>
+                    <option
+                        v-for="city in currentCities"
+                        :key="city"
+                        :value="city"
+                    >
+                      {{ city }}
+                    </option>
+                  </select>
+                </div>
+
+              </div>
+              <div class="my-tests-form-btn">
+                <template v-if="editingExtra">
+                  <button
+                      type="button"
+                      class="btn btn-ghost btn-cancel"
+                      @click="cancelEditExtra"
+                  >
+                    取消
+                  </button>
+                  <button
+                      type="button"
+                      class="btn btn-primary"
+                      @click="saveExtra"
+                  >
+                    保存
+                  </button>
+                </template>
+
               </div>
 
-              <!-- 市级下拉 -->
-              <div class="my-tests-form-field">
-                <label class="my-tests-form-label">所在市级</label>
-                <select
-                    class="my-tests-form-input"
-                    v-model="selectedCity"
-                    :disabled="!selectedProvince"
-                >
-                  <option value="">请选择市级</option>
-                  <option
-                      v-for="city in currentCities"
-                      :key="city"
-                      :value="city"
-                  >
-                    {{ city }}
-                  </option>
-                </select>
-              </div>
             </div>
           </div>
 
@@ -179,22 +202,6 @@
                     </g>
                   </g>
                 </svg>
-              </button>
-            </template>
-            <template v-else>
-              <button
-                  type="button"
-                  class="btn btn-ghost"
-                  @click="cancelEditExtra"
-              >
-                取消
-              </button>
-              <button
-                  type="button"
-                  class="btn btn-primary"
-                  @click="saveExtra"
-              >
-                保存
               </button>
             </template>
           </div>
@@ -240,9 +247,21 @@
                 class="my-tests-card my-tests-card--ongoing"
             >
               <div class="my-tests-card-main">
-                <h3 class="my-tests-card-title">
-                  {{ renderTitle(item) }}
-                </h3>
+                <div class="my-tests-card-title-done">
+                  <h3 class="my-tests-card-title">
+                    {{ renderTitle(item) }}
+                  </h3>
+                  <span
+                      class="my-tests-status"
+                      :class="{
+                    'my-tests-status--ongoing': !item.report_status,
+                    'my-tests-status--pending': item.report_status === 1
+                  }"
+                  >
+                  {{ renderStatusText(item) }}
+                </span>
+                </div>
+
                 <p class="my-tests-card-sub">
                   创建时间：{{ formatDateTime(item.create_at) }}
                 </p>
@@ -250,15 +269,7 @@
                 <p class="my-tests-card-sub">
                   试卷编号：{{ item.public_id }}
                 </p>
-                <span
-                    class="my-tests-status"
-                    :class="{
-                    'my-tests-status--ongoing': !item.report_status,
-                    'my-tests-status--pending': item.report_status === 1
-                  }"
-                >
-                  {{ renderStatusText(item) }}
-                </span>
+
               </div>
 
               <button
@@ -298,21 +309,23 @@
                 class="my-tests-card"
             >
               <div class="my-tests-card-main">
-                <h3 class="my-tests-card-title">
-                  {{ renderTitle(item) }}
-                </h3>
+                <div class="my-tests-card-title-done">
+                  <h3 class="my-tests-card-title">
+                    {{ renderTitle(item) }}
+                  </h3>
+                  <span class="my-tests-status my-tests-status--done">
+                  {{ renderStatusText(item) }}
+                </span>
+                </div>
 
-
-                <span class="my-tests-status my-tests-status--done">
+                <span class="my-tests-status my-tests-status--done my-tests-status--time">
                   创建时间：{{ formatDateTime(item.create_at) }}
                  </span>
 
-                <span class="my-tests-status my-tests-status--done">
+                <span class="my-tests-status my-tests-status--done my-tests-status--time">
                   试卷编号：{{ item.public_id }}
                </span>
-                <span class="my-tests-status my-tests-status--done">
-                  {{ renderStatusText(item) }}
-                </span>
+
               </div>
 
               <button

@@ -3,25 +3,32 @@
     <div class="report-preview-backdrop"></div>
     <div class="report-preview-panel" :key="panelKey">
       <header class="report-preview-header">
-        <div class="report-preview-header__titles">
-          <p class="report-preview-label">测评报告预览</p>
-          <h3 class="report-preview-title">{{ headerTitle }}</h3>
-          <p class="report-preview-meta">报告编号：{{ publicId }}</p>
+        <div class="report-preview-header-close">
+          <button
+              type="button"
+              class="btn btn-ghost close-btn-header"
+              @click="emit('close')"
+          >
+            关闭
+          </button>
+
         </div>
-        <button
-            type="button"
-            class="btn btn-ghost"
-            @click="handleModalExportPdf"
-        >
-          打印 pdf
-        </button>
-        <button
-            type="button"
-            class="btn btn-ghost"
-            @click="emit('close')"
-        >
-          关闭
-        </button>
+        <div class="report-preview-header-title-pdf">
+          <div class="report-preview-header__titles">
+            <p class="report-preview-label">测评报告预览</p>
+            <h3 class="report-preview-title">{{ headerTitle }}</h3>
+            <p class="report-preview-meta">报告编号：{{ publicId }}</p>
+          </div>
+          <button
+              type="button"
+              class="btn btn-ghost"
+              @click="handleModalExportPdf"
+          >
+            打印 pdf
+          </button>
+
+        </div>
+
       </header>
       <div class="report-preview-body">
         <div class="report-page report-page--pdf">
@@ -129,7 +136,6 @@ const currentMainComponent = computed(() => {
 
 .report-preview-panel {
   position: relative;
-  width: min(1100px, 92vw);
   max-height: 90vh;
   background: #fff;
   border-radius: 16px;
@@ -140,14 +146,21 @@ const currentMainComponent = computed(() => {
 }
 
 .report-preview-header {
-  padding: 16px 20px;
+  padding: 16px 32px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.report-preview-header-close{
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.report-preview-header-title-pdf {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid #e5e7eb;
 }
-
 .report-preview-header__titles {
   display: flex;
   flex-direction: column;
@@ -174,7 +187,7 @@ const currentMainComponent = computed(() => {
 }
 
 .report-preview-body {
-  padding: 0 12px 16px;
+  padding: 0 32px;
   overflow-y: auto;
 }
 </style>
@@ -197,6 +210,7 @@ const currentMainComponent = computed(() => {
   .report-page * {
     visibility: visible !important;
   }
+
 
   /* 3. 把弹框从 fixed 还原成普通文档流，避免 max-height / overflow 影响打印 */
   .report-preview-modal {
@@ -231,4 +245,25 @@ const currentMainComponent = computed(() => {
     visibility: hidden !important;
   }
 }
+.btn-ghost {
+  background: #5a60ea;
+  color: #fff;
+  border: none;
+}
+
+.btn-ghost:hover {
+  background: var(--brand-dark)
+}
+
+.close-btn-header {
+  background: transparent;
+  font-size: 14px;
+  cursor: pointer;
+  color: #888;
+}
+.close-btn-header:hover {
+  color: #000;
+  background-color: transparent;
+}
+
 </style>

@@ -9,11 +9,9 @@ body {
     /* 垂直居中整块内容 */
     display: flex;
     flex-direction: column;
-    justify-content: center;
     /* 关键：宽度控制在 640–960 之间，理想值为 46vw */
     width: clamp(640px, 46vw, 960px);
     margin: 0 auto;          /* 水平居中 */
-
     box-sizing: border-box;
     padding: 24px 0;         /* 上下留一点空，左右不再用百分比 padding 控宽度 */
 }
@@ -209,7 +207,7 @@ body {
 }
 
 .my-tests-section {
-    margin-top: 28px;
+    margin-top: 16px;
 }
 
 .my-tests-section-title {
@@ -232,19 +230,26 @@ body {
     padding: 16px 18px;
     border-radius: 16px;
     background: #ffffff;
-}
-
-.my-tests-card--ongoing {
     border: 1px solid rgba(90, 96, 234, 0.18);
 }
 
 .my-tests-card-main {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.my-tests-card-title-done {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
 }
 
 .my-tests-card-title {
-    margin: 0 0 4px;
     font-size: 16px;
 }
 
@@ -258,7 +263,7 @@ body {
     display: inline-flex;
     align-items: center;
     padding: 2px 8px;
-    border-radius: 999px;
+    border-radius: 4px;
     font-size: 12px;
 }
 
@@ -270,6 +275,12 @@ body {
 .my-tests-status--done {
     background: rgba(16, 185, 129, 0.06);
     color: #059669;
+}
+
+.my-tests-status--time {
+    border-radius: 4px;
+    background-color: rgba(75, 85, 99, 0.06);
+    color: var(--text-third);
 }
 
 .my-tests-status--pending {
@@ -397,12 +408,25 @@ body {
 }
 
 .my-tests-form-input {
-    padding: 8px 12px;
-    border-radius: 10px;
+    padding: 12px;
+    border-radius: 12px;
     border: 1px solid #d1d5db;
-    font-size: 13px;
+    font-size: 14px;
     outline: none;
-    background: #fff;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* 只给下拉框（省份 / 市级）加箭头 */
+select.my-tests-form-input {
+    padding-right: 40px;  /* 留出箭头空间 */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+
+    background-image: url("data:image/svg+xml,%3Csvg width='18' height='14' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 7l5 6 5-6' fill='none' stroke='%23d0d7de' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px 16px;
 }
 
 .my-tests-form-input:focus {
@@ -573,6 +597,7 @@ body {
 .my-tests-profile-bottom-info {
     display: flex;
     align-items: center;
+    width: 100%;
 }
 
 .my-tests-profile-bottom-info > p + div {
@@ -603,14 +628,43 @@ body {
     border-left: 1px solid var(--text-third);  /* 竖线颜色可按需要调 */
     padding-left: 8px;              /* 竖线和文字之间留点空 */
 }
-
-.my-tests-profile-extra-edit {
-    margin-top: 12px;
+.my-tests-profile-extra-edit{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin: 0 auto;
+    gap: 16px;
+}
+.my-tests-profile-extra-edit .my-tests-profile-extra-labels{
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* ✅ 两列 */
+    gap: 16px 24px;
+    width: 100%;
+    margin: 0 auto;
+}
+.my-tests-form-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    margin: 0 auto;
 }
 
 .my-tests-profile-extra-edit .my-tests-form-input {
     width: 100%;
+}
+.btn-cancel{
+    background: #e5e7eb;
+    color: #374151;
+    padding: 9px 18px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+.btn-cancel:hover{
+    background: #d1d5db;
 }

@@ -423,33 +423,45 @@ span {
     flex-direction: column;
     gap: 6px;
 }
-
+.report-section__subtitle::after,
+.combo-panel__subtitle::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;              /* 满宽 */
+    bottom: 0;
+    height: 1px;
+    background: rgba(151, 151, 151, 0.3); /* 线的颜色：偏灰蓝 */
+}
 .combo-panel__subtitle {
+    position: relative;
     font-size: 13px;
     font-weight: 600;
     color: #111827;
+    padding-bottom: 12px; /* 留出线和标题的间距 */
+    margin: 16px 0;  /* 标题与下面内容的间距 */
 }
 
 .combo-panel__ai-block {
-    background: #ffffff;
     border-radius: 12px;
     padding: 10px 12px;
-    box-shadow: 0 0 0 1px #edf2ff inset;
+    background-color: #f9fafb;
 }
 
 .combo-panel__text-line {
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: 400;
     line-height: 1.6;
-    color: #4b5563;
+    color: var(--text-secondary);
 }
 
 /* 3+1+2 模式：物理 / 历史说明块 */
 .report-section--mode312-intro {
     background: #f9fafb;
     border-radius: 16px;
-    padding: 12px 14px;
+    padding: 16px;
     border: 1px solid #e5e7eb;
-    margin-bottom: 12px;
+    margin: 16px 0;
 }
 
 .mode312-intro__text {
@@ -467,7 +479,6 @@ span {
 .report-section--mode312-group {
     border-radius: 18px;
     border: 1px solid #e5e7eb;
-    padding: 12px 14px 14px;
     background: #fdfdff;
     gap: 12px;
     margin-top: 8px;
@@ -497,9 +508,13 @@ span {
 }
 
 /* 3+1+2 模式下的推荐概览小节，字号稍微弱一点 */
-.report-section--mode312-analysis .report-section__subtitle {
-    font-size: 13px;
-    color: #4b5563;
+ .report-section__subtitle {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+    position: relative ;
+    margin: 16px 0;
+    padding-bottom: 12px;
 }
 
 /* 3+1+2 下的主条稍微收紧一点间距 */

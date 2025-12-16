@@ -23,6 +23,7 @@ body {
     color: var(--text-third);
     background-color: white;
     padding: 8px 16px;
+    border-radius: 999px;
 }
 
 /* SVG 图标尺寸 & 颜色继承文字色 */

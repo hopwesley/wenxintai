@@ -4,27 +4,34 @@
     background: rgba(15, 23, 42, 0.60);
     backdrop-filter: blur(4px);
     z-index: 999;
-
     display: flex;
     align-items: center;
     justify-content: center;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-third: #929292;
+    --brand: #5A60EA;
+    --brand-dark: #484DBB;
 }
-
 
 .overlay__card--ai {
     position: relative;
-    background: radial-gradient(circle at top, #1e293b 0, #020617 60%);
+    background-image: url('/img/ai-bg@2x.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
     color: #e5e7eb;
     border-radius: 20px;
+    overflow: hidden;
     padding: 24px 28px;
-    box-shadow: 0 0 40px rgba(56, 189, 248, 0.35);
+    box-shadow: 0 0 40px rgba(56, 189, 248, 0.1);
     border: 1px solid rgba(129, 140, 248, 0.7);
     overflow: hidden;
-
     /* 尺寸放大，让 AI 面板更有存在感 */
-    max-width: 640px;
-    min-width: 460px;
+    max-width: 740px;
+    min-width: 560px;
     min-height: 320px;
+    height: auto;
 }
 
 /* 卡片外围流动光效 */
@@ -51,17 +58,16 @@
 
 /* 标题 + 副标题 */
 .overlay__title {
-    font-size: 18px;
+    font-size: 24px;
     font-weight: 600;
-    margin-bottom: 6px;
+    color: var(--text-primary);
 }
 
 .overlay__subtitle {
     font-size: 13px;
-    color: #cbd5f5;
+    color: var(--text-secondary);
     margin-bottom: 16px;
 }
-
 
 .overlay__dot {
     width: 10px;
@@ -119,7 +125,6 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    margin-bottom: 12px;
 }
 
 .overlay__live {
@@ -179,8 +184,11 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 12px;
     opacity: 0.9;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 8px 12px;
+    border-radius: 6px;
+    width: 266px;
 }
 
 /* 一旦 hasLogs = true，则 overlay 根节点多一个类：overlay--ai--active
@@ -195,14 +203,12 @@
     height: 220px;
     padding: 12px 16px;
     border-radius: 12px;
-    background: rgba(15, 23, 42, 0.9);
-    border: 1px solid rgba(148, 163, 184, 0.6);
+    background: rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.78);
     overflow-y: auto;
-
     display: flex;
     flex-direction: column;
     gap: 6px;
-
     scrollbar-width: none;        /* Firefox */
     -ms-overflow-style: none;     /* IE / Edge */
 }
@@ -220,7 +226,7 @@
 
 .overlay__log-index {
     font-size: 11px;
-    color: #6b7280;
+    color: var(--text-secondary);
     min-width: 28px;
 }
 
@@ -229,15 +235,15 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 12px;
     line-height: 1.5;
-    color: #e5e7eb;
+    color: var(--text-secondary);
     word-break: break-all;
     white-space: pre-wrap;
 }
 
 /* 没日志时的占位文案 */
 .overlay__log-placeholder {
-    margin-top: 16px;
+    margin-top: 6px;
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--text-secondary);
     opacity: 0.9;
 }

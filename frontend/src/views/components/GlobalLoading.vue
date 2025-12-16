@@ -40,7 +40,7 @@ const {visible, message} = useGlobalLoading()
   max-width: 320px;
   padding: 20px 24px 18px;
   border-radius: 16px;
-  background: rgba(15, 23, 42, 0.92);
+  background: white;
   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.7);
   display: flex;
   flex-direction: column;
@@ -63,7 +63,7 @@ const {visible, message} = useGlobalLoading()
   margin: 0;
   font-size: 14px;
   line-height: 1.5;
-  color: #e5e7eb;
+  color: #475569;
   text-align: center;
 }
 

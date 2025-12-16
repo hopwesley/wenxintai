@@ -26,7 +26,6 @@
       <div class="overlay__pulse">
         <span class="overlay__dot"></span>
         <span class="overlay__bar"></span>
-        <span class="overlay__bar overlay__bar--delay"></span>
       </div>
 
       <!-- 日志窗口 -->

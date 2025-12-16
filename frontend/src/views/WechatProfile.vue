@@ -59,13 +59,13 @@
           <!-- 左侧：信息内容（只读或编辑表单） -->
           <div class="my-tests-profile-bottom-info">
             <!-- 只读：学校 / 地区 -->
-            <p
+            <div
                 class="my-tests-profile-sub"
                 v-if="!editingExtra"
             >
               <div>{{ profile?.school_name || '-' }}</div>
               <div>{{ profile?.city || profile?.province || '-' }}</div>
-            </p>
+            </div>
 
             <!-- 只读资料字段 -->
             <div

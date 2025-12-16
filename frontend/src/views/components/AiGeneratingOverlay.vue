@@ -3,18 +3,20 @@
     <div class="overlay__card overlay__card--ai">
       <!-- 头部：LIVE 标记 + 标题 + 元信息 -->
       <div class="overlay__header">
-        <div class="overlay__live">
-          <span class="overlay__live-dot"></span>
-          <span class="overlay__live-label">AI 实时分析中</span>
-        </div>
-
-        <div class="overlay__title-row">
-          <div class="overlay__title">{{ title }}</div>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div class="overlay__live">
+            <span class="overlay__live-dot"></span>
+            <span class="overlay__live-label">AI 实时分析中</span>
+          </div>
           <div v-if="headerInfo" class="overlay__meta">
             <span v-if="headerInfo.mode">模式：{{ headerInfo.mode }}</span>
             <span v-if="headerInfo.grade">年级：{{ headerInfo.grade }}</span>
             <span v-if="stage">阶段：{{ stage }}</span>
           </div>
+        </div>
+
+        <div class="overlay__title-row">
+          <div class="overlay__title">{{ title }}</div>
         </div>
 
         <div class="overlay__subtitle" v-if="subtitle">

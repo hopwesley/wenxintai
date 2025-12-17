@@ -94,9 +94,8 @@ function handleCancel() {
 }
 
 .td-dialog {
-  width: 520px;
-  max-width: 100%;
-  max-height: 80vh;
+  max-width: 740px;
+  max-height: 560px;
   background: #ffffff;
   border-radius: 20px;
   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);

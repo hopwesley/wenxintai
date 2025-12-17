@@ -293,7 +293,7 @@ async function handleConfirm(action: 'confirm' | 'skip' = 'confirm') {
 .form-area {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   margin-bottom: 26px;
 }
 
@@ -305,7 +305,7 @@ async function handleConfirm(action: 'confirm' | 'skip' = 'confirm') {
 
 .form-label {
   font-size: 14px;
-  color: #555;
+  color: var(--text-third);
 }
 
 .form-label--highlight {
@@ -315,10 +315,9 @@ async function handleConfirm(action: 'confirm' | 'skip' = 'confirm') {
 /* 输入框 / 选择框样式 */
 .form-input {
   width: 100%;
-  height: 40px;
   border-radius: 10px;
   border: 1px solid #ddd;
-  padding: 0 12px;
+  padding: 12px;
   font-size: 14px;
   outline: none;
 }
@@ -329,17 +328,24 @@ async function handleConfirm(action: 'confirm' | 'skip' = 'confirm') {
 }
 
 .form-select {
+  flex: 1;
   width: 100%;
-  height: 40px;
   border-radius: 10px;
   border: 1px solid #ddd;
-  padding: 0 10px;
+  padding: 12px 40px 12px 12px;
   font-size: 14px;
   outline: none;
   appearance: none;
   background-size: 6px 6px, 6px 6px;
   background: #fff linear-gradient(45deg, transparent 50%, #c0c4cc 50%),
   linear-gradient(135deg, #c0c4cc 50%, transparent 50%) no-repeat calc(100% - 15px) 50%, calc(100% - 10px) 50%;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='18' height='14' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 7l5 6 5-6' fill='none' stroke='%23d0d7de' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px 16px;
 }
 
 .form-select:disabled {
@@ -361,8 +367,7 @@ async function handleConfirm(action: 'confirm' | 'skip' = 'confirm') {
 .checkbox-line {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 6px;
+  gap: 4px;
   font-size: 13px;
   color: #666;
 }
@@ -371,14 +376,15 @@ async function handleConfirm(action: 'confirm' | 'skip' = 'confirm') {
 .dialog-footer {
   display: flex;
   justify-content: center;
+  flex-direction: column-reverse;
   gap: 16px;
 }
 
 .btn-confirm {
-  background: #7167ff;
+  background: #5a60ea;
   color: white;
-  padding: 8px 26px;
-  border-radius: 30px;
+  padding: 12px 26px;
+  border-radius: 10px;
   border: none;
   cursor: pointer;
   font-size: 15px;

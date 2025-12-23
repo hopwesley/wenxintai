@@ -9,7 +9,6 @@
             <h2 style="font-weight: 600;font-size: 20px;color: var(--brand)">智择未来</h2>
             <p style="font-weight: 400;font-size: 14px;color: var(--text-third)">新高考AI选科智能决策系统</p>
           </div>
-          cd frontend/
           <nav class="main-nav-tabs">
             <button
                 v-for="tab in tabDefs"

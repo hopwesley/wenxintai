@@ -592,7 +592,9 @@ span {
 .report-page__action {
     min-width: 120px;
 }
-
+.report-page__export:hover {
+    background:  #484DBB;
+}
 /* 简单的响应式处理：窄屏时改成单列 */
 
 @media (max-width: 768px) {

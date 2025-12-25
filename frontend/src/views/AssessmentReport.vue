@@ -11,7 +11,7 @@
         完成报告
       </button>
 
-      <button class="btn btn-primary report-page__action" @click="handleExportPdf">
+      <button class="btn btn-primary report-page__export" @click="handleExportPdf">
         导出 PDF
       </button>
     </div>

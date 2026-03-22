@@ -53,6 +53,9 @@ type DbService interface {
 	) error
 	InsertWeChatOrder(ctx context.Context, d *WeChatOrder) error
 	PayByInviteCode(ctx context.Context, publicId string, inviteCode string) error
+
+	InsertReportFeedback(ctx context.Context, feedback *ReportFeedback) error
+	QueryTestRecordPaymentInfo(ctx context.Context, publicId string) (payOrderId string, paidTime sql.NullTime, err error)
 }
 
 func maskMobile(m string) string {

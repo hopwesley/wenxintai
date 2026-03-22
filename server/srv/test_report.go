@@ -17,6 +17,12 @@ type tesReportRequest struct {
 	PublicID string `json:"public_id"`
 }
 
+type finishReportRequest struct {
+	PublicID        string `json:"public_id"`
+	RatingScore     *int   `json:"rating_score,omitempty"`
+	FeedbackContent string `json:"feedback_content,omitempty"`
+}
+
 func (req *tesReportRequest) parseObj(r *http.Request) *ApiErr {
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		return ApiInvalidReq("invalid request body", err)
@@ -113,9 +119,10 @@ const ReportInvalidDuration = 6 * 30 * 24 * time.Hour
 
 type CombinedReport struct {
 	*dbSrv.UserProfile
-	Mode        string    `json:"mode"`
-	GeneratedAt time.Time `json:"generated_at"`
-	ExpiredAt   time.Time `json:"expired_at"`
+	Mode          string    `json:"mode"`
+	GeneratedAt   time.Time `json:"generated_at"`
+	ExpiredAt     time.Time `json:"expired_at"`
+	PaidByInvite  bool      `json:"paid_by_invite"`
 	*ai_api.EngineResult
 	AIContent string `json:"ai_content,omitempty"`
 }
@@ -183,6 +190,17 @@ func (s *HttpSrv) queryOrCreateReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	combinedResult.UserProfile = user
+
+	// 判断是否通过邀请码支付
+	if record.PayOrderId.Valid {
+		payOrderId := record.PayOrderId.String
+		// 查询 invites 表，如果存在该邀请码，则是邀请码支付
+		invite, invErr := dbSrv.Instance().GetInviteByCode(ctx, payOrderId)
+		if invErr == nil && invite != nil {
+			combinedResult.PaidByInvite = true
+		}
+	}
+
 	writeJSON(w, http.StatusOK, combinedResult)
 
 }
@@ -343,15 +361,76 @@ func (s *HttpSrv) parseReport(w http.ResponseWriter, report *dbSrv.TestReport, s
 }
 
 func (s *HttpSrv) finalizedReport(w http.ResponseWriter, r *http.Request) {
-	var req tesReportRequest
-	err := req.parseObj(r)
-	if err != nil {
-		s.log.Err(err).Msgf("invalid test report request")
-		writeError(w, err)
+	var req finishReportRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.log.Err(err).Msg("invalid finish report request")
+		writeError(w, ApiInvalidReq("invalid request body", err))
 		return
 	}
-	uid := userIDFromRequest(r)
-	sLog := s.log.With().Str("public_id", req.PublicID).Str("wechat_id", uid).Logger()
-	writeJSON(w, http.StatusOK, CommonRes{Ok: true, Msg: "成功完成测试"})
+
+	if !IsValidPublicID(req.PublicID) {
+		writeError(w, ApiInvalidReq("无效的问卷编号", nil))
+		return
+	}
+
+	ctx := r.Context()
+	uid := userIDFromContext(ctx)
+	sLog := s.log.With().Str("public_id", req.PublicID).Str("uid", uid).Logger()
+
+	// 如果提供了反馈数据，则保存反馈
+	if req.RatingScore != nil {
+		// 验证评分范围
+		if *req.RatingScore < 0 || *req.RatingScore > 10 {
+			writeError(w, ApiInvalidReq("评分必须在 0-10 之间", nil))
+			return
+		}
+
+		// 查询支付信息，获取邀请码
+		payOrderId, _, err := dbSrv.Instance().QueryTestRecordPaymentInfo(ctx, req.PublicID)
+		if err != nil {
+			sLog.Err(err).Msg("query payment info failed")
+			writeError(w, ApiInternalErr("查询支付信息失败", err))
+			return
+		}
+
+		if payOrderId == "" {
+			sLog.Warn().Msg("no payment info found")
+			writeError(w, ApiInvalidReq("未找到支付信息", nil))
+			return
+		}
+
+		// 验证是否是邀请码支付
+		invite, invErr := dbSrv.Instance().GetInviteByCode(ctx, payOrderId)
+		if invErr != nil {
+			sLog.Err(invErr).Msg("query invite code failed")
+			writeError(w, ApiInternalErr("查询邀请码失败", invErr))
+			return
+		}
+
+		if invite == nil {
+			sLog.Warn().Str("pay_order_id", payOrderId).Msg("not paid by invite code")
+			writeError(w, ApiInvalidReq("该报告不是通过邀请码支付", nil))
+			return
+		}
+
+		// 保存反馈
+		feedback := &dbSrv.ReportFeedback{
+			PublicID:        req.PublicID,
+			Uid:             uid,
+			InviteCode:      payOrderId,
+			RatingScore:     *req.RatingScore,
+			FeedbackContent: req.FeedbackContent,
+		}
+
+		if err := dbSrv.Instance().InsertReportFeedback(ctx, feedback); err != nil {
+			sLog.Err(err).Msg("insert feedback failed")
+			writeError(w, ApiInternalErr("保存反馈失败", err))
+			return
+		}
+
+		sLog.Info().Int("rating", *req.RatingScore).Msg("feedback saved successfully")
+	}
+
+	writeJSON(w, http.StatusOK, CommonRes{Ok: true, Msg: "感谢您的反馈"})
 	sLog.Debug().Msg("finish report success")
 }

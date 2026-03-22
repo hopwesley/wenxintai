@@ -23,9 +23,17 @@
         stage="AI报告"
     />
     <ReportFinishLetter
+        v-if="!isPaidByInvite"
         :visible="showFinishLetter"
         @close="showFinishLetter = false"
         @confirm="handleLetterConfirm"
+    />
+    <ReportFeedbackForm
+        v-if="isPaidByInvite"
+        :visible="showFinishLetter"
+        @close="showFinishLetter = false"
+        @confirm="handleFeedbackSubmit"
+        @skip="handleFeedbackSkip"
     />
     <PaymentModal
         v-model:open="paymentDialogShow"
@@ -48,7 +56,9 @@ import ReportBasic from '@/views/report_basic.vue'
 import ReportPro from '@/views/report_pro.vue'
 import {TestTypeAdv, TestTypeBasic, TestTypePro, TestTypeSchool} from "@/controller/common";
 import ReportFinishLetter from "@/views/components/ReportFinishLetter.vue";
+import ReportFeedbackForm from "@/views/components/ReportFeedbackForm.vue";
 import PaymentModal from "@/views/components/PaymentModal.vue";
+import {useReportView} from "@/controller/report_manager";
 
 const {
   route,
@@ -57,11 +67,17 @@ const {
   handleExportPdf,
   showFinishLetter,
   handleLetterConfirm,
+  handleFeedbackSubmit,
+  handleFeedbackSkip,
   paymentDialogShow,
   currentPlan,
   publicId,
   generateReport,
 } = useReportController()
+
+const { rawReportData } = useReportView()
+
+const isPaidByInvite = computed(() => rawReportData.value?.paid_by_invite ?? false)
 
 const businessType = computed(() =>
     String(route.params.typ ?? "")

@@ -128,6 +128,7 @@ export interface ReportRawData {
     mode: ModeOption
     generated_at: string
     expired_at: string
+    paid_by_invite: boolean
 
     common_score: ReportCommonScore
     recommend_33: ReportRecommend33 | null
@@ -669,6 +670,42 @@ export function useReportController(options?: ReportControllerOptions) {
         }
     }
 
+    const handleFeedbackSubmit = async (data: { ratingScore: number; feedbackContent: string }) => {
+        showFinishLetter.value = false
+        showLoading()
+        try {
+            await apiRequest(API_PATHS.FINISH_REPORT, {
+                method: 'POST',
+                body: {
+                    public_id: publicId.value,
+                    rating_score: data.ratingScore,
+                    feedback_content: data.feedbackContent,
+                },
+            })
+        } catch (e) {
+            console.error('提交反馈失败：' + e)
+            showAlert('提交反馈失败：' + e)
+        } finally {
+            resetSession()
+            router.replace('/home').finally(()=>{
+                hideLoading()
+            })
+        }
+    }
+
+    const handleFeedbackSkip = async () => {
+        showFinishLetter.value = false
+        showLoading()
+        try {
+            resetSession()
+            router.replace('/home').finally(()=>{
+                hideLoading()
+            })
+        } catch (e) {
+            console.error('跳过反馈失败：' + e)
+        }
+    }
+
     const handleExportPdf = () => {
         const oldTitle = document.title
 
@@ -714,6 +751,8 @@ export function useReportController(options?: ReportControllerOptions) {
         // 流程控制
         showFinishLetter,
         handleLetterConfirm,
+        handleFeedbackSubmit,
+        handleFeedbackSkip,
         handleExportPdf,
 
         paymentDialogShow,

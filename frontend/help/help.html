@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智择未来 - 使用指南</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 12px;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .intro {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .intro h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .intro ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .intro li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .intro li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .step {
+            background: white;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .step-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+
+        .step-title {
+            font-size: 1.8em;
+            color: #333;
+        }
+
+        .step-content {
+            margin-top: 20px;
+        }
+
+        .step-content p {
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            line-height: 1.8;
+        }
+
+        .step-image {
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+            display: block;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+
+        .tip {
+            background: #d1ecf1;
+            padding: 15px;
+            border-left: 4px solid #17a2b8;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+
+        .important {
+            background: #f8d7da;
+            padding: 15px;
+            border-left: 4px solid #dc3545;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .step-title {
+                font-size: 1.3em;
+            }
+
+            .step-number {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>智择未来 - 使用指南</h1>
+            <p>AI 选科全景分析系统使用教程</p>
+        </header>
+
+        <div class="intro">
+            <h2>欢迎使用智择未来选科系统</h2>
+            <p>本系统通过科学的心理测评和 AI 智能分析，帮助高一学生做出最适合自己的选科决策。完成测评大约需要 15-20 分钟。</p>
+            <h3 style="margin-top: 20px; color: #667eea;">测评流程概览：</h3>
+            <ul>
+                <li>微信扫码登录系统</li>
+                <li>填写基本信息</li>
+                <li>完成兴趣测评（RIASEC）</li>
+                <li>完成能力测评（ASC）</li>
+                <li>使用邀请码免费体验</li>
+                <li>查看 AI 生成的选科报告</li>
+                <li>提交使用反馈</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <div class="step-header">
+                <div class="step-number">1</div>
+                <h2 class="step-title">微信扫码登录</h2>
+            </div>
+            <div class="step-content">
+                <p>打开系统网站后，点击"微信登录"按钮，使用微信扫描二维码完成登录。</p>
+                <img src="1_singup.png" alt="微信登录" class="step-image">
+                <div class="tip">
+                    <strong>提示：</strong>请使用微信扫码登录，系统会自动获取您的微信昵称和头像。
+                </div>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-header">
+                <div class="step-number">2</div>
+                <h2 class="step-title">填写基本信息</h2>
+            </div>
+            <div class="step-content">
+                <p>登录成功后，请填写您的基本信息，包括姓名、学校、年级、选科模式等。这些信息将帮助系统为您生成更精准的选科建议。</p>
+                <img src="2_step1.png" alt="填写基本信息" class="step-image">
+                <div class="highlight">
+                    <strong>重要：</strong>请如实填写信息，选科模式请根据您所在省份的高考政策选择（3+3 或 3+1+2）。
+                </div>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-header">
+                <div class="step-number">3</div>
+                <h2 class="step-title">AI 生成测评题目</h2>
+            </div>
+            <div class="step-content">
+                <p>系统会根据您的基本信息，使用 AI 智能生成个性化的测评题目。这个过程大约需要 20-30 秒。</p>
+                <img src="3_ai_process.png" alt="AI 生成题目" class="step-image">
+                <div class="tip">
+                    <strong>提示：</strong>请耐心等待，AI 正在为您量身定制测评题目。
+                </div>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-header">
+                <div class="step-number">4</div>
+                <h2 class="step-title">完成测评问卷</h2>
+            </div>
+            <div class="step-content">
+                <p>系统会分两个阶段进行测评：</p>
+                <ul style="margin-left: 20px; margin-bottom: 15px;">
+                    <li><strong>兴趣测评（RIASEC）：</strong>了解您的职业兴趣倾向</li>
+                    <li><strong>能力测评（ASC）：</strong>评估您在各学科的能力水平</li>
+                </ul>
+                <p>请根据您的真实想法和感受作答，没有对错之分。</p>
+                <img src="4_step2.png" alt="完成测评" class="step-image">
+                <div class="important">
+                    <strong>注意：</strong>请认真作答，不要随意选择。测评结果将直接影响选科建议的准确性。
+                </div>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-header">
+                <div class="step-number">5</div>
+                <h2 class="step-title">使用邀请码</h2>
+            </div>
+            <div class="step-content">
+                <p>完成测评后，系统会提示您支付或使用邀请码。请输入老师提供的邀请码，即可免费查看完整报告。</p>
+                <img src="5_invitecode.png" alt="使用邀请码" class="step-image">
+                <div class="highlight">
+                    <strong>邀请码格式：</strong>邀请码通常为 "X-XXXX-XXXX-XXXX-X" 格式，请向您的老师获取。
+                </div>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-header">
+                <div class="step-number">6</div>
+                <h2 class="step-title">查看选科报告</h2>
+            </div>
+            <div class="step-content">
+                <p>使用邀请码后，系统会生成您的专属选科报告。报告包含：</p>
+                <ul style="margin-left: 20px; margin-bottom: 15px;">
+                    <li>各学科的兴趣和能力分析</li>
+                    <li>推荐的选科组合（按优先级排序）</li>
+                    <li>每个组合的详细说明和建议</li>
+                    <li>AI 生成的个性化分析报告</li>
+                </ul>
+                <img src="6_report.png" alt="查看报告" class="step-image">
+                <div class="tip">
+                    <strong>提示：</strong>您可以点击"导出 PDF"按钮保存报告，方便与家长和老师讨论。
+                </div>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-header">
+                <div class="step-number">7</div>
+                <h2 class="step-title">提交使用反馈</h2>
+            </div>
+            <div class="step-content">
+                <p>查看完报告后，请点击"完成报告"按钮，系统会弹出反馈表单。</p>
+                <p><strong>请务必完成以下两项反馈：</strong></p>
+                <ol style="margin-left: 20px; margin-bottom: 15px;">
+                    <li><strong>评分（0-10 分）：</strong>您觉得这个报告对您的选课是否有帮助？</li>
+                    <li><strong>文字反馈：</strong>请分享您的使用体验和建议</li>
+                </ol>
+                <img src="7_feedback.png" alt="提交反馈" class="step-image">
+                <div class="important">
+                    <strong>重要：</strong>您的反馈对我们非常重要！请认真填写，帮助我们改进系统。
+                </div>
+            </div>
+        </div>
+
+        <div class="intro" style="background: #e7f3ff;">
+            <h2 style="color: #0066cc;">常见问题</h2>
+            <div style="margin-top: 20px;">
+                <p><strong>Q: 测评需要多长时间？</strong></p>
+                <p>A: 完整测评大约需要 15-20 分钟，建议在安静的环境下一次性完成。</p>
+
+                <p style="margin-top: 15px;"><strong>Q: 可以中途退出吗？</strong></p>
+                <p>A: 可以，系统会自动保存您的进度，下次登录可以继续。</p>
+
+                <p style="margin-top: 15px;"><strong>Q: 邀请码在哪里获取？</strong></p>
+                <p>A: 请向您的班主任或任课老师获取邀请码。</p>
+
+                <p style="margin-top: 15px;"><strong>Q: 报告可以重新生成吗？</strong></p>
+                <p>A: 建议半年后重新测评，以获取更准确的选科建议。</p>
+            </div>
+        </div>
+
+        <footer>
+            <p>智择未来 AI 选科系统 © 2026</p>
+            <p>如有问题，请联系您的老师</p>
+        </footer>
+    </div>
+</body>
+</html>

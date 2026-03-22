@@ -36,6 +36,7 @@ sync-dist:build-frontend
 	mkdir -p $(STATIC_DIR)
 	rm -rf $(STATIC_DIR)/*
 	cp -r $(FRONTEND_DIR)/dist/* $(STATIC_DIR)/
+	cp -r $(FRONTEND_DIR)/help $(STATIC_DIR)/
 
 # ==== 构建后端（当前系统）====
 build-server:
